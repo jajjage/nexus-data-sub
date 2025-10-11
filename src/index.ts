@@ -1,7 +1,7 @@
 /* eslint-disable no-console */
 import app from './app';
 import { config } from './config/env';
-import { testConnection, close as closeDb } from './database/connection';
+import { close as closeDb, testConnection } from './database/connection';
 import { redisClientInstance } from './database/redis';
 
 const startServer = async () => {

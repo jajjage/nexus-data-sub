@@ -30,7 +30,6 @@ interface RegisterRequest {
 }
 
 export class AuthController {
-  private static emailService = new EmailService();
   private static readonly ALLOWED_ROLES = [
     'reporter',
     'staff',
@@ -86,7 +85,8 @@ export class AuthController {
       // Fire-and-forget is acceptable for non-critical emails, but handle the promise
       setImmediate(async () => {
         try {
-          await AuthController.emailService.sendVerificationEmail(
+          const emailService = new EmailService();
+          await emailService.sendVerificationEmail(
             user.email,
             user.verificationToken!
           );
@@ -182,7 +182,8 @@ export class AuthController {
               // Fire-and-forget is acceptable for non-critical emails, but handle the promise
               setImmediate(async () => {
                 try {
-                  await AuthController.emailService.send2FADisableEmail(
+                  const emailService = new EmailService();
+                  await emailService.send2FADisableEmail(
                     user.email
                   );
                 } catch (error) {
@@ -444,7 +445,8 @@ export class AuthController {
 
       setImmediate(async () => {
         try {
-          await AuthController.emailService.sendVerificationEmail(
+          const emailService = new EmailService();
+          await emailService.sendVerificationEmail(
             user.email,
             verificationToken
           );

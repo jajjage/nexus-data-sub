@@ -3,31 +3,71 @@ import nodemailer from 'nodemailer';
 import { config } from '../config/env';
 
 export class EmailService {
-  private transporter;
+  private transporter: nodemailer.Transporter | undefined;
 
   constructor() {
-    // Validate email configuration
-    if (!config.email.user || !config.email.pass) {
-      throw new Error('Email configuration missing authentication credentials');
-    }
+    this.initialize();
+  }
 
-    this.transporter = nodemailer.createTransport({
-      host: config.email.host,
-      port: config.email.port,
-      secure: config.email.secure,
-      auth: {
-        user: config.email.user,
-        pass: config.email.pass,
-      },
-    });
+  private async initialize() {
+    if (config.nodeEnv === 'production') {
+      // In production, require email credentials
+      if (!config.email.user || !config.email.pass) {
+        throw new Error('Email configuration missing authentication credentials for production');
+      }
+      this.transporter = nodemailer.createTransport({
+        host: config.email.host,
+        port: config.email.port,
+        secure: config.email.secure,
+        auth: {
+          user: config.email.user,
+          pass: config.email.pass,
+        },
+      });
+    } else {
+      // In non-production environments, use Ethereal if no credentials are provided
+      if (config.email.user && config.email.pass) {
+        this.transporter = nodemailer.createTransport({
+          host: config.email.host,
+          port: config.email.port,
+          secure: config.email.secure,
+          auth: {
+            user: config.email.user,
+            pass: config.email.pass,
+          },
+        });
+      } else {
+        const testAccount = await nodemailer.createTestAccount();
+        console.log('✅ Generated test email account:', testAccount.user);
+        this.transporter = nodemailer.createTransport({
+          host: 'smtp.ethereal.email',
+          port: 587,
+          secure: false,
+          auth: {
+            user: testAccount.user,
+            pass: testAccount.pass,
+          },
+        });
+      }
+    }
+  }
+
+  private async ensureTransporter(): Promise<nodemailer.Transporter> {
+    if (!this.transporter) {
+      await this.initialize();
+      if (!this.transporter) {
+        throw new Error('Email transporter failed to initialize');
+      }
+    }
+    return this.transporter;
   }
 
   async sendVerificationEmail(email: string, token: string): Promise<void> {
+    const transporter = await this.ensureTransporter();
     const verificationUrl = `${config.app.baseUrl}/api/auth/verify?token=${token}`;
 
     const mailOptions = {
-      // Use the authenticated email address as from
-      from: `"Election Monitoring" <${config.email.user}>`,
+      from: `"Election Monitoring" <${config.email.user || 'noreply@election.com'}>`,
       to: email,
       subject: 'Verify your email address',
       html: `
@@ -48,13 +88,13 @@ export class EmailService {
     };
 
     try {
-      const info = await this.transporter.sendMail(mailOptions);
+      const info = await transporter.sendMail(mailOptions);
       console.log('✅ Email sent successfully!');
       console.log('Message ID:', info.messageId);
 
-      // For Ethereal emails, show preview URL
-      if (config.email.host.includes('ethereal')) {
-        console.log('Preview URL:', nodemailer.getTestMessageUrl(info));
+      const previewUrl = nodemailer.getTestMessageUrl(info);
+      if (previewUrl) {
+        console.log('Preview URL:', previewUrl);
       }
     } catch (error) {
       console.error('❌ Error sending email:', error);
@@ -63,10 +103,11 @@ export class EmailService {
   }
 
   async sendPasswordResetEmail(email: string, token: string): Promise<void> {
+    const transporter = await this.ensureTransporter();
     const resetUrl = `${config.app.baseUrl}/reset-password?token=${token}`;
 
     const mailOptions = {
-      from: `"Election Monitoring" <${config.email.user}>`,
+      from: `"Election Monitoring" <${config.email.user || 'noreply@election.com'}>`,
       to: email,
       subject: 'Password Reset Request',
       html: `
@@ -88,12 +129,13 @@ export class EmailService {
     };
 
     try {
-      const info = await this.transporter.sendMail(mailOptions);
+      const info = await transporter.sendMail(mailOptions);
       console.log('✅ Password reset email sent successfully!');
       console.log('Message ID:', info.messageId);
 
-      if (config.email.host.includes('ethereal')) {
-        console.log('Preview URL:', nodemailer.getTestMessageUrl(info));
+      const previewUrl = nodemailer.getTestMessageUrl(info);
+      if (previewUrl) {
+        console.log('Preview URL:', previewUrl);
       }
     } catch (error) {
       console.error('❌ Error sending password reset email:', error);
@@ -102,9 +144,10 @@ export class EmailService {
   }
 
   async send2FADisableEmail(email: string): Promise<void> {
+    const transporter = await this.ensureTransporter();
     const resetUrl = `${config.app.baseUrl}/2fa-disable`;
     const mailOptions = {
-      from: `"Election Monitoring" <${config.email.user}>`,
+      from: `"Election Monitoring" <${config.email.user || 'noreply@election.com'}>`,
       to: email,
       subject: 'You Successfully Disabled 2FA',
       html: `
@@ -126,12 +169,13 @@ export class EmailService {
     };
 
     try {
-      const info = await this.transporter.sendMail(mailOptions);
+      const info = await transporter.sendMail(mailOptions);
       console.log('✅ Password reset email sent successfully!');
       console.log('Message ID:', info.messageId);
 
-      if (config.email.host.includes('ethereal')) {
-        console.log('Preview URL:', nodemailer.getTestMessageUrl(info));
+      const previewUrl = nodemailer.getTestMessageUrl(info);
+      if (previewUrl) {
+        console.log('Preview URL:', previewUrl);
       }
     } catch (error) {
       console.error('❌ Error sending password reset email:', error);
