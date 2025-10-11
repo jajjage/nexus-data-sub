@@ -1,0 +1,25 @@
+{
+  "cSpell.words": [
+    "dbaeumer",
+    "devcontainers",
+    "eamodio",
+    "esbenp",
+    "mhutchie",
+    "mikestead",
+    "mtxr",
+    "rangav",
+    "sqltools"
+  ],
+  "sqltools.connections": [
+    {
+      "previewLimit": 50,
+      "server": "db",
+      "port": 5432,
+      "askForPassword": true,
+      "driver": "PostgreSQL",
+      "name": "auth",
+      "database": "election_auth",
+      "username": "postgres"
+    }
+  ]
+}

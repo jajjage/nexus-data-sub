@@ -1,0 +1,76 @@
+{
+  "name": "Election Auth Service",
+  "dockerComposeFile": "docker-compose.yml",
+  "service": "auth-dev",
+  "workspaceFolder": "/workspace",
+  "features": {
+    "ghcr.io/devcontainers-extra/features/npm-package:1": {
+      "packages": "typescript,@types/node,ts-node,nodemon"
+    },
+    "ghcr.io/devcontainers/features/git:1": {}
+  },
+  "forwardPorts": [3000, 5432],
+  "portsAttributes": {
+    "3000": {
+      "label": "Application",
+      "onAutoForward": "notify"
+    },
+    "5432": {
+      "label": "PostgreSQL",
+      "onAutoForward": "ignore"
+    },
+    "6379": {
+      "label": "Redis",
+      "onAutoForward": "ignore"
+    }
+  },
+  "customizations": {
+    "vscode": {
+      "extensions": [
+        "dbaeumer.vscode-eslint",
+        "esbenp.prettier-vscode",
+        "ms-azuretools.vscode-docker",
+        "ms-vscode.vscode-typescript-next",
+        "rangav.vscode-thunder-client",
+        "ms-postgresql.pg-adrian",
+        "mhutchie.git-graph",
+        "eamodio.gitlens",
+        "mikestead.dotenv",
+        "mtxr.sqltools-driver-pg",
+        "github.vscode-github-actions"
+      ],
+      "settings": {
+        "terminal.integrated.defaultProfile.linux": "zsh",
+        "terminal.integrated.profiles.linux": {
+          "zsh": {
+            "path": "/bin/zsh"
+          }
+        },
+        "editor.formatOnSave": true,
+        "editor.defaultFormatter": "esbenp.prettier-vscode",
+        "editor.codeActionsOnSave": {
+          "source.fixAll.eslint": "always",
+          "source.organizeImports": "always"
+        },
+        "typescript.preferences.useAliasesForRenames": false,
+        "typescript.suggest.autoImports": true,
+        "javascript.suggest.autoImports": true,
+        "editor.tabSize": 2,
+        "editor.insertSpaces": true,
+        "files.trimTrailingWhitespace": true,
+        "files.insertFinalNewline": true,
+        "git.enableSmartCommit": true,
+        "git.confirmSync": false,
+        "explorer.confirmDelete": false,
+        "explorer.confirmDragAndDrop": false
+      }
+    }
+  },
+  "remoteUser": "node",
+  "updateRemoteUserUID": true,
+
+  "mounts": [
+    "source=${localEnv:HOME}/.ssh,target=/home/node/.ssh,type=bind,consistency=cached",
+    "source=${localEnv:HOME}/.gitconfig,target=/home/node/.gitconfig,type=bind,consistency=cached"
+  ]
+}
