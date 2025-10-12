@@ -6,13 +6,14 @@ import { hashPassword } from '../utils/security.utils';
 export interface User {
   userId: string;
   backupId?: string;
+  fullName: string;
+  phoneNumber: string;
+  pin?: string;
   email: string;
   password?: string;
-  role: 'reporter' | 'staff' | 'admin' | 'observer';
+  role: 'user' | 'staff' | 'admin';
   roleId?: string;
   isVerified: boolean;
-  verificationToken?: string | null;
-  verificationTokenExpiresAt?: Date | null;
   twoFactorEnabled?: boolean;
   twoFactorSecret?: string | null;
   twoFactorBackupCodes?: string | null;
@@ -30,11 +31,12 @@ export interface User {
 export interface RegisterUser {
   userId: string;
   email: string;
+  fullName: string;
+  phoneNumber: string;
   password?: string;
-  role: 'reporter' | 'staff' | 'admin';
+  role: 'user' | 'staff' | 'admin';
   roleId?: string;
   isVerified: boolean;
-  verificationToken?: string | null;
 }
 
 export interface BackupCode {
@@ -48,8 +50,10 @@ export interface BackupCode {
 
 export interface CreateUserInput {
   email: string;
+  fullName?: string;
+  phoneNumber?: string;
   password: string;
-  role: 'reporter' | 'staff' | 'admin' | 'observer';
+  role: 'user' | 'staff' | 'admin';
 }
 
 const userColumns = [
@@ -78,6 +82,9 @@ const shapeUserFromRows = (rows: any[]): User | null => {
   return {
     userId: firstRow.userId,
     backupId: firstRow.backupId,
+    fullName: firstRow.fullName,
+    phoneNumber: firstRow.phoneNumber,
+    pin: firstRow.pin,
     email: firstRow.email,
     password: firstRow.password,
     role: firstRow.role,
@@ -103,36 +110,41 @@ export class UserModel {
     const dbConnection = client || db;
     const hashedPassword = await hashPassword(userData.password);
     const userId = generateUUID();
-    const verificationToken = generateSecureToken();
-    const verificationTokenExpiresAt = new Date(
-      Date.now() + 24 * 60 * 60 * 1000
-    ); // 24 hours
+    // New users are immediately marked as verified
+    const isVerified = true;
 
-    const role = await dbConnection('roles')
-      .where('name', userData.role)
-      .first();
+    let role = await dbConnection('roles').where('name', userData.role).first();
     if (!role) {
-      throw new Error(`Role ${userData.role} not found`);
+      role = await dbConnection('roles').where('name', 'user').first();
     }
+
+    const phoneValue =
+      userData.phoneNumber !== undefined &&
+      userData.phoneNumber !== null &&
+      String(userData.phoneNumber).trim().length > 0
+        ? String(userData.phoneNumber).trim()
+        : null;
 
     const [newUser] = await dbConnection('users')
       .insert({
         id: userId,
         email: userData.email,
+        full_name: userData.fullName ?? null,
+        phone_number: phoneValue,
         password: hashedPassword,
         role: userData.role,
         role_id: role.id,
-        verification_token: verificationToken,
-        verification_token_expires_at: verificationTokenExpiresAt,
+        is_verified: isVerified,
       })
       .returning('*');
 
     return {
       userId: newUser.id,
       email: newUser.email,
+      fullName: newUser.full_name,
+      phoneNumber: newUser.phone_number,
       role: newUser.role,
       isVerified: newUser.is_verified,
-      verificationToken: newUser.verification_token,
     };
   }
 
@@ -219,16 +231,9 @@ export class UserModel {
   }
 
   static async verifyEmail(token: string): Promise<boolean> {
-    const result = await db('users')
-      .where({ verification_token: token, is_verified: false })
-      .andWhere('verification_token_expires_at', '>', db.fn.now())
-      .update({
-        is_verified: true,
-        verification_token: null,
-        updated_at: db.fn.now(),
-      });
-
-    return result > 0;
+    // Email verification is no longer required in this application.
+    // Keep method for compatibility but always return false.
+    return false;
   }
 
   static async updatePassword(
@@ -267,17 +272,15 @@ export class UserModel {
       email: row.email,
       role: row.role,
       isVerified: row.is_verified,
+      fullName: row.full_name,
+      phoneNumber: row.phone_number,
+      pin: row.pin,
     };
   }
 
   static async generateVerificationToken(userId: string): Promise<string> {
-    const token = generateSecureToken();
-    const expires = new Date(Date.now() + 24 * 60 * 60 * 1000); // 24 hours
-    await db('users').where({ id: userId }).update({
-      verification_token: token,
-      verification_token_expires_at: expires,
-    });
-    return token;
+    // Verification tokens are no longer used. Return empty string for compatibility.
+    return '';
   }
 
   static async updateRole(userId: string, roleName: string): Promise<void> {
@@ -333,24 +336,11 @@ export class UserModel {
   }
 
   static async cleanupExpiredTokens(): Promise<void> {
+    // Only clean up expired password reset tokens now that verification tokens are unused
     await db('users')
-      .where(function () {
-        this.whereNotNull('verification_token_expires_at').andWhere(
-          'verification_token_expires_at',
-          '<',
-          db.fn.now()
-        );
-      })
-      .orWhere(function () {
-        this.whereNotNull('password_reset_token_expires_at').andWhere(
-          'password_reset_token_expires_at',
-          '<',
-          db.fn.now()
-        );
-      })
+      .whereNotNull('password_reset_token_expires_at')
+      .andWhere('password_reset_token_expires_at', '<', db.fn.now())
       .update({
-        verification_token: null,
-        verification_token_expires_at: null,
         password_reset_token: null,
         password_reset_token_expires_at: null,
       });

@@ -1,21 +1,21 @@
-import express from 'express';
 import cookieParser from 'cookie-parser';
-import helmet from 'helmet';
 import cors from 'cors';
+import express from 'express';
+import helmet from 'helmet';
 import swaggerJsdoc from 'swagger-jsdoc';
 import swaggerUi from 'swagger-ui-express';
 import { swaggerOptions } from './config/swagger';
-import authRoutes from './routes/auth.routes';
+import { tokenCleanupJob } from './jobs/token_cleanup.job';
+import { deviceInfoMiddleware } from './middleware/deviceInfo.middleware';
+import { errorMiddleware } from './middleware/error.middleware';
 import adminRoutes from './routes/admin.routes';
+import authRoutes from './routes/auth.routes';
 import healthRoutes from './routes/health.routes';
+import mobileAuthRoutes from './routes/mobileAuth.routes';
 import passwordRoutes from './routes/password.routes';
 import sessionRoutes from './routes/session.routes';
 import twoFactorRoutes from './routes/twoFactor.routes';
-import mobileAuthRoutes from './routes/mobileAuth.routes';
-import { errorMiddleware } from './middleware/error.middleware';
 import { ApiError } from './utils/ApiError';
-import { tokenCleanupJob } from './jobs/token_cleanup.job';
-import { deviceInfoMiddleware } from './middleware/deviceInfo.middleware';
 import { apiLimiter, authLimiter, loginLimiter } from './utils/rateLimit';
 
 const app = express();
@@ -39,7 +39,7 @@ app.use(
 );
 app.use(cors());
 // {
-//   origin: process.env.CORS_ALLOWED_ORIGINS?.split(',') || 'http://192.168.92.138:8081',
+//   origin: process.env.CORS_ALLOWED_ORIGINS?.split(',') || 'http:// 10.150.164.18:8081',
 //   credentials: true,
 // }
 app.use(cookieParser());

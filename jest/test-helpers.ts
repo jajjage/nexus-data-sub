@@ -1,6 +1,6 @@
 import request from 'supertest';
-import { CreateUserInput, UserModel } from '../src/models/User';
 import db from '../src/database/connection';
+import { CreateUserInput, UserModel } from '../src/models/User';
 
 export function getCookie(
   response: request.Response,
@@ -22,6 +22,8 @@ export const generateTestUsers = async () => {
     // Create an admin user
     const adminData: CreateUserInput = {
       email: 'admin.test@example.com',
+      fullName: 'Admin Test',
+      phoneNumber: '1234567890',
       password: 'Password123!',
       role: 'admin',
     };
@@ -29,17 +31,18 @@ export const generateTestUsers = async () => {
     await db('users').where({ id: admin.userId }).update({ is_verified: true });
 
     // Create a reporter user
-    const reporterData: CreateUserInput = {
-      email: 'reporter.test@example.com',
+    // Create a normal user
+    const userData: CreateUserInput = {
+      email: 'user.test@example.com',
+      fullName: 'User Test',
+      phoneNumber: '1234567890',
       password: 'Password123!',
-      role: 'reporter',
+      role: 'user',
     };
-    const reporter = await UserModel.create(reporterData);
-    await db('users')
-      .where({ id: reporter.userId })
-      .update({ is_verified: true });
+    const user = await UserModel.create(userData);
+    await db('users').where({ id: user.userId }).update({ is_verified: true });
 
-    return { admin, reporter };
+    return { admin, user };
   } catch {
     throw new Error('Failed to generate test users');
   }

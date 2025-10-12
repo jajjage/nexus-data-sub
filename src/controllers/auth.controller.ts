@@ -25,33 +25,24 @@ interface ResendVerificationRequest {
 
 interface RegisterRequest {
   email: string;
+  phoneNumber: string;
+  fullName: string;
   password: string;
-  role?: string;
 }
 
 export class AuthController {
-  private static readonly ALLOWED_ROLES = [
-    'reporter',
-    'staff',
-    'admin',
-    'observer',
-  ] as const;
-
   /**
    * Register a new user
    */
   static async register(req: Request, res: Response): Promise<Response> {
     try {
-      const { email, password, role = 'reporter' }: RegisterRequest = req.body;
-
-      if (!email || !password) {
-        return sendError(res, 'Email and password are required', 400, []);
-      }
-
-      if (!AuthController.ALLOWED_ROLES.includes(role as any)) {
+      const { email, password, phoneNumber, fullName }: RegisterRequest =
+        req.body;
+      console.log(email, password, phoneNumber, fullName);
+      if (!email || !password || !phoneNumber || !fullName) {
         return sendError(
           res,
-          `Invalid role. Must be one of: ${AuthController.ALLOWED_ROLES.join(', ')}`,
+          'Email, password, and phone number are required',
           400,
           []
         );
@@ -68,40 +59,74 @@ export class AuthController {
       }
 
       const normalizedEmail = email.toLowerCase().trim();
-      const normalizedRole =
-        role as (typeof AuthController.ALLOWED_ROLES)[number];
+
+      // For public registration, ignore any supplied role and assign the safe default.
+      // If admin users should create other roles, that should be a separate endpoint
+      // protected by RBAC.
+      const normalizedRole = 'user';
+
+      // Normalize phone number: strip non-digit characters
+      const normalizedPhone = String(phoneNumber || '').replace(/\D/g, '');
+      if (!normalizedPhone) {
+        return sendError(res, 'Invalid phone number', 400, []);
+      }
+
+      // Basic length check (Nigeria numbers typically 7-15 digits including country code)
+      if (normalizedPhone.length < 7 || normalizedPhone.length > 15) {
+        return sendError(res, 'Invalid phone number length', 400, []);
+      }
 
       const existingUser = await UserModel.findByEmail(normalizedEmail);
       if (existingUser) {
         return sendError(res, 'User with this email already exists', 409, []);
       }
 
-      const user = await UserModel.create({
-        email: normalizedEmail,
-        password,
-        role: normalizedRole,
-      });
+      let user;
+      try {
+        user = await UserModel.create({
+          email: normalizedEmail,
+          phoneNumber: normalizedPhone,
+          fullName: fullName.trim(),
+          password,
+          role: normalizedRole,
+        });
+      } catch (err: any) {
+        // Map DB unique constraint errors to 409 with helpful message
+        if (err && err.code === '23505') {
+          const detail: string = err.detail || '';
+          const m = detail.match(/Key \(([^)]+)\)=\(([^)]+)\) already exists/);
+          if (m) {
+            const column = m[1];
+            const value = m[2];
+            const human = column.includes('email')
+              ? `User with this email (${value}) already exists`
+              : column.includes('phone') || column.includes('phone_number')
+                ? `User with this phone number (${value}) already exists`
+                : `Duplicate value for ${column}: ${value}`;
+            return sendError(res, human, 409, []);
+          }
+          return sendError(res, 'Duplicate value error', 409, []);
+        }
+        throw err;
+      }
 
-      // Fire-and-forget is acceptable for non-critical emails, but handle the promise
+      // Fire-and-forget welcome email; keep compatibility with existing method name
       setImmediate(async () => {
         try {
           const emailService = new EmailService();
-          await emailService.sendVerificationEmail(
-            user.email,
-            user.verificationToken!
-          );
+          await emailService.sendVerificationEmail(user.email, user.fullName);
         } catch (error) {
-          console.error('Failed to send verification email:', error);
+          console.error('Failed to send welcome email:', error);
         }
       });
 
+      // Public registration creates an active (verified) low-privilege user.
       return sendSuccess(
         res,
-        'User registered successfully. Please check your email for verification.',
+        'User registered successfully.',
         {
           id: user.userId,
           email: user.email,
-          verificationToken: user.verificationToken,
         },
         201
       );
@@ -183,9 +208,7 @@ export class AuthController {
               setImmediate(async () => {
                 try {
                   const emailService = new EmailService();
-                  await emailService.send2FADisableEmail(
-                    user.email
-                  );
+                  await emailService.send2FADisableEmail(user.email);
                 } catch (error) {
                   console.error('Failed to send verification email:', error);
                 }

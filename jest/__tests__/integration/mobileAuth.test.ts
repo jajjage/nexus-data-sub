@@ -9,8 +9,10 @@ describe('Mobile Auth API', () => {
     it('should login successfully and return tokens', async () => {
       const userData: CreateUserInput = {
         email: 'test.mobile.login@example.com',
+        fullName: 'Test Mobile Login',
+        phoneNumber: '1234567890',
         password: 'Password123!',
-        role: 'reporter',
+        role: 'user',
       };
       await UserModel.create(userData);
       await db('users')
@@ -40,8 +42,10 @@ describe('Mobile Auth API', () => {
     it('should refresh the access token with a valid refresh token', async () => {
       const userData: CreateUserInput = {
         email: 'test.mobile.refresh@example.com',
+        fullName: 'Test Mobile Refresh',
+        phoneNumber: '1234567890',
         password: 'Password123!',
-        role: 'reporter',
+        role: 'user',
       };
       await UserModel.create(userData);
       await db('users')
@@ -76,6 +80,8 @@ describe('Mobile Auth API', () => {
     it('should force 2FA re-configuration when logging in with a backup code', async () => {
       const userData: CreateUserInput = {
         email: 'test.2fa@example.com',
+        fullName: 'Test 2FA',
+        phoneNumber: '1234567890',
         password: 'Password123!',
         role: 'staff',
       };
@@ -112,6 +118,8 @@ describe('Mobile Auth API', () => {
     it('should allow disabling 2fa while logging in with a backup code', async () => {
       const userData: CreateUserInput = {
         email: 'test.2fadisable@example.com',
+        fullName: 'Test 2FADisable',
+        phoneNumber: '1234567890',
         password: 'Password123!',
         role: 'staff',
       };

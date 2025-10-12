@@ -11,7 +11,7 @@ describe('Auth API', () => {
       const userData = {
         email: 'test.register@example.com',
         password: 'Password123!',
-        role: 'reporter',
+        role: 'user',
       };
 
       const response = await request(app)
@@ -28,8 +28,10 @@ describe('Auth API', () => {
     it('should login successfully with valid credentials', async () => {
       const userData: CreateUserInput = {
         email: 'test.login@example.com',
+        fullName: 'Test Login',
+        phoneNumber: '1234567890',
         password: 'Password123!',
-        role: 'reporter',
+        role: 'user',
       };
       await UserModel.create(userData);
       await db('users')
@@ -50,8 +52,10 @@ describe('Auth API', () => {
     it('should refresh access token with a valid refresh token', async () => {
       const userData: CreateUserInput = {
         email: 'test.refresh@example.com',
+        fullName: 'Test Refresh',
+        phoneNumber: '1234567890',
         password: 'Password123!',
-        role: 'reporter',
+        role: 'user',
       };
       await UserModel.create(userData);
       await db('users')
@@ -76,35 +80,31 @@ describe('Auth API', () => {
 
   describe('GET /api/v1/auth/verify', () => {
     it('should verify an email with a valid token', async () => {
-      const userData: CreateUserInput = {
-        email: 'test.verify@example.com',
-        password: 'Password123!',
-        role: 'reporter',
-      };
-      const user = await UserModel.create(userData);
-
-      const token = await UserModel.generateVerificationToken(user.userId);
+      // Email verification is disabled; calling verify should return 400
       const response = await request(app)
-        .get(`/api/v1/auth/verify?token=${token}`)
-        .expect(200);
-      expect(response.body.success).toBe(true);
+        .get(`/api/v1/auth/verify?token=some-token`)
+        .expect(400);
+      expect(response.body.success).toBe(false);
     });
   });
 
   describe('POST /api/v1/auth/resend-verification', () => {
     it('should resend verification email for an unverified user', async () => {
+      // Resend verification is disabled; expect failure
       const userData: CreateUserInput = {
         email: 'test.resend@example.com',
+        fullName: 'Test Resend',
+        phoneNumber: '1234567890',
         password: 'Password123!',
-        role: 'reporter',
+        role: 'user',
       };
       await UserModel.create(userData);
 
       const response = await request(app)
         .post('/api/v1/auth/resend-verification')
         .send({ email: userData.email })
-        .expect(200);
-      expect(response.body.success).toBe(true);
+        .expect(400);
+      expect(response.body.success).toBe(false);
     });
   });
 
@@ -112,8 +112,10 @@ describe('Auth API', () => {
     it('should logout successfully', async () => {
       const userData: CreateUserInput = {
         email: 'test.logout@example.com',
+        fullName: 'Test Logout',
+        phoneNumber: '1234567890',
         password: 'Password123!',
-        role: 'reporter',
+        role: 'user',
       };
       await UserModel.create(userData);
       await db('users')
@@ -138,6 +140,8 @@ describe('Auth API', () => {
     it('should force 2FA re-configuration when logging in with a backup code', async () => {
       const userData: CreateUserInput = {
         email: 'test.2fa@example.com',
+        fullName: 'Test 2FA',
+        phoneNumber: '1234567890',
         password: 'Password123!',
         role: 'staff',
       };
@@ -174,6 +178,8 @@ describe('Auth API', () => {
     it('should allow disabling 2fa while logging in with a backup code', async () => {
       const userData: CreateUserInput = {
         email: 'test.2fadisable@example.com',
+        fullName: 'Test 2FADisable',
+        phoneNumber: '1234567890',
         password: 'Password123!',
         role: 'staff',
       };

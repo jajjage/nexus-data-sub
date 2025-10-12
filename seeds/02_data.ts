@@ -6,6 +6,7 @@ export async function seed(knex: Knex): Promise<void> {
     .insert([
       { name: 'admin', description: 'System administrator with full access' },
       { name: 'staff', description: 'Election data staff' },
+      { name: 'user', description: 'Normal application user' },
     ])
     .returning(['id', 'name']);
 
@@ -52,7 +53,7 @@ export async function seed(knex: Knex): Promise<void> {
       'profile.read',
       'profile.update',
     ].map(perm => ({
-      role_id: roleMap['reporter'],
+      role_id: roleMap['user'],
       permission_id: permMap[perm],
     })),
     ...[
@@ -67,15 +68,7 @@ export async function seed(knex: Knex): Promise<void> {
       role_id: roleMap['staff'],
       permission_id: permMap[perm],
     })),
-    ...[
-      'reports.read.public',
-      'incidents.read.public',
-      'profile.read',
-      'profile.update',
-    ].map(perm => ({
-      role_id: roleMap['observer'],
-      permission_id: permMap[perm],
-    })),
+    // No separate observer role in the simplified role model.
     ...Object.keys(permMap).map(perm => ({
       role_id: roleMap['admin'],
       permission_id: permMap[perm],

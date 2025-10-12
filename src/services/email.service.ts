@@ -13,7 +13,9 @@ export class EmailService {
     if (config.nodeEnv === 'production') {
       // In production, require email credentials
       if (!config.email.user || !config.email.pass) {
-        throw new Error('Email configuration missing authentication credentials for production');
+        throw new Error(
+          'Email configuration missing authentication credentials for production'
+        );
       }
       this.transporter = nodemailer.createTransport({
         host: config.email.host,
@@ -62,27 +64,27 @@ export class EmailService {
     return this.transporter;
   }
 
-  async sendVerificationEmail(email: string, token: string): Promise<void> {
+  async sendVerificationEmail(email: string, full_name: string): Promise<void> {
     const transporter = await this.ensureTransporter();
-    const verificationUrl = `${config.app.baseUrl}/api/auth/verify?token=${token}`;
-
+    // Email verification is disabled in this application; send a friendly welcome/onboarding email instead.
     const mailOptions = {
-      from: `"Election Monitoring" <${config.email.user || 'noreply@election.com'}>`,
+      from: `"Nexus Data" <${config.email.user || 'noreply@election.com'}>`,
       to: email,
-      subject: 'Verify your email address',
+      subject: 'Welcome to Nexus Data',
       html: `
         <div style="font-family: Arial, sans-serif; max-width: 600px;">
-          <h2>Welcome to Election Monitoring System</h2>
-          <p>Please click the link below to verify your email address:</p>
-          <p>
-            <a href="${verificationUrl}" 
-               style="background-color: #007bff; color: white; padding: 10px 20px; text-decoration: none; border-radius: 5px;">
-              Verify Email
-            </a>
-          </p>
-          <p>If the button doesn't work, copy and paste this link in your browser:</p>
-          <p>${verificationUrl}</p>
+          <h2>Welcome to Nexus Data</h2>
+          <p>Hi there — and welcome! Your account has been created and is ready to use.</p>
+          <h3>Getting started</h3>
+          <ul>
+            <li>Explore available data bundles and pricing.</li>
+            <li>Top up your wallet to purchase bundles.</li>
+            <li>Visit your profile to update personal information.</li>
+          </ul>
+          <p>If you'd like to upgrade your account to a staff or admin role, please contact a system administrator.</p>
           <p>If you didn't create an account, please ignore this email.</p>
+          <hr />
+          <p style="font-size: 12px; color: #666">Need help? Reply to this email or visit our support page.</p>
         </div>
       `,
     };
@@ -107,7 +109,7 @@ export class EmailService {
     const resetUrl = `${config.app.baseUrl}/reset-password?token=${token}`;
 
     const mailOptions = {
-      from: `"Election Monitoring" <${config.email.user || 'noreply@election.com'}>`,
+      from: `"Nexus Data" <${config.email.user || 'noreply@election.com'}>`,
       to: email,
       subject: 'Password Reset Request',
       html: `
@@ -116,7 +118,7 @@ export class EmailService {
           <p>You are receiving this email because you (or someone else) have requested the reset of the password for your account.</p>
           <p>Please click the link below to reset your password:</p>
           <p>
-            <a href="${resetUrl}" 
+            <a href="${resetUrl}"
                style="background-color: #007bff; color: white; padding: 10px 20px; text-decoration: none; border-radius: 5px;">
               Reset Password
             </a>
@@ -147,7 +149,7 @@ export class EmailService {
     const transporter = await this.ensureTransporter();
     const resetUrl = `${config.app.baseUrl}/2fa-disable`;
     const mailOptions = {
-      from: `"Election Monitoring" <${config.email.user || 'noreply@election.com'}>`,
+      from: `"Nexus Data" <${config.email.user || 'noreply@election.com'}>`,
       to: email,
       subject: 'You Successfully Disabled 2FA',
       html: `
@@ -156,7 +158,7 @@ export class EmailService {
           <p>You are receiving this email because you (or someone else) have Login and disable your 2FA for your account.</p>
           <p>Please click the link below to appeal if it wasn't you:</p>
           <p>
-            <a href="${resetUrl}" 
+            <a href="${resetUrl}"
                style="background-color: #007bff; color: white; padding: 10px 20px; text-decoration: none; border-radius: 5px;">
               Reset Password
             </a>

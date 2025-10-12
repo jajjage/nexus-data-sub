@@ -2,17 +2,17 @@ export const swaggerOptions = {
   definition: {
     openapi: '3.0.0',
     info: {
-      title: 'Election Monitoring Authentication Service API',
+      title: 'Nexus Data Authentication Service API',
       version: '1.0.0',
       description:
-        'Secure authentication and authorization service for election monitoring system',
+        'Secure authentication and authorization service for Nexus Data system',
       contact: {
-        name: 'Election Monitoring Team',
-        email: 'support@electionmonitoring.com',
+        name: 'Nexus Data Team',
+        email: 'support@nexusdata.com',
       },
       license: {
         name: 'MIT',
-        url: 'https://github.com/your-org/election-auth-service/blob/main/LICENSE',
+        url: 'https://github.com/your-org/nexus-data-auth-service/blob/main/LICENSE',
       },
     },
     servers: [
@@ -57,7 +57,7 @@ export const swaggerOptions = {
             },
             role: {
               type: 'string',
-              enum: ['reporter', 'staff', 'admin', 'observer'],
+              enum: ['user', 'staff', 'admin'],
               description: 'User role',
             },
             isVerified: {
@@ -84,7 +84,7 @@ export const swaggerOptions = {
         // Authentication schemas
         RegisterRequest: {
           type: 'object',
-          required: ['email', 'password', 'role'],
+          required: ['email', 'password'],
           properties: {
             email: {
               type: 'string',
@@ -96,22 +96,27 @@ export const swaggerOptions = {
               minLength: 8,
               example: 'Password123!',
             },
-            role: {
+            phoneNumber: {
               type: 'string',
-              enum: ['reporter', 'staff', 'admin', 'observer'],
-              example: 'reporter',
+              minLength: 11,
+              example: '0000000000',
+            },
+            fullName: {
+              type: 'string',
+              minLength: 36,
+              example: 'John Doe',
             },
           },
         },
 
         LoginRequest: {
           type: 'object',
-          required: ['email', 'password'],
+          required: ['credentials', 'password'],
           properties: {
-            email: {
+            credentialse: {
               type: 'string',
-              format: 'email',
-              example: 'user@example.com',
+              enum: ['email', 'phone'],
+              example: 'email or phone',
             },
             password: {
               type: 'string',
@@ -133,12 +138,12 @@ export const swaggerOptions = {
 
         TwoFactorLoginRequest: {
           type: 'object',
-          required: ['email', 'password'],
+          required: ['credentials', 'password'],
           properties: {
-            email: {
+            credentials: {
               type: 'string',
-              format: 'email',
-              example: 'user@example.com',
+              enum: ['email', 'phone'],
+              example: 'email or phone',
             },
             password: {
               type: 'string',

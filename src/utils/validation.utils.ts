@@ -81,17 +81,17 @@ export const validateName = (
   return { isValid: true };
 };
 
-export const validateRole = (
-  role: string
-): { isValid: boolean; message?: string } => {
-  const validRoles = ['admin', 'reporter', 'viewer'];
+// export const validateRole = (
+//   role: string
+// ): { isValid: boolean; message?: string } => {
+//   const validRoles = ['admin', 'staff', 'user'];
 
-  if (!validRoles.includes(role)) {
-    return {
-      isValid: false,
-      message: 'Invalid role. Must be one of: admin, reporter, viewer',
-    };
-  }
+//   if (!validRoles.includes(role)) {
+//     return {
+//       isValid: false,
+//       message: 'Invalid role. Must be one of: admin, staff, user',
+//     };
+//   }
 
-  return { isValid: true };
-};
+//   return { isValid: true };
+// };

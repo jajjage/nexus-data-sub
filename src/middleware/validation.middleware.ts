@@ -29,17 +29,34 @@ export const validateRegistration: (ValidationChain | RequestHandler)[] = [
     .withMessage(
       'Password must contain at least one uppercase letter, one lowercase letter, one number and one special character'
     ),
-  body('role')
-    .isIn(['reporter', 'staff', 'admin'])
-    .withMessage('Role must be either reporter, staff, or admin'),
+  body('fullName')
+    .isLength({ min: 2, max: 50 })
+    .withMessage('Full name must be between 2 and 50 characters long')
+    .trim(),
+  body('phoneNumber')
+    .isMobilePhone('any')
+    .withMessage('Please provide a valid phone number')
+    .trim(),
   handleValidationErrors,
 ];
 
 export const validateLogin: (ValidationChain | RequestHandler)[] = [
-  body('email')
-    .isEmail()
-    .withMessage('Please provide a valid email')
-    .normalizeEmail(),
+  body(['email', 'phoneNumber']).custom((value, { req }) => {
+    if (!req.body.email && !req.body.phoneNumber) {
+      throw new Error('Either email or phone number is required');
+    }
+    if (req.body.email) {
+      if (!value.isEmail()) {
+        throw new Error('Please provide a valid email');
+      }
+    }
+    if (req.body.phoneNumber) {
+      if (!value.isMobilePhone('any')) {
+        throw new Error('Please provide a valid phone number');
+      }
+    }
+    return true;
+  }),
   body('password').notEmpty().withMessage('Password is required'),
   handleValidationErrors,
 ];

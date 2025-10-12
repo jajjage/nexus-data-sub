@@ -100,8 +100,7 @@ global.beforeAll(async () => {
     INSERT INTO roles (id, name, description) VALUES
     ('c69c77a0-b191-4ba5-a491-e0343322efdd', 'admin', 'System administrator with full access'),
     ('49a27a7e-299b-47e8-b5a3-dc46f6506440', 'staff', 'Election data staff'),
-    ('07bcd0bc-75b2-479c-8636-f7a9846ae480', 'reporter', 'Election incident reporter'),
-    ('4fe0c891-b9e5-45db-8177-caed183c40ac', 'observer', 'Election observer with read-only access')
+    ('07bcd0bc-75b2-479c-8636-f7a9846ae480', 'user', 'Normal application user')
     ON CONFLICT (name) DO NOTHING;
   `);
   await connection_1.default.query(`
@@ -136,7 +135,7 @@ global.beforeAll(async () => {
     INSERT INTO role_permissions (role_id, permission_id)
     SELECT r.id, p.id
     FROM roles r, permissions p
-    WHERE r.name = 'reporter' AND p.name IN (
+    WHERE r.name = 'user' AND p.name IN (
       'reports.create',
       'reports.read.own',
       'reports.update.own',
@@ -166,12 +165,7 @@ global.beforeAll(async () => {
     INSERT INTO role_permissions (role_id, permission_id)
     SELECT r.id, p.id
     FROM roles r, permissions p
-    WHERE r.name = 'observer' AND p.name IN (
-      'reports.read.public',
-      'incidents.read.public',
-      'profile.read',
-      'profile.update'
-    )
+    -- No separate observer role; public read permissions can be assigned to 'user' as needed
     ON CONFLICT (role_id, permission_id) DO NOTHING;
   `);
   await connection_1.default.query(`

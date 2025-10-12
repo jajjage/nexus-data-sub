@@ -98,26 +98,15 @@ The registration process is role-dependent.
 
 **`POST /api/v1/auth/register`**
 
-**For Reporters:**
+**For Normal Users:**
 
-Reporters must be assigned to at least one polling unit upon registration.
-
-```json
-{
-  "email": "reporter@example.com",
-  "password": "SecurePassword123!",
-  "role": "reporter",
-  "pollingUnitIds": ["uuid-of-polling-unit-1"]
-}
-```
-
-**For Other Roles (Admin, staff, Observer):**
+Normal users may perform limited actions like purchasing bundles or funding a wallet. They do not get elevated permissions and do not need to be assigned to polling units.
 
 ```json
 {
-  "email": "staff@example.com",
+  "email": "user@example.com",
   "password": "SecurePassword123!",
-  "role": "staff"
+  "role": "user"
 }
 ```
 
@@ -125,12 +114,12 @@ Reporters must be assigned to at least one polling unit upon registration.
 
 | Method | Endpoint                          | Description                  | Authentication |
 | :----- | :-------------------------------- | :--------------------------- | :------------- |
-| `GET`  | `/api/v1/polling-units/available` | Get available polling units. | `reporter`     |
-| `POST` | `/api/v1/polling-units/claim`     | Claim a polling unit.        | `reporter`     |
+| `GET`  | `/api/v1/polling-units/available` | Get available polling units. | `user`     |
+| `POST` | `/api/v1/polling-units/claim`     | Claim a polling unit.        | `user`     |
 
 #### Claiming a Polling Unit
 
-Reporters can claim a polling unit that is not at capacity (max 2 reporters per unit).
+Users can claim a polling unit that is not at capacity (max 2 users per unit).
 
 **`POST /api/v1/polling-units/claim`**
 
@@ -146,9 +135,8 @@ Reporters can claim a polling unit that is not at capacity (max 2 reporters per 
 
 | Role         | Description                              | 2FA Required | Key Permissions                                 |
 | :----------- | :--------------------------------------- | :----------- | :---------------------------------------------- |
-| **Reporter** | Submits incident reports from the field. | Optional     | Create/update own reports, claim polling units. |
+| **User**     | Submits incident reports from the field. | Optional     | Create/update own reports, claim polling units. |
 | **staff**    | Verifies election data.                  | ✅ Mandatory | Verify reports, manage incidents.               |
-| **Observer** | Has read-only access to public data.     | Optional     | View public data.                               |
 | **Admin**    | System administrator.                    | ✅ Mandatory | Full system access.                             |
 
 ## ⚙️ Background Jobs

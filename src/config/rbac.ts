@@ -1,33 +1,27 @@
 export const roleHierarchy: { [key: string]: number } = {
-  observer: 0,
-  reporter: 1,
-  staff: 2,
-  admin: 3,
+  user: 0,
+  staff: 1,
+  admin: 2,
 };
 
 // Role-Permission Matrix
 export const ROLE_PERMISSIONS = {
-  reporter: [
-    'reports.create',
-    'reports.read.own',
-    'reports.update.own',
-    'reports.delete.own',
-    'incidents.read',
+  user: [
     'profile.read',
     'profile.update',
+    'transactions.read.own',
+    'incidents.read',
   ],
   staff: [
+    'reports.create',
     'reports.read.all',
-    'reports.verify',
+    'reports.update.all',
+    'transactions.read.all',
+    'transactions.create',
+    'transactions.update',
     'incidents.create',
     'incidents.read.all',
     'incidents.update.own',
-    'profile.read',
-    'profile.update',
-  ],
-  observer: [
-    'reports.read.public',
-    'incidents.read.public',
     'profile.read',
     'profile.update',
   ],
@@ -37,6 +31,10 @@ export const ROLE_PERMISSIONS = {
     'reports.update.all',
     'reports.delete.all',
     'reports.verify',
+    'transactions.read.all',
+    'transactions.create',
+    'transactions.update',
+    'transactions.delete',
     'incidents.create',
     'incidents.read.all',
     'incidents.update.all',
