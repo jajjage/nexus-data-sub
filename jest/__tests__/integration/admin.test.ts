@@ -6,66 +6,76 @@ import { getCookie } from '../../test-helpers';
 
 describe('Admin API', () => {
   let adminToken: string | undefined;
-  let reporterToken: string | undefined;
-  let reporterUserId: string;
+  let userToken: string | undefined;
+  let userUserId: string;
   let staffRoleId: string;
 
   beforeEach(async () => {
     // Create an admin user and log in to get a token
     const adminData: CreateUserInput = {
       email: 'admin.test@example.com',
+      fullName: 'Admin Test',
+      phoneNumber: '1234567890',
       password: 'Password123!',
       role: 'admin',
     };
+    // Create admin user
     const admin = await UserModel.create(adminData);
-    await db('users').where({ id: admin.userId }).update({ is_verified: true });
+
+    // Get the admin role and ensure user has the role_id set
+    const adminRole = await db('roles').where('name', 'admin').first();
+    await db('users').where({ id: admin.userId }).update({
+      is_verified: true,
+      role_id: adminRole.id,
+    });
     const adminLoginResponse = await request(app)
       .post('/api/v1/auth/login')
-      .send(adminData);
+      .send({ email: adminData.email, password: adminData.password });
     adminToken = getCookie(adminLoginResponse, 'accessToken');
     // Fail fast if login didn't return a cookie token — prevents sending 'Bearer undefined'
     if (!adminToken) {
       // Diagnostic info to help debug why cookie wasn't set
-      // console.error('ADMIN LOGIN RESPONSE STATUS:', adminLoginResponse.status);
-      // console.error('ADMIN LOGIN RESPONSE BODY:', adminLoginResponse.body);
-      // console.error(
-      //   'ADMIN LOGIN SET-COOKIE:',
-      //   adminLoginResponse.headers && adminLoginResponse.headers['set-cookie']
-      // );
+      console.error('ADMIN LOGIN RESPONSE STATUS:', adminLoginResponse.status);
+      console.error('ADMIN LOGIN RESPONSE BODY:', adminLoginResponse.body);
+      console.error(
+        'ADMIN LOGIN SET-COOKIE:',
+        adminLoginResponse.headers && adminLoginResponse.headers['set-cookie']
+      );
     }
+
     expect(adminToken).toBeDefined();
 
-    // Create a reporter user and log in to get a token
-    const reporterData: CreateUserInput = {
-      email: 'reporter.test@example.com',
+    // Create a user user and log in to get a token
+    const userData: CreateUserInput = {
+      email: 'user.test@example.com',
+      fullName: 'User Test',
+      phoneNumber: '0987654321',
       password: 'Password123!',
-      role: 'reporter',
+      role: 'user',
     };
-    const reporter = await UserModel.create(reporterData);
-    await db('users')
-      .where({ id: reporter.userId })
-      .update({ is_verified: true });
-    reporterUserId = reporter.userId;
-    const reporterLoginResponse = await request(app)
+    const user = await UserModel.create(userData);
+    await db('users').where({ id: user.userId }).update({ is_verified: true });
+    userUserId = user.userId;
+    const userLoginResponse = await request(app)
       .post('/api/v1/auth/login')
-      .send(reporterData);
-    reporterToken = getCookie(reporterLoginResponse, 'accessToken');
-    if (!reporterToken) {
+      .send({ email: userData.email, password: userData.password });
+    userToken = getCookie(userLoginResponse, 'accessToken');
+    if (!userToken) {
       // console.error(
-      //   'REPORTER LOGIN RESPONSE STATUS:',
-      //   reporterLoginResponse.status
+      //   'user LOGIN RESPONSE STATUS:',
+      //   userLoginResponse.status
       // );
       // console.error(
-      //   'REPORTER LOGIN RESPONSE BODY:',
-      //   reporterLoginResponse.body
+      //   'user LOGIN RESPONSE BODY:',
+      //   userLoginResponse.body
       // );
       // console.error(
-      //   'REPORTER LOGIN SET-COOKIE:',
-      //   reporterLoginResponse.headers &&
-      //     reporterLoginResponse.headers['set-cookie']
+      //   'user LOGIN SET-COOKIE:',
+      //   userLoginResponse.headers &&
+      //     userLoginResponse.headers['set-cookie']
       // );
     }
-    expect(reporterToken).toBeDefined();
+    expect(userToken).toBeDefined();
 
     // Get the staff role ID for assignment tests
     const staffRole = await db('roles').where({ name: 'staff' }).first();
@@ -74,6 +84,27 @@ describe('Admin API', () => {
 
   afterEach(async () => {
     await db('users').where('email', 'like', '%.test@example.com').del();
+  });
+
+  describe('POST /api/v1/admin/users', () => {
+    it('should create a new user with the specified role', async () => {
+      const newUser = {
+        email: 'new.user@example.com',
+        password: 'Password123!',
+        fullName: 'New User',
+        phoneNumber: '1112223333',
+        role: 'staff',
+      };
+
+      const response = await request(app)
+        .post('/api/v1/admin/users')
+        .set('Authorization', `Bearer ${adminToken}`)
+        .send(newUser)
+        .expect(201);
+
+      expect(response.body.success).toBe(true);
+      expect(response.body.data.email).toBe(newUser.email);
+    });
   });
 
   describe('GET /api/v1/admin/roles', () => {
@@ -91,7 +122,7 @@ describe('Admin API', () => {
     it('should return 403 when not authenticated as admin', async () => {
       await request(app)
         .get('/api/v1/admin/roles')
-        .set('Authorization', `Bearer ${reporterToken}`)
+        .set('Authorization', `Bearer ${userToken}`)
         .expect(403);
     });
   });
@@ -114,7 +145,7 @@ describe('Admin API', () => {
       const response = await request(app)
         .post('/api/v1/admin/assign-role')
         .set('Authorization', `Bearer ${adminToken}`)
-        .send({ userId: reporterUserId, roleId: staffRoleId })
+        .send({ userId: userUserId, roleId: staffRoleId })
         .expect(200);
 
       expect(response.body.success).toBe(true);
@@ -125,7 +156,7 @@ describe('Admin API', () => {
   describe('GET /api/v1/admin/users/:userId/get-sessions', () => {
     it('should get user sessions', async () => {
       const response = await request(app)
-        .get(`/api/v1/admin/users/${reporterUserId}/get-sessions`)
+        .get(`/api/v1/admin/users/${userUserId}/get-sessions`)
         .set('Authorization', `Bearer ${adminToken}`)
         .expect(200);
 
@@ -137,7 +168,7 @@ describe('Admin API', () => {
   describe('DELETE /api/v1/admin/users/:userId/delete-sessions', () => {
     it('should revoke user sessions', async () => {
       const response = await request(app)
-        .delete(`/api/v1/admin/users/${reporterUserId}/delete-sessions`)
+        .delete(`/api/v1/admin/users/${userUserId}/delete-sessions`)
         .set('Authorization', `Bearer ${adminToken}`)
         .expect(200);
 
@@ -151,18 +182,18 @@ describe('Admin API', () => {
   describe('POST /api/v1/admin/users/:userId/disable-2fa', () => {
     it('should disable 2fa for a user', async () => {
       await db('users')
-        .where({ id: reporterUserId })
+        .where({ id: userUserId })
         .update({ two_factor_enabled: true, two_factor_secret: 'testsecret' });
 
       const response = await request(app)
-        .post(`/api/v1/admin/users/${reporterUserId}/disable-2fa`)
+        .post(`/api/v1/admin/users/${userUserId}/disable-2fa`)
         .set('Authorization', `Bearer ${adminToken}`)
         .expect(200);
 
       expect(response.body.success).toBe(true);
       expect(response.body.message).toBe('2FA disabled successfully for user');
 
-      const user = await UserModel.findById(reporterUserId);
+      const user = await UserModel.findById(userUserId);
       expect(user?.twoFactorEnabled).toBe(false);
     });
   });

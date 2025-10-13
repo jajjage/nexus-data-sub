@@ -1,5 +1,5 @@
 import { NextFunction, Request, RequestHandler, Response } from 'express';
-import { body, ValidationChain, validationResult } from 'express-validator';
+import { body, ValidationChain, validationResult, check } from 'express-validator';
 
 export const handleValidationErrors = (
   req: Request,
@@ -40,23 +40,61 @@ export const validateRegistration: (ValidationChain | RequestHandler)[] = [
   handleValidationErrors,
 ];
 
+export const validateUserCreation: (ValidationChain | RequestHandler)[] = [
+  body('email')
+    .isEmail()
+    .withMessage('Please provide a valid email')
+    .normalizeEmail(),
+  body('password')
+    .isLength({ min: 8 })
+    .withMessage('Password must be at least 8 characters long')
+    .matches(/^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[@$!%*?&])[A-Za-z\d@$!%*?&]/)
+    .withMessage(
+      'Password must contain at least one uppercase letter, one lowercase letter, one number and one special character'
+    ),
+  body('fullName')
+    .isLength({ min: 2, max: 50 })
+    .withMessage('Full name must be between 2 and 50 characters long')
+    .trim(),
+  body('phoneNumber')
+    .isMobilePhone('any')
+    .withMessage('Please provide a valid phone number')
+    .trim(),
+  body('role')
+    .optional()
+    .isIn(['admin', 'staff', 'user'])
+    .withMessage('Invalid role specified'),
+  handleValidationErrors,
+];
+
 export const validateLogin: (ValidationChain | RequestHandler)[] = [
-  body(['email', 'phoneNumber']).custom((value, { req }) => {
-    if (!req.body.email && !req.body.phoneNumber) {
-      throw new Error('Either email or phone number is required');
-    }
-    if (req.body.email) {
-      if (!value.isEmail()) {
-        throw new Error('Please provide a valid email');
-      }
-    }
-    if (req.body.phoneNumber) {
-      if (!value.isMobilePhone('any')) {
-        throw new Error('Please provide a valid phone number');
-      }
-    }
-    return true;
-  }),
   body('password').notEmpty().withMessage('Password is required'),
+  check()
+    .custom((_, { req }) => {
+      const { email, phoneNumber } = req.body;
+      if (email && phoneNumber) {
+        throw new Error('Please provide either email or phone number, not both');
+      }
+      if (!email && !phoneNumber) {
+        throw new Error('Please provide either email or phone number');
+      }
+      return true;
+    })
+    .custom((_, { req }) => {
+      const { email, phoneNumber } = req.body;
+      if (email) {
+        return body('email')
+          .isEmail()
+          .withMessage('Please provide a valid email')
+          .run(req);
+      }
+      if (phoneNumber) {
+        return body('phoneNumber')
+          .isMobilePhone('any')
+          .withMessage('Please provide a valid phone number')
+          .run(req);
+      }
+      return true;
+    }),
   handleValidationErrors,
 ];

@@ -1,10 +1,64 @@
 import { Request, Response } from 'express';
-import { UserModel } from '../models/User';
 import { RoleModel } from '../models/Role';
+import { UserModel } from '../models/User';
 import { SessionService } from '../services/session.service';
 import { sendError, sendSuccess } from '../utils/response.utils';
 
+import { validatePassword } from '../utils/validation.utils';
+
 export class AdminController {
+  static async createUser(req: Request, res: Response) {
+    try {
+      const { email, password, phoneNumber, fullName, role } = req.body;
+
+      if (!email || !password || !phoneNumber || !fullName || !role) {
+        return sendError(res, 'All fields are required', 400);
+      }
+
+      if (!['admin', 'staff', 'user'].includes(role)) {
+        return sendError(res, 'Invalid role specified', 400);
+      }
+
+      const passwordValidation = validatePassword(password);
+      if (!passwordValidation.isValid) {
+        return sendError(
+          res,
+          passwordValidation.message || 'Invalid password format',
+          400
+        );
+      }
+
+      const normalizedEmail = email.toLowerCase().trim();
+      const normalizedPhone = String(phoneNumber || '').replace(/\D/g, '');
+
+      const existingUser = await UserModel.findByEmail(normalizedEmail);
+      if (existingUser) {
+        return sendError(res, 'User with this email already exists', 409);
+      }
+
+      const user = await UserModel.create({
+        email: normalizedEmail,
+        phoneNumber: normalizedPhone,
+        fullName: fullName.trim(),
+        password,
+        role,
+      });
+
+      return sendSuccess(
+        res,
+        'User created successfully.',
+        {
+          id: user.userId,
+          email: user.email,
+        },
+        201
+      );
+    } catch (error) {
+      console.error('Create user error:', error);
+      return sendError(res, 'Internal server error during user creation', 500);
+    }
+  }
+
   static async getAllUsers(req: Request, res: Response) {
     try {
       const page = parseInt(req.query.page as string) || 1;

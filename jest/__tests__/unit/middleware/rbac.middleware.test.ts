@@ -252,7 +252,7 @@ describe('RBAC Middleware', () => {
         sessionId: 'session123',
       };
 
-      const middleware = requireRole('reporter');
+      const middleware = requireRole('staff');
       middleware(mockRequest as Request, mockResponse as Response, mockNext);
 
       expect(mockNext).toHaveBeenCalled();
@@ -262,12 +262,12 @@ describe('RBAC Middleware', () => {
       mockRequest.user = {
         userId: '123',
         email: 'test@example.com',
-        role: 'reporter',
+        role: 'staff',
         permissions: ['reports.create'],
         sessionId: 'session123',
       };
 
-      const middleware = requireRole('admin', 'reporter');
+      const middleware = requireRole('admin', 'staff');
       middleware(mockRequest as Request, mockResponse as Response, mockNext);
 
       expect(mockNext).toHaveBeenCalled();

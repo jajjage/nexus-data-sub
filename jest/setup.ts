@@ -51,8 +51,8 @@ beforeAll(async () => {
 
 // Hook to clean the database before each test
 beforeEach(async () => {
-  // The database is reset once before all tests.
-  // Individual tests should clean up their own specific modifications if necessary.
+  // Truncate tables with user-specific data to ensure a clean slate before each test
+  await db.raw('TRUNCATE TABLE users, backup_code RESTART IDENTITY CASCADE');
 });
 
 // Global teardown hook

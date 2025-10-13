@@ -203,6 +203,48 @@ export class UserModel {
       backupCodes,
     };
   }
+  static async findByPhoneNumber(phoneNumber: string): Promise<User | null> {
+    const trimmedPhone = phoneNumber.trim();
+
+    // Get basic user info
+    const userRow = await db('users as u')
+      .leftJoin('roles as r', 'u.role_id', 'r.id')
+      .select([
+        'u.id as userId',
+        'u.email',
+        'u.password',
+        'u.role',
+        'u.role_id',
+        'u.is_verified as isVerified',
+        'u.two_factor_enabled as twoFactorEnabled',
+        'u.two_factor_secret as twoFactorSecret',
+        'r.name as roleName',
+      ])
+      .whereRaw('u.phone_number = ?', [trimmedPhone])
+      .first();
+
+    if (!userRow) return null;
+
+    // Get permissions separately
+    const permissions = await db('role_permissions as rp')
+      .join('permissions as p', 'rp.permission_id', 'p.id')
+      .select('p.name')
+      .where('rp.role_id', userRow.role_id);
+
+    // Get backup codes if needed
+    const backupCodes = await db('backup_code')
+      .select(
+        'id as backupId',
+        'two_factor_backup_codes as twoFactorBackupCodes'
+      )
+      .where('user_id', userRow.userId);
+
+    return {
+      ...userRow,
+      permissions,
+      backupCodes,
+    };
+  }
 
   static async getAllUsers(
     page: number = 1,

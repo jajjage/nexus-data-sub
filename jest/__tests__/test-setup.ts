@@ -44,7 +44,7 @@ const mockConfig = {
 jest.mock('../../src/config/env', () => ({ config: mockConfig }));
 
 // Make config available globally for tests
-global.testConfig = mockConfig;
+// global.testConfig = mockConfig;
 
 // jest/__tests__/test-setup.ts
 describe('Test Setup', () => {

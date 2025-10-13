@@ -1,7 +1,7 @@
-import { Request, Response, NextFunction } from 'express';
+import { NextFunction, Request, Response } from 'express';
+import { UserModel } from '../models/User';
 import { JwtService } from '../services/jwt.service';
 import { SessionService } from '../services/session.service';
-import { UserModel } from '../models/User';
 import { UserPayload } from '../types/auth.types';
 import { ApiError } from '../utils/ApiError';
 
@@ -53,9 +53,12 @@ export const authenticate = async (
       userId: user.userId,
       email: user.email,
       role: user.role,
-      permissions: user.permissions?.map(p => p.name) || [],
+      permissions: user.permissions?.map(p => p.name) ?? [],
       sessionId: decoded.sessionId ?? '',
     };
+
+    // Debug log for permissions
+    console.log('User permissions:', req.user.permissions);
 
     return next();
   } catch (_error) {

@@ -33,11 +33,11 @@ export async function up(knex: Knex): Promise<void> {
     // Store phone numbers as strings to preserve formatting and avoid integer overflow
     table.string('phone_number', 20).unique().nullable();
     table.string('pin', 5).nullable();
-  table.string('email', 255).unique().notNullable();
-  table.string('password', 255).notNullable();
-  table.string('role', 255);
-  table.uuid('role_id').references('id').inTable('roles').onDelete('CASCADE');
-  table.boolean('is_verified').defaultTo(true);
+    table.string('email', 255).unique().notNullable();
+    table.string('password', 255).notNullable();
+    table.string('role', 255);
+    table.uuid('role_id').references('id').inTable('roles').onDelete('CASCADE');
+    table.boolean('is_verified').defaultTo(true);
     table.string('two_factor_secret', 255).nullable();
     table.boolean('two_factor_enabled').defaultTo(false);
     table.string('password_reset_token', 255);

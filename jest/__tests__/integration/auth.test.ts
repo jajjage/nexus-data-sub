@@ -10,6 +10,8 @@ describe('Auth API', () => {
     it('should register a new user successfully', async () => {
       const userData = {
         email: 'test.register@example.com',
+        fullName: 'Test Register',
+        phoneNumber: '1234567890',
         password: 'Password123!',
         role: 'user',
       };

@@ -18,6 +18,11 @@ export async function seed(knex: Knex): Promise<void> {
   // Insert permissions
   const permissions = await knex('permissions')
     .insert([
+      { name: 'reports.create', description: 'Create new election reports' },
+      { name: 'reports.read.own', description: 'View own election reports' },
+      { name: 'reports.update.own', description: 'Update own election reports' },
+      { name: 'reports.delete.own', description: 'Delete own election reports' },
+      { name: 'reports.read.all', description: 'View all election reports' },
       { name: 'reports.verify', description: 'Verify election reports' },
       { name: 'incidents.create', description: 'Create new incidents' },
       { name: 'incidents.read', description: 'View incidents' },

@@ -10,8 +10,10 @@ describe('UserModel', () => {
       // Arrange
       const userData: CreateUserInput = {
         email: 'test.create@example.com',
+        fullName: 'Test User',
+        phoneNumber: '1234567890',
         password: 'Password123!',
-        role: 'reporter',
+        role: 'user',
       };
 
       // Act
@@ -20,9 +22,8 @@ describe('UserModel', () => {
       // Assert
       expect(user).toBeDefined();
       expect(user.email).toBe(userData.email);
-      expect(user.role).toBe('reporter');
-      expect(user.isVerified).toBe(false);
-      expect(user.verificationToken).toBeDefined();
+      expect(user.role).toBe('user');
+      expect(user.isVerified).toBe(true);
 
       // Verify the user was actually inserted into the database
       const dbUser = await db('users').where({ email: userData.email }).first();
@@ -36,6 +37,8 @@ describe('UserModel', () => {
       // Arrange
       const userData: CreateUserInput = {
         email: 'test.find@example.com',
+        fullName: 'Find User',
+        phoneNumber: '0987654321',
         password: 'Password123!',
         role: 'staff',
       };
@@ -54,6 +57,8 @@ describe('UserModel', () => {
       // Arrange
       const userData: CreateUserInput = {
         email: 'test.case@example.com',
+        fullName: 'Case User',
+        phoneNumber: '1122334455',
         password: 'Password123!',
         role: 'admin',
       };

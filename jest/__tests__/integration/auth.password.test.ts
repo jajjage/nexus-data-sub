@@ -1,7 +1,7 @@
 import request from 'supertest';
 import app from '../../../src/app';
-import { UserModel, CreateUserInput } from '../../../src/models/User';
 import db from '../../../src/database/connection';
+import { CreateUserInput, UserModel } from '../../../src/models/User';
 import { getCookie } from '../../test-helpers';
 
 describe('Auth Password API', () => {
@@ -9,8 +9,10 @@ describe('Auth Password API', () => {
   let userId: string;
   const userData: CreateUserInput = {
     email: 'test-password@example.com',
+    fullName: 'Test Password',
+    phoneNumber: '1234567890',
     password: 'Password123!',
-    role: 'reporter',
+    role: 'user',
   };
 
   beforeEach(async () => {

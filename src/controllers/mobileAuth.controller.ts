@@ -1,15 +1,15 @@
 /* eslint-disable no-console */
 import { Request, Response } from 'express';
+import { ROLE_PERMISSIONS } from '../config/rbac';
+import db from '../database/connection';
 import { UserModel } from '../models/User';
+import { EmailService } from '../services/email.service';
 import { JwtService } from '../services/jwt.service';
 import { SessionService } from '../services/session.service';
-import { ROLE_PERMISSIONS } from '../config/rbac';
-import { generateSecureToken } from '../utils/crypto';
-import { getClientIP, comparePassword } from '../utils/security.utils';
-import { sendError, sendSuccess } from '../utils/response.utils';
 import { TotpService } from '../services/topt.service';
-import db from '../database/connection';
-import { EmailService } from '../services/email.service';
+import { generateSecureToken } from '../utils/crypto';
+import { sendError, sendSuccess } from '../utils/response.utils';
+import { comparePassword, getClientIP } from '../utils/security.utils';
 import { twoFADisableTracker } from '../utils/twoFADisableTracker';
 
 export class MobileAuthController {
@@ -19,15 +19,29 @@ export class MobileAuthController {
    */
   static async login(req: Request, res: Response): Promise<Response> {
     try {
-      const { email, password, totpCode, backupCode, deviceId, reset } =
-        req.body;
+      const {
+        email,
+        password,
+        phoneNumber,
+        totpCode,
+        backupCode,
+        deviceId,
+        reset,
+      } = req.body;
 
       if (!email || !password) {
         return sendError(res, 'Email and password are required', 400);
       }
 
-      const normalizedEmail = email.toLowerCase().trim();
-      const user = await UserModel.findByEmail(normalizedEmail);
+      const normalizedEmail = email ? email.toLowerCase().trim() : null;
+
+      let user;
+      if (normalizedEmail) {
+        user = await UserModel.findByEmail(normalizedEmail);
+      } else if (phoneNumber) {
+        const normalizedPhone = String(phoneNumber).replace(/\D/g, '');
+        user = await UserModel.findByPhoneNumber(normalizedPhone);
+      }
 
       if (!user || !(await comparePassword(password, user.password ?? ''))) {
         return sendError(res, 'Invalid email or password', 400);

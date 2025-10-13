@@ -3,12 +3,21 @@ import { AdminController } from '../controllers/admin.controller';
 import { requireRole, authorize } from '../middleware/rbac.middleware';
 import { authenticate } from '../middleware/auth.middleware';
 
+import { validateUserCreation } from '../middleware/validation.middleware';
+
 const router = Router();
 
 // Apply authentication middleware to all admin routes
 router.use(authenticate);
 // Apply admin role middleware to all admin routes
 router.use(requireRole('admin'));
+
+router.post(
+  '/users',
+  authorize('users.create'),
+  validateUserCreation,
+  AdminController.createUser
+);
 
 /**
  * @swagger

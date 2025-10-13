@@ -38,7 +38,7 @@ export class AuthController {
     try {
       const { email, password, phoneNumber, fullName }: RegisterRequest =
         req.body;
-      console.log(email, password, phoneNumber, fullName);
+
       if (!email || !password || !phoneNumber || !fullName) {
         return sendError(
           res,
@@ -146,14 +146,27 @@ export class AuthController {
    */
   static async login(req: Request, res: Response): Promise<Response> {
     try {
-      const { email, password, totpCode, backupCode, reset } = req.body;
+      const { email, password, phoneNumber, totpCode, backupCode, reset } =
+        req.body;
+      console.log(email, password, phoneNumber, totpCode, backupCode, reset);
 
-      if (!email || !password) {
-        return sendError(res, 'Email and password are required', 400);
+      if ((!email && !phoneNumber) || !password) {
+        return sendError(
+          res,
+          'Email or phone number, and password are required',
+          400
+        );
       }
 
-      const normalizedEmail = email.toLowerCase().trim();
-      const user = await UserModel.findByEmail(normalizedEmail);
+      const normalizedEmail = email ? email.toLowerCase().trim() : null;
+
+      let user;
+      if (normalizedEmail) {
+        user = await UserModel.findByEmail(normalizedEmail);
+      } else if (phoneNumber) {
+        const normalizedPhone = String(phoneNumber).replace(/\D/g, '');
+        user = await UserModel.findByPhoneNumber(normalizedPhone);
+      }
 
       if (!user || !(await comparePassword(password, user.password ?? ''))) {
         return sendError(res, 'Invalid email or password', 401);
@@ -259,7 +272,7 @@ export class AuthController {
         userId: user.userId,
         email: user.email,
         role: user.role,
-        permissions: user.permissions?.map(p => p.name),
+        permissions: user.permissions?.map(p => p.name) || [],
         sessionId,
         aud: user.email,
       });

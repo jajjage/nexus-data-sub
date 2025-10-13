@@ -10,9 +10,9 @@ export class EmailService {
   }
 
   private async initialize() {
-    if (config.nodeEnv === 'production') {
+    if (process.env.NODE_ENV === 'production') {
       // In production, require email credentials
-      if (!config.email.user || !config.email.pass) {
+      if (!process.env.EMAIL_USER || !process.env.EMAIL_PASS) {
         throw new Error(
           'Email configuration missing authentication credentials for production'
         );
