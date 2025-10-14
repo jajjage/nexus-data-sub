@@ -3,6 +3,7 @@
   "dockerComposeFile": "docker-compose.yml",
   "service": "app",
   "workspaceFolder": "/workspace",
+  "postCreateCommand": "npm ci",
   "features": {
     "ghcr.io/devcontainers-extra/features/npm-package:1": {
       "packages": "typescript,@types/node,ts-node,nodemon"

@@ -6,13 +6,15 @@ services:
     ports:
       - "3000:3000"
     volumes:
-      - ..:/app:cached
+      - ..:/workspace:cached  # ✅ Changed to /workspace
+      - node_modules:/workspace/node_modules  # ✅ Use named volume
     environment:
       - DATABASE_URL=postgresql://postgres:postgres@db:5432/election_auth
       - NODE_ENV=development
     depends_on:
       - db
       - redis
+    working_dir: /workspace  # ✅ Now matches the volume
     command: npm run dev
 
   db:
@@ -38,3 +40,4 @@ services:
 volumes:
   db_data:
   redis_data:
+  node_modules:  # ✅ Add this named volume
