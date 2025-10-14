@@ -1,183 +1,118 @@
-# Election Monitoring Authentication Service
+# Fintech Auth & Wallet Service
 
-A production-ready authentication and authorization system built for election monitoring systems with enterprise-grade security features.
+A robust, production-ready backend service designed for fintech applications, providing secure user authentication, virtual account generation, and wallet management.
 
 ## 🌟 Overview
 
-This service provides secure authentication and authorization for election monitoring applications. It's designed to handle the unique security requirements of electoral systems where data integrity and user verification are critical.
+This service provides the core infrastructure for a fintech application, particularly one focused on data vending or similar services in the Nigerian context. It handles user registration, creates dedicated virtual accounts for payments, processes incoming payment webhooks, and manages user wallets.
 
-### Key Features
+### Core Features
 
-- **🔐 Multi-Factor Authentication** - Mandatory 2FA for privileged users.
-- **🛡️ Role-Based Access Control (RBAC)** - Fine-grained permissions system.
-- **⚡ Session Management** - Redis-backed session storage.
-- **🗳️ Polling Unit Management** - Allows reporters to be assigned to and claim specific polling units.
-- ** cron Jobs** - Automated cleanup of expired tokens.
-- **📄 API Documentation** - Interactive Swagger/OpenAPI docs.
-- **🏥 Health Monitoring** - Comprehensive service health checks.
-- **🔒 JWT Security** - Short-lived access tokens with refresh token rotation.
+-   **🔐 Secure Authentication**: JWT-based authentication with access/refresh token rotation.
+-   **🛡️ Two-Factor Authentication (2FA)**: Time-based One-Time Password (TOTP) for enhanced security.
+-   **🏦 Virtual Account Generation**: Automatically creates a unique virtual account for each user upon registration (e.g., via PalmPay).
+-   **💰 Wallet Management**: Automatically credits a user's wallet when a payment is received.
+-   **🪝 Webhook Processing**: Securely handles incoming webhooks from payment providers to update wallet balances.
+-   **👥 Role-Based Access Control (RBAC)**: A flexible system for defining user roles and permissions.
+-   **⚡ Session Management**: Redis-backed session storage for scalability and performance.
+-   **📄 API Documentation**: Interactive Swagger/OpenAPI documentation included.
+-   **🏥 Health Monitoring**: Endpoint for checking service health and database connectivity.
+
+## ⚙️ How It Works: The User Journey
+
+This service is designed around a simple and effective user flow:
+
+1.  **User Registration**: A new user signs up with their details.
+2.  **Automatic VA Creation**: Upon successful registration, the service automatically generates a unique virtual account (VA) for the user and links it to their profile.
+3.  **User Funds Account**: The user can now send money to this virtual account number through their bank or payment app.
+4.  **Webhook Notification**: The payment provider (e.g., PalmPay) sends a webhook notification to our service's webhook endpoint to signal the incoming payment.
+5.  **Wallet is Credited**: The service validates the webhook, confirms the transaction, and automatically credits the corresponding user's wallet with the received amount.
+6.  **Purchase Services**: The user can now use their wallet balance to purchase services (e.g., mobile data, airtime).
+
+## 🛠️ Technology Stack
+
+-   **Backend**: Node.js, Express, TypeScript
+-   **Database**: PostgreSQL (managed with Knex.js for queries and migrations)
+-   **Caching/Sessions**: Redis
+-   **Authentication**: JWT, TOTP for 2FA
+-   **Testing**: Jest, Supertest
 
 ## 🚀 Getting Started
 
 ### Prerequisites
 
-- Docker and Docker Compose
-- Node.js v18+
-- pnpm (or npm/yarn)
+-   Docker and Docker Compose
+-   Node.js v18+
+-   An NPM client (npm, pnpm, or yarn)
 
-### Development Environment
+### Setup and Installation
 
-This project includes a Dev Container setup for a consistent development environment.
+1.  **Clone the repository**:
+    ```bash
+    git clone <repository-url>
+    cd <repository-directory>
+    ```
 
-1.  Open the project in VS Code.
-2.  When prompted, click **"Reopen in Container"**.
-3.  The development server will start automatically.
+2.  **Set up environment variables**:
+    Copy the `.env.example` file to a new `.env` file and fill in the required values (database credentials, JWT secrets, etc.).
+    ```bash
+    cp .env.example .env
+    ```
 
-### Manual Setup
-
-1.  **Start Services**:
-
+3.  **Start services with Docker**:
+    This will start the PostgreSQL and Redis containers.
     ```bash
     docker-compose up -d
     ```
 
-2.  **Install Dependencies**:
-
+4.  **Install dependencies**:
     ```bash
     npm install
     ```
 
-3.  **Run Migrations**:
-
+5.  **Run database migrations**:
+    This will set up the necessary tables in your database.
     ```bash
     npm run db:migrate
     ```
 
-4.  **Start Development Server**:
+6.  **Start the development server**:
     ```bash
     npm run dev
     ```
 
-The API will be available at `http://localhost:3000`.
+The API will now be running and available at `http://localhost:3000`.
 
 ## 🧪 Running Tests
 
-To run the test suite:
+To run the complete test suite (unit and integration tests):
 
 ```bash
 npm test
 ```
 
-To run tests in watch mode:
-
-```bash
-npm run test:watch
-```
-
 ## 📚 API Documentation
 
-Interactive API documentation is available via Swagger UI:
+Interactive API documentation is available via Swagger UI once the server is running:
 
-- **Swagger UI**: `http://localhost:3000/api/v1/docs`
-
-## 🛠️ API Endpoints
-
-### Authentication
-
-| Method | Endpoint                | Description              |
-| :----- | :---------------------- | :----------------------- |
-| `POST` | `/api/v1/auth/register` | Register a new user.     |
-| `POST` | `/api/v1/auth/login`    | Log in a user.           |
-| `POST` | `/api/v1/auth/logout`   | Log out a user.          |
-| `POST` | `/api/v1/auth/refresh`  | Refresh an access token. |
-| `GET`  | `/api/v1/auth/verify`   | Verify a user's email.   |
-
-#### User Registration
-
-The registration process is role-dependent.
-
-**`POST /api/v1/auth/register`**
-
-**For Normal Users:**
-
-Normal users may perform limited actions like purchasing bundles or funding a wallet. They do not get elevated permissions and do not need to be assigned to polling units.
-
-```json
-{
-  "email": "user@example.com",
-  "password": "SecurePassword123!",
-  "role": "user"
-}
-```
-
-### Polling Units
-
-| Method | Endpoint                          | Description                  | Authentication |
-| :----- | :-------------------------------- | :--------------------------- | :------------- |
-| `GET`  | `/api/v1/polling-units/available` | Get available polling units. | `user`     |
-| `POST` | `/api/v1/polling-units/claim`     | Claim a polling unit.        | `user`     |
-
-#### Claiming a Polling Unit
-
-Users can claim a polling unit that is not at capacity (max 2 users per unit).
-
-**`POST /api/v1/polling-units/claim`**
-
-```json
-{
-  "pollingUnitId": "uuid-of-polling-unit-to-claim"
-}
-```
-
-## 👥 Role-Based Access Control (RBAC)
-
-### User Roles
-
-| Role         | Description                              | 2FA Required | Key Permissions                                 |
-| :----------- | :--------------------------------------- | :----------- | :---------------------------------------------- |
-| **User**     | Submits incident reports from the field. | Optional     | Create/update own reports, claim polling units. |
-| **staff**    | Verifies election data.                  | ✅ Mandatory | Verify reports, manage incidents.               |
-| **Admin**    | System administrator.                    | ✅ Mandatory | Full system access.                             |
-
-## ⚙️ Background Jobs
-
-This service runs automated jobs using `node-cron`.
-
-- **Token Cleanup**: A cron job runs hourly to clean up expired verification and password reset tokens from the database.
+-   **Swagger UI**: `http://localhost:3000/api/v1/docs`
 
 ## 🗃️ Database Migrations
 
 Database schema changes are managed with `knex`.
 
-- **Create a Migration**:
+-   **Create a new migration**:
+    ```bash
+    npm run db:migrate:make -- <migration_name>
+    ```
+    *(Note: The `--` is important to pass the name argument to the script.)*
 
-  ```bash
-  npm run db:migrate:make -- <migration-name>
-  ```
+-   **Run the latest migrations**:
+    ```bash
+    npm run db:migrate
+    ```
 
-  _(Note: The `--` is important to pass the name argument to the script.)_
-
-- **Run Migrations**:
-
-  ```bash
-  npm run db:migrate
-  ```
-
-- **Rollback Migrations**:
-  ```bash
-  npm run db:rollback
-  ```
-
-## 🤝 Contributing
-
-We welcome contributions! Please follow these steps:
-
-1.  Fork the repository.
-2.  Create a new feature branch.
-3.  Make your changes.
-4.  Ensure all tests pass (`npm test`).
-5.  Submit a pull request.
-
----
-
-_Built for transparency and integrity in electoral processes._
+-   **Roll back the last migration**:
+    ```bash
+    npm run db:rollback
+    ```

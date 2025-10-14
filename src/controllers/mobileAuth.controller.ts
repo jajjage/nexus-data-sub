@@ -29,8 +29,12 @@ export class MobileAuthController {
         reset,
       } = req.body;
 
-      if (!email || !password) {
-        return sendError(res, 'Email and password are required', 400);
+      if ((!email && !phoneNumber) || !password) {
+        return sendError(
+          res,
+          'Email or phone number, and password are required',
+          400
+        );
       }
 
       const normalizedEmail = email ? email.toLowerCase().trim() : null;
@@ -44,7 +48,7 @@ export class MobileAuthController {
       }
 
       if (!user || !(await comparePassword(password, user.password ?? ''))) {
-        return sendError(res, 'Invalid email or password', 400);
+        return sendError(res, 'Invalid email/phone or password', 400);
       }
 
       if (!user.isVerified) {

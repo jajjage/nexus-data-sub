@@ -64,13 +64,13 @@ export class EmailService {
     return this.transporter;
   }
 
-  async sendVerificationEmail(email: string, full_name: string): Promise<void> {
+  async sendWelcomeEmail(email: string, full_name: string): Promise<void> {
     const transporter = await this.ensureTransporter();
     // Email verification is disabled in this application; send a friendly welcome/onboarding email instead.
     const mailOptions = {
       from: `"Nexus Data" <${config.email.user || 'noreply@election.com'}>`,
       to: email,
-      subject: 'Welcome to Nexus Data',
+      subject: `Welcome to Nexus Data ${full_name}`,
       html: `
         <div style="font-family: Arial, sans-serif; max-width: 600px;">
           <h2>Welcome to Nexus Data</h2>

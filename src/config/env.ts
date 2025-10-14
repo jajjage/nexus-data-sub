@@ -35,4 +35,17 @@ export const config = {
   app: {
     baseUrl: process.env.APP_BASE_URL || 'http://localhost:3000',
   },
+  webhooks: {
+    basePath: process.env.WEBHOOK_BASE_PATH || '/webhooks',
+    palmpay: {
+      signatureHeader:
+        process.env.PALMPAY_SIGNATURE_HEADER || 'x-palmpay-signature',
+      secret: process.env.PALMPAY_WEBHOOK_SECRET || '',
+    },
+  },
+  palmpay: {
+    baseUrl: process.env.PALMPAY_API_BASE || 'https://api.palmpay.com',
+    apiKey: process.env.PALMPAY_API_KEY || '',
+    timeout: parseInt(process.env.PALMPAY_API_TIMEOUT || '10000', 10),
+  },
 };

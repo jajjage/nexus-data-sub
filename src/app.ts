@@ -15,6 +15,7 @@ import mobileAuthRoutes from './routes/mobileAuth.routes';
 import passwordRoutes from './routes/password.routes';
 import sessionRoutes from './routes/session.routes';
 import twoFactorRoutes from './routes/twoFactor.routes';
+import webhookRoutes from './routes/webhook.routes';
 import { ApiError } from './utils/ApiError';
 import { apiLimiter, authLimiter, loginLimiter } from './utils/rateLimit';
 
@@ -44,7 +45,16 @@ app.use(cors());
 // }
 app.use(cookieParser());
 app.use(deviceInfoMiddleware);
-app.use(express.json({ limit: '1mb' }));
+app.use(
+  express.json({
+    limit: '1mb',
+    verify: (req: any, res, buf) => {
+      if (req.originalUrl.startsWith('/api/v1/webhooks')) {
+        req.rawBody = buf.toString();
+      }
+    },
+  })
+);
 app.use(express.urlencoded({ extended: true, limit: '1mb' }));
 
 app.use(express.static('public'));
@@ -66,6 +76,7 @@ app.use('/api/v1/password', passwordRoutes);
 app.use('/api/v1/session', sessionRoutes);
 app.use('/api/v1/2fa', twoFactorRoutes);
 app.use('/api/v1/mobile/auth', mobileAuthRoutes);
+app.use('/api/v1/webhooks', webhookRoutes);
 
 app.get('/', (req, res) => {
   res.redirect('/api/v1/docs');

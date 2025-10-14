@@ -3,6 +3,9 @@ jest.mock('../../src/services/email.service', () => {
   EmailServiceMock.prototype.sendVerificationEmail = jest
     .fn()
     .mockResolvedValue(true);
+  EmailServiceMock.prototype.sendWelcomeEmail = jest
+    .fn()
+    .mockResolvedValue(true);
   EmailServiceMock.prototype.sendPasswordResetEmail = jest
     .fn()
     .mockResolvedValue(true);

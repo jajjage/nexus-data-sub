@@ -17,6 +17,37 @@ process.env.JWT_REFRESH_SECRET =
 jest.setTimeout(30000);
 
 // Global setup hook
+import knex from '../src/database/connection';
+// Mock config for tests
+jest.mock('../src/config/env', () => ({
+  config: {
+    database: {
+      url:
+        process.env.DATABASE_URL ||
+        'postgresql://postgres:postgres@db:5432/election_auth_test',
+    },
+    webhooks: {
+      palmpay: {
+        signatureHeader: 'x-palmpay-signature',
+        secret: 'test_webhook_secret',
+      },
+    },
+    palmpay: {
+      apiKey: 'test-api-key',
+      baseUrl: 'https://api.palmpay.com',
+    },
+    app: {
+      baseUrl: 'http://localhost:3000',
+    },
+  },
+}));
+
+jest.mock('../src/services/email.service', () => ({
+  EmailService: jest.fn().mockImplementation(() => ({
+    sendWelcomeEmail: jest.fn().mockResolvedValue(void 0),
+  })),
+}));
+
 beforeAll(async () => {
   try {
     // Ensure the database connection is alive
@@ -36,9 +67,22 @@ beforeAll(async () => {
     await db.raw('DROP TABLE IF EXISTS users CASCADE');
     await db.raw('DROP TABLE IF EXISTS roles CASCADE');
 
-    // Run seeds to create schema and populate data
-    await db.seed.run();
-    console.log('✅ Database seeding completed');
+    await knex.migrate.rollback({ directory: './migrations' }, true);
+    console.log('✅ Database rolled back');
+
+    // Run all migrations
+    await knex.migrate.up({
+      directory: './migrations',
+      name: '1600000000000_initial_schema.ts',
+    });
+    await knex.migrate.up({
+      directory: './migrations',
+      name: '20251013075158_add_virtual_accounts_and_wallets.ts',
+    });
+    console.log('✅ Database migrations completed');
+
+    // Run all seeds
+    await knex.seed.run({ directory: './seeds' });
 
     // Ping Redis to ensure connection
     await redisClientInstance.getClient().ping();

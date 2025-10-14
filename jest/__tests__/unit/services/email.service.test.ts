@@ -12,6 +12,7 @@ describe('EmailService', () => {
       return {
         sendVerificationEmail: sendMailMock,
         sendPasswordResetEmail: sendMailMock,
+        sendWelcomeEmail: sendMailMock,
       };
     });
     emailService = new EmailService();
@@ -19,10 +20,10 @@ describe('EmailService', () => {
 
   it('should send a verification email', async () => {
     const email = 'test@example.com';
-    const token = 'test-token';
-    await emailService.sendVerificationEmail(email, token);
+    const full_name = 'Test User';
+    await emailService.sendWelcomeEmail(email, full_name);
 
-    expect(sendMailMock).toHaveBeenCalledWith(email, token);
+    expect(sendMailMock).toHaveBeenCalledWith(email, full_name);
   });
 
   it('should send a password reset email', async () => {

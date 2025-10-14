@@ -31,10 +31,17 @@ interface RegisterRequest {
 }
 
 export class AuthController {
+  private emailService: EmailService;
+  private virtualAccountService: any;
+
+  constructor(emailService: EmailService, virtualAccountService: any) {
+    this.emailService = emailService;
+    this.virtualAccountService = virtualAccountService;
+  }
   /**
    * Register a new user
    */
-  static async register(req: Request, res: Response): Promise<Response> {
+  public static async register(req: Request, res: Response): Promise<Response> {
     try {
       const { email, password, phoneNumber, fullName }: RegisterRequest =
         req.body;
@@ -76,9 +83,20 @@ export class AuthController {
         return sendError(res, 'Invalid phone number length', 400, []);
       }
 
-      const existingUser = await UserModel.findByEmail(normalizedEmail);
-      if (existingUser) {
+      const existingUserByEmail = await UserModel.findByEmail(normalizedEmail);
+      if (existingUserByEmail) {
         return sendError(res, 'User with this email already exists', 409, []);
+      }
+
+      const existingUserByPhone =
+        await UserModel.findByPhoneNumber(normalizedPhone);
+      if (existingUserByPhone) {
+        return sendError(
+          res,
+          'User with this phone number already exists',
+          409,
+          []
+        );
       }
 
       let user;
@@ -114,11 +132,32 @@ export class AuthController {
       setImmediate(async () => {
         try {
           const emailService = new EmailService();
-          await emailService.sendVerificationEmail(user.email, user.fullName);
+          await emailService.sendWelcomeEmail(user.email, user.fullName);
         } catch (error) {
           console.error('Failed to send welcome email:', error);
         }
       });
+
+      // Create a virtual account for the new user.
+      // This is done after user creation is successful to ensure data integrity.
+      try {
+        const { VirtualAccountService } = await import(
+          '../services/virtualAccount.service'
+        );
+        const vaService = new VirtualAccountService();
+        await vaService.createAndPersistVirtualAccount({
+          id: user.userId,
+          name: user.fullName,
+          email: user.email,
+        });
+      } catch (error) {
+        // If VA creation fails, log it but don't fail the registration.
+        // This could be enhanced with a retry mechanism or a cleanup job.
+        console.error(
+          `Failed to create virtual account for user ${user.userId}:`,
+          error
+        );
+      }
 
       // Public registration creates an active (verified) low-privilege user.
       return sendSuccess(
@@ -169,7 +208,7 @@ export class AuthController {
       }
 
       if (!user || !(await comparePassword(password, user.password ?? ''))) {
-        return sendError(res, 'Invalid email or password', 401);
+        return sendError(res, 'Invalid email/phone or password', 401);
       }
 
       if (!user.isVerified) {
@@ -482,10 +521,7 @@ export class AuthController {
       setImmediate(async () => {
         try {
           const emailService = new EmailService();
-          await emailService.sendVerificationEmail(
-            user.email,
-            verificationToken
-          );
+          await emailService.sendWelcomeEmail(user.email, verificationToken);
         } catch (error) {
           console.error('Failed to send verification email:', error);
         }
