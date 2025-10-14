@@ -11,8 +11,8 @@ RUN apk update && apk add --no-cache \
    
 
 # Create app directory with proper permissions
-RUN npm i -g @google/gemini-cli \
-    && mkdir -p /workspaces && chown -R node:node /workspaces
+RUN npm i -g @google/gemini-cli && \
+    mkdir -p /workspace && chown -R node:node /workspace
 
 # Switch to node user
 USER node

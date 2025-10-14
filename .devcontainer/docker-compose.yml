@@ -1,12 +1,12 @@
 services:
-  auth-dev:
+  app:
     build:
       context: ..
       dockerfile: .devcontainer/Dockerfile
     ports:
       - "3000:3000"
     volumes:
-      - ..:/workspace:cached
+      - ..:/app:cached
     environment:
       - DATABASE_URL=postgresql://postgres:postgres@db:5432/election_auth
       - NODE_ENV=development
