@@ -249,10 +249,6 @@ export class AuthController {
 
               twoFADisableTracker.recordAttempt(user.userId, clientIP);
 
-              console.log(
-                `2FA disabled via backup code for user: ${user.userId}, IP: ${getClientIP(req)}`
-              );
-
               await UserModel.disable2FA(user.userId);
               // Fire-and-forget is acceptable for non-critical emails, but handle the promise
               setImmediate(async () => {
@@ -264,11 +260,6 @@ export class AuthController {
                 }
               });
             } else {
-              // Default behavior (reset === true or undefined) - force 2FA reconfiguration
-              console.log(
-                `2FA reconfiguration triggered for user: ${user.userId}, IP: ${getClientIP(req)}`
-              );
-
               const secret = TotpService.generateSecret();
               const { plain: plainBackupCodes, hashed: hashedBackupCodes } =
                 TotpService.generateBackupCodes();
