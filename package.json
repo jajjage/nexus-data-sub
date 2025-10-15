@@ -1,5 +1,5 @@
 {
-  "name": "election-auth-service",
+  "name": "nexus-data",
   "version": "1.0.0",
   "description": "Secure authentication service for election monitoring system",
   "main": "dist/index.js",

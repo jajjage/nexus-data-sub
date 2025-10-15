@@ -92,14 +92,18 @@ export class TotpService {
     userId: string,
     backupCode: string
   ): Promise<boolean> {
-    const user = await UserModel.findById(userId);
-    if (!user || !user.twoFactorBackupCodes) {
+    // Fetch backup codes directly from backup_code table to avoid race conditions
+    const backupCodeRecord = await db('backup_code')
+      .where({ user_id: userId })
+      .first();
+
+    if (!backupCodeRecord || !backupCodeRecord.two_factor_backup_codes) {
       return false;
     }
 
     const hashedCode = hashBackupCode(backupCode);
     const backupCodes: { code: string; used: boolean }[] = JSON.parse(
-      user.twoFactorBackupCodes
+      backupCodeRecord.two_factor_backup_codes
     );
     const codeIndex = backupCodes.findIndex(
       c => safeCompare(c.code, hashedCode) && !c.used
@@ -109,9 +113,46 @@ export class TotpService {
       return false;
     }
 
-    backupCodes[codeIndex].used = true;
-    await UserModel.updateBackupCodes(userId, JSON.stringify(backupCodes));
+    // Mark the code as used atomically using database transaction
+    const trx = await db.transaction();
+    try {
+      const currentRecord = await trx('backup_code')
+        .where({ user_id: userId })
+        .select('two_factor_backup_codes as two_factor_backup_codes')
+        .first();
+      
+      if (!currentRecord) {
+        await trx.rollback();
+        return false;
+      }
 
-    return true;
+      const currentBackupCodes: { code: string; used: boolean }[] = JSON.parse(
+        currentRecord.two_factor_backup_codes
+      );
+      
+      const currentIndex = currentBackupCodes.findIndex(
+        c => safeCompare(c.code, hashedCode) && !c.used
+      );
+      
+      if (currentIndex === -1) {
+        await trx.rollback();
+        return false;
+      }
+
+      currentBackupCodes[currentIndex].used = true;
+      
+      await trx('backup_code')
+        .where({ user_id: userId })
+        .update({ 
+          two_factor_backup_codes: JSON.stringify(currentBackupCodes),
+          updated_at: db.fn.now()
+        });
+
+      await trx.commit();
+      return true;
+    } catch (error) {
+      await trx.rollback();
+      return false;
+    }
   }
 }

@@ -220,7 +220,7 @@ export class UserModel {
         'u.two_factor_secret as twoFactorSecret',
         'r.name as roleName',
       ])
-      .whereRaw('u.phone_number = ?', [trimmedPhone])
+      .where('u.phone_number', trimmedPhone)
       .first();
 
     if (!userRow) return null;
@@ -272,6 +272,7 @@ export class UserModel {
     return { users, total };
   }
 
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
   static async verifyEmail(token: string): Promise<boolean> {
     // Email verification is no longer required in this application.
     // Keep method for compatibility but always return false.
@@ -320,7 +321,8 @@ export class UserModel {
     };
   }
 
-  static async generateVerificationToken(userId: string): Promise<string> {
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
+  static async generateVerificationToken(_userId: string): Promise<string> {
     // Verification tokens are no longer used. Return empty string for compatibility.
     return '';
   }

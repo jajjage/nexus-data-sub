@@ -70,7 +70,22 @@ export const webhookAuthMiddleware = async (
     }
 
     // Get signature from appropriate header based on provider
-    const signatureHeader = req.get(config.webhooks.palmpay.signatureHeader);
+    let signatureHeader;
+    switch(providerName) {
+      case 'palmpay':
+        signatureHeader = req.get(config.webhooks.palmpay.signatureHeader);
+        break;
+      case 'paystack':
+        signatureHeader = req.get('x-paystack-signature');
+        break;
+      case 'flutterwave':
+        signatureHeader = req.get('verif-hash');
+        break;
+      default:
+        signatureHeader = req.get(config.webhooks.palmpay.signatureHeader); // fallback
+        break;
+    }
+    
     const webhookSecret =
       provider.webhook_secret || config.webhooks.palmpay.secret;
 

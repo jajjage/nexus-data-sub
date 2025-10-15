@@ -1,4 +1,3 @@
-/* eslint-disable no-console */
 import { Request, Response } from 'express';
 import { ROLE_PERMISSIONS } from '../config/rbac';
 import db from '../database/connection';
@@ -187,7 +186,6 @@ export class AuthController {
     try {
       const { email, password, phoneNumber, totpCode, backupCode, reset } =
         req.body;
-      console.log(email, password, phoneNumber, totpCode, backupCode, reset);
 
       if ((!email && !phoneNumber) || !password) {
         return sendError(
@@ -526,7 +524,6 @@ export class AuthController {
           console.error('Failed to send verification email:', error);
         }
       });
-      console.log(verificationToken);
       return sendSuccess(
         res,
         'Verification email resent successfully',

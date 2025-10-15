@@ -47,26 +47,62 @@ const getClientIP = (req: Request): string => {
   const realIP = req.headers['x-real-ip'] as string;
   const cfConnectingIP = req.headers['cf-connecting-ip'] as string;
 
+  let ip = '127.0.0.1'; // Default fallback
+
   if (forwarded) {
     // X-Forwarded-For can contain multiple IPs, get the first one
-    return forwarded.split(',')[0].trim();
+    ip = forwarded.split(',')[0].trim();
+  } else if (cfConnectingIP) {
+    ip = cfConnectingIP;
+  } else if (realIP) {
+    ip = realIP;
+  } else {
+    // Fallback to connection remote address
+    ip = (
+      req.connection?.remoteAddress ||
+      req.socket?.remoteAddress ||
+      (req.connection as any)?.socket?.remoteAddress ||
+      '127.0.0.1'
+    );
   }
 
-  if (cfConnectingIP) {
-    return cfConnectingIP;
-  }
+  // Validate and sanitize the IP
+  return sanitizeIP(ip);
+};
 
-  if (realIP) {
-    return realIP;
+const isValidIP = (ip: string): boolean => {
+  // Validate IPv4 format
+  const ipv4Regex = /^(\d{1,3}\.){3}\d{1,3}$/;
+  if (ipv4Regex.test(ip)) {
+    // Additional validation for IPv4 range
+    const octets = ip.split('.').map(Number);
+    return octets.every(octet => octet >= 0 && octet <= 255);
   }
-
-  // Fallback to connection remote address
-  return (
-    req.connection?.remoteAddress ||
-    req.socket?.remoteAddress ||
-    (req.connection as any)?.socket?.remoteAddress ||
-    '127.0.0.1'
-  );
+  
+  // Basic validation for IPv6 format
+  const ipv6Regex = /^([0-9a-fA-F]{1,4}:){7}[0-9a-fA-F]{1,4}$/;
+  if (ipv6Regex.test(ip)) {
+    return true;
+  }
+  
+  // For IPv6 addresses with :: shorthand
+  if (ip.includes('::')) {
+    // More comprehensive check for IPv6 with shorthand notation
+    const ipv6RegexWithShorthand = /^([0-9a-fA-F]{0,4}:){1,7}[0-9a-fA-F]{0,4}(:[0-9a-fA-F]{0,4}){0,7}$/;
+    // Simplified validation for common IPv6 patterns with shorthand
+    const parts = ip.split('::');
+    if (parts.length === 2) {
+      const leftSide = parts[0].split(':');
+      const rightSide = parts[1].split(':');
+      // Validate that each part is a valid hex value (0-4 chars)
+      const allValid = [...leftSide, ...rightSide].every(part => 
+        part === '' || /^[0-9a-fA-F]{0,4}$/.test(part)
+      );
+      return allValid;
+    }
+  }
+  
+  return false;
 };
 
 const hashPassword = async (password: string): Promise<string> => {
@@ -98,18 +134,14 @@ const sanitizeIP = (ip: string): string => {
     return 'unknown';
   }
 
-  // Basic IP validation (IPv4 and IPv6)
-  const ipv4Regex = /^(\d{1,3}\.){3}\d{1,3}$/;
-  const ipv6Regex = /^([0-9a-fA-F]{1,4}:){7}[0-9a-fA-F]{1,4}$/;
-
-  if (ipv4Regex.test(ip) || ipv6Regex.test(ip)) {
-    return ip;
-  }
-
   // For forwarded IPs, take the first one
   const firstIP = ip.split(',')[0].trim();
-  if (ipv4Regex.test(firstIP) || ipv6Regex.test(firstIP)) {
+  if (isValidIP(firstIP)) {
     return firstIP;
+  }
+
+  if (isValidIP(ip)) {
+    return ip;
   }
 
   return 'unknown';
@@ -123,4 +155,5 @@ export {
   comparePassword,
   sanitizeUserAgent,
   sanitizeIP,
+  isValidIP,  // Export for use in other modules if needed
 };

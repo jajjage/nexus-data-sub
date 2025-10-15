@@ -24,6 +24,11 @@ export class WebhookController {
         throw new ApiError(400, 'Provider not specified');
       }
 
+      // Validate provider name to prevent injection
+      if (!/^[a-z0-9_-]+$/.test(provider)) {
+        throw new ApiError(400, 'Invalid provider name format');
+      }
+
       if (!req.webhookEvent) {
         throw new ApiError(500, 'Webhook event not found in request');
       }

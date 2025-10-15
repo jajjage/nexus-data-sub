@@ -1,4 +1,3 @@
-/* eslint-disable no-console */
 import { Request, Response } from 'express';
 import { ROLE_PERMISSIONS } from '../config/rbac';
 import db from '../database/connection';
@@ -91,9 +90,7 @@ export class MobileAuthController {
 
               twoFADisableTracker.recordAttempt(user.userId, clientIP);
 
-              console.log(
-                `2FA disabled via backup code for user: ${user.userId}, IP: ${getClientIP(req)}`
-              );
+              
 
               await UserModel.disable2FA(user.userId);
               setImmediate(async () => {
@@ -102,14 +99,11 @@ export class MobileAuthController {
                     user.email
                   );
                 } catch (error) {
-                  console.error('Failed to send verification email:', error);
+                  console.error('Failed to send 2FA disable email:', error);
                 }
               });
             } else {
               // Default behavior (reset === true or undefined) - force 2FA reconfiguration
-              console.log(
-                `2FA reconfiguration triggered for user: ${user.userId}, IP: ${getClientIP(req)}`
-              );
 
               const secret = TotpService.generateSecret();
               const { plain: plainBackupCodes, hashed: hashedBackupCodes } =
@@ -158,7 +152,6 @@ export class MobileAuthController {
       });
 
       const userAgent = (req as any).deviceInfo;
-      console.log(userAgent);
 
       setImmediate(async () => {
         try {
@@ -171,7 +164,7 @@ export class MobileAuthController {
             deviceId
           );
         } catch (error) {
-          console.error('Failed to send verification email:', error);
+          console.error('Failed to create session:', error);
         }
       });
 
@@ -188,7 +181,6 @@ export class MobileAuthController {
         200
       );
     } catch (error) {
-      console.error('Login error:', error);
       return sendError(res, 'Internal server error during login', 500);
     }
   }
@@ -252,7 +244,6 @@ export class MobileAuthController {
         200
       );
     } catch (error) {
-      console.error('Refresh error:', error);
       return sendError(
         res,
         'Internal server error during token refresh',

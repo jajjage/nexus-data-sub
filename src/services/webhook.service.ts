@@ -45,6 +45,30 @@ export class WebhookService {
         };
       }
 
+      // Additional validation
+      if (isNaN(amount) || !isFinite(amount) || amount <= 0) {
+        await trx.rollback();
+        throw new ApiError(400, 'Invalid amount in webhook payload');
+      }
+
+      // Set maximum amount to prevent excessive credits (adjust as per business requirements)
+      if (amount > 1000000) { // 1,000,000 units max (adjust as needed)
+        await trx.rollback();
+        throw new ApiError(400, 'Amount exceeds maximum allowed value');
+      }
+
+      // Validate provider reference format (alphanumeric, underscore, hyphen)
+      if (typeof providerReference !== 'string' || !/^[a-zA-Z0-9_-]+$/.test(providerReference)) {
+        await trx.rollback();
+        throw new ApiError(400, 'Invalid provider reference format');
+      }
+
+      // Validate provider VA ID format
+      if (typeof providerVaId !== 'string' || !/^[a-zA-Z0-9_-]+$/.test(providerVaId)) {
+        await trx.rollback();
+        throw new ApiError(400, 'Invalid provider VA ID format');
+      }
+
       // Insert incoming payment with idempotency check
       const [incomingPayment] = await trx('incoming_payments')
         .insert({
@@ -106,30 +130,40 @@ export class WebhookService {
 
       // If user found, credit their wallet
       if (userId) {
-        // Ensure wallet exists
-        await trx('wallets')
-          .insert({
-            user_id: userId,
-            balance: 0,
-            currency,
-            updated_at: new Date(),
-          })
-          .onConflict('user_id')
-          .ignore();
-
-        // Get current balance and update atomically
-        const wallet = await trx('wallets')
+        // Ensure wallet exists using a separate query to handle potential race condition
+        const existingWallet = await trx('wallets')
           .where({ user_id: userId })
-          .forUpdate()
+          .first();
+        
+        if (!existingWallet) {
+          await trx('wallets')
+            .insert({
+              user_id: userId,
+              balance: 0,
+              currency,
+              updated_at: new Date(),
+            });
+        }
+
+        // Get current wallet and update balance atomically
+        const currentWallet = await trx('wallets')
+          .where({ user_id: userId })
+          .forUpdate()  // This ensures we lock the row during transaction
           .first();
 
-        const currentBalance = wallet ? Number(wallet.balance) : 0;
-        const newBalance = Number((currentBalance + amount).toFixed(2));
+        if (!currentWallet) {
+          await trx.rollback();
+          throw new ApiError(500, 'Wallet not found after creation');
+        }
 
-        await trx('wallets').where({ user_id: userId }).update({
-          balance: newBalance,
-          updated_at: new Date(),
-        });
+        const newBalance = Number((Number(currentWallet.balance) + amount).toFixed(2));
+        
+        await trx('wallets')
+          .where({ user_id: userId })
+          .update({
+            balance: newBalance,
+            updated_at: new Date(),
+          });
 
         // Record wallet transaction
         await trx('wallet_transactions').insert({

@@ -2,6 +2,27 @@ import dotenv from 'dotenv';
 
 dotenv.config();
 
+// Validate required secrets at startup
+const jwtSecret = process.env.JWT_SECRET;
+const jwtRefreshSecret = process.env.JWT_REFRESH_SECRET;
+
+if (
+  !jwtSecret ||
+  jwtSecret === 'your-super-secret-jwt-key-change-in-production'
+) {
+  throw new Error(
+    'JWT_SECRET environment variable must be set to a secure value'
+  );
+}
+if (
+  !jwtRefreshSecret ||
+  jwtRefreshSecret === 'your-super-secret-refresh-key-change-in-production'
+) {
+  throw new Error(
+    'JWT_REFRESH_SECRET environment variable must be set to a secure value'
+  );
+}
+
 export const config = {
   port: parseInt(process.env.PORT || '3000', 10),
   database: {
@@ -15,6 +36,8 @@ export const config = {
       10
     ),
   },
+  // JWT secrets are validated at startup in jwt.service.ts
+  // to ensure the app doesn't run with default secrets
   jwt: {
     secret:
       process.env.JWT_SECRET ||

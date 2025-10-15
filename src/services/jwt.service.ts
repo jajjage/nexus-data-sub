@@ -28,11 +28,11 @@ export class JwtService {
     const accessSecret = process.env.JWT_SECRET;
     const refreshSecret = process.env.JWT_REFRESH_SECRET;
 
-    if (!accessSecret) {
-      throw new Error('JWT_SECRET environment variable is not set');
+    if (!accessSecret || accessSecret === 'your-super-secret-jwt-key-change-in-production') {
+      throw new Error('JWT_SECRET environment variable must be set to a secure value');
     }
-    if (!refreshSecret) {
-      throw new Error('JWT_REFRESH_SECRET environment variable is not set');
+    if (!refreshSecret || refreshSecret === 'your-super-secret-refresh-key-change-in-production') {
+      throw new Error('JWT_REFRESH_SECRET environment variable must be set to a secure value');
     }
 
     return { accessSecret, refreshSecret };
