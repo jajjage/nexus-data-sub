@@ -1,10 +1,11 @@
 -- DROP schema public CASCADE;
-CREATE schema public;
+-- CREATE schema public;
 -- DROP TABLE knex_migrations, knex_migrations_lock;
--- DELETE FROM public.knex_migrations_lock WHERE index = '1'
+-- DELETE FROM public.users WHERE id = 'bd043a18-09d1-4ff5-a699-f593bab7ce1f';
 
 -- UPDATE public.users SET two_factor_secret=null WHERE id = 'bd043a18-09d1-4ff5-a699-f593bab7ce1f'
-
+INSERT INTO public.users (id, email, full_name, phone_number, role, password, role_id, is_verified, created_at, updated_at)
+VALUES ('bd043a18-09d1-4ff5-a699-f593bab7ce1f', 'admin@example.com', 'Admin User', '123-456-7890', 'admin', '$2b$10$RHKpnJTOl/DgjIpUNfjkEeSEMol.akG46Gg9LRBua8dJH1thH6J5a', 'c40e47c7-c06b-47d7-8c7c-3f41bd4c3a33', true, NOW(), NOW());
 -- SELECT
 -- u.id AS user_id,
 -- u.email,

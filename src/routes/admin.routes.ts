@@ -1,7 +1,7 @@
 import { Router } from 'express';
 import { AdminController } from '../controllers/admin.controller';
-import { requireRole, authorize } from '../middleware/rbac.middleware';
 import { authenticate } from '../middleware/auth.middleware';
+import { authorize, requireRole } from '../middleware/rbac.middleware';
 
 import { validateUserCreation } from '../middleware/validation.middleware';
 
@@ -12,19 +12,71 @@ router.use(authenticate);
 // Apply admin role middleware to all admin routes
 router.use(requireRole('admin'));
 
-router.post(
-  '/users',
-  authorize('users.create'),
-  validateUserCreation,
-  AdminController.createUser
-);
-
 /**
  * @swagger
  * tags:
  *   name: Administration
  *   description: Administrative operations
  */
+
+/**
+ * @swagger
+ * /admin/users:
+ *   post:
+ *     summary: Create user (admin only)
+ *     tags: [Administration]
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             $ref: '#/components/schemas/RegisterRequest'
+ *     security:
+ *       - bearerAuth: []
+ *     responses:
+ *       201:
+ *         description: User registered successfully
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 success:
+ *                   type: boolean
+ *                   example: true
+ *                 message:
+ *                   type: string
+ *                   example: User registered successfully. Please check your email to verify your account.
+ *                 data:
+ *                   type: object
+ *                   properties:
+ *                     user:
+ *                       $ref: '#/components/schemas/User'
+ *       401:
+ *         description: Authentication required
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/ErrorResponse'
+ *       403:
+ *         description: Insufficient permissions
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/ErrorResponse'
+ *       500:
+ *         description: Internal server error
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/ErrorResponse'
+ */
+router.post(
+  '/users',
+  authorize('users.create'),
+  validateUserCreation,
+  AdminController.createUser
+);
 
 /**
  * @swagger

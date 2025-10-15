@@ -1,5 +1,5 @@
-import { Request, Response } from 'express';
 import bcrypt from 'bcrypt';
+import { Request, Response } from 'express';
 
 const ACCESS_TOKEN_EXPIRY = 15 * 60 * 1000; // 15 minutes
 const REFRESH_TOKEN_EXPIRY = 7 * 24 * 60 * 60 * 1000; // 7 days
@@ -42,10 +42,20 @@ const clearAuthCookies = (res: Response): void => {
 };
 
 const getClientIP = (req: Request): string => {
+  // Helper to safely get header as string
+  const getHeader = (
+    value: string | string[] | undefined
+  ): string | undefined => {
+    if (Array.isArray(value)) {
+      return value[0];
+    }
+    return value;
+  };
+
   // Try to get IP from various headers in order of preference
-  const forwarded = req.headers['x-forwarded-for'] as string;
-  const realIP = req.headers['x-real-ip'] as string;
-  const cfConnectingIP = req.headers['cf-connecting-ip'] as string;
+  const forwarded = getHeader(req.headers['x-forwarded-for']);
+  const realIP = getHeader(req.headers['x-real-ip']);
+  const cfConnectingIP = getHeader(req.headers['cf-connecting-ip']);
 
   let ip = '127.0.0.1'; // Default fallback
 
@@ -56,17 +66,21 @@ const getClientIP = (req: Request): string => {
     ip = cfConnectingIP;
   } else if (realIP) {
     ip = realIP;
-  } else {
-    // Fallback to connection remote address
-    ip = (
-      req.connection?.remoteAddress ||
-      req.socket?.remoteAddress ||
-      (req.connection as any)?.socket?.remoteAddress ||
-      '127.0.0.1'
-    );
+  } else if (req.socket?.remoteAddress) {
+    // Use socket.remoteAddress (connection is deprecated)
+    ip = req.socket.remoteAddress;
   }
 
-  // Validate and sanitize the IP
+  // Clean IPv6 localhost notation
+  if (ip === '::1' || ip === '::ffff:127.0.0.1') {
+    ip = '127.0.0.1';
+  }
+
+  // Remove IPv6 prefix if present
+  if (ip.startsWith('::ffff:')) {
+    ip = ip.substring(7);
+  }
+
   return sanitizeIP(ip);
 };
 
@@ -78,30 +92,29 @@ const isValidIP = (ip: string): boolean => {
     const octets = ip.split('.').map(Number);
     return octets.every(octet => octet >= 0 && octet <= 255);
   }
-  
+
   // Basic validation for IPv6 format
   const ipv6Regex = /^([0-9a-fA-F]{1,4}:){7}[0-9a-fA-F]{1,4}$/;
   if (ipv6Regex.test(ip)) {
     return true;
   }
-  
+
   // For IPv6 addresses with :: shorthand
   if (ip.includes('::')) {
     // More comprehensive check for IPv6 with shorthand notation
-    const ipv6RegexWithShorthand = /^([0-9a-fA-F]{0,4}:){1,7}[0-9a-fA-F]{0,4}(:[0-9a-fA-F]{0,4}){0,7}$/;
     // Simplified validation for common IPv6 patterns with shorthand
     const parts = ip.split('::');
     if (parts.length === 2) {
       const leftSide = parts[0].split(':');
       const rightSide = parts[1].split(':');
       // Validate that each part is a valid hex value (0-4 chars)
-      const allValid = [...leftSide, ...rightSide].every(part => 
-        part === '' || /^[0-9a-fA-F]{0,4}$/.test(part)
+      const allValid = [...leftSide, ...rightSide].every(
+        part => part === '' || /^[0-9a-fA-F]{0,4}$/.test(part)
       );
       return allValid;
     }
   }
-  
+
   return false;
 };
 
@@ -148,12 +161,12 @@ const sanitizeIP = (ip: string): string => {
 };
 
 export {
-  setAuthCookies,
   clearAuthCookies,
+  comparePassword,
   getClientIP,
   hashPassword,
-  comparePassword,
-  sanitizeUserAgent,
+  isValidIP,
   sanitizeIP,
-  isValidIP,  // Export for use in other modules if needed
+  sanitizeUserAgent,
+  setAuthCookies,
 };
