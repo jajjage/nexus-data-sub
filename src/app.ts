@@ -16,8 +16,9 @@ import passwordRoutes from './routes/password.routes';
 import sessionRoutes from './routes/session.routes';
 import twoFactorRoutes from './routes/twoFactor.routes';
 import webhookRoutes from './routes/webhook.routes';
+import testWebhookRoutes from './routes/testWebhook.routes';
 import { ApiError } from './utils/ApiError';
-import { apiLimiter, authLimiter, loginLimiter } from './utils/rateLimit';
+import { apiLimiter, authLimiter, loginLimiter, testWebhookLimiter } from './utils/rateLimit';
 
 const app = express();
 
@@ -77,6 +78,7 @@ app.use('/api/v1/session', sessionRoutes);
 app.use('/api/v1/2fa', twoFactorRoutes);
 app.use('/api/v1/mobile/auth', mobileAuthRoutes);
 app.use('/api/v1/webhooks', webhookRoutes);
+app.use('/api/v1/test-webhooks', testWebhookLimiter, testWebhookRoutes);
 
 app.get('/', (req, res) => {
   res.redirect('/api/v1/docs');

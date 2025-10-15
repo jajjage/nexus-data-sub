@@ -326,6 +326,10 @@ export class AuthController {
       return sendSuccess(res, 'Login successful', {
         id: user.userId,
         email: user.email,
+        fullName: user.fullName,
+        accountNumber: user.accountNumber,
+        phoneNumber: user.phoneNumber,
+        balance: user.balance,
         role: user.role,
       });
     } catch (error) {

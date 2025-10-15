@@ -1,67 +1,33 @@
 import { Knex } from 'knex';
 
+/**
+ * Migration: create providers, virtual_accounts, incoming_payments,
+ * wallets, wallet_transactions, webhook_events, settlements
+ *
+ * Notes:
+ * - provider_id is a FK -> providers.id (bigint)
+ * - virtual_accounts.provider_id and incoming_payments.provider_id are NOT NULL
+ * - unique constraints that previously included text provider now use provider_id
+ * - If you're migrating an existing DB you must first backfill provider rows
+ *   and provider_id values in a separate migration that maps provider text -> providers.id.
+ */
+
 export async function up(knex: Knex): Promise<void> {
-  // Create virtual_accounts table
-  await knex.schema.createTable('virtual_accounts', table => {
-    table.bigIncrements('id').primary();
-    table
-      .uuid('user_id')
-      .notNullable()
-      .references('id')
-      .inTable('users')
-      .onDelete('CASCADE');
-    table.text('provider').notNullable();
-    table.text('provider_va_id').notNullable();
-    table.text('account_number').notNullable();
-    table.text('currency').notNullable().defaultTo('NGN');
-    table.text('status').notNullable().defaultTo('active');
-    table.jsonb('metadata');
+  // Create providers first
+  await knex.schema.createTable('providers', table => {
+    table.uuid('id').primary().defaultTo(knex.raw('gen_random_uuid()'));
+    table.text('name').notNullable().unique();
+    table.text('api_base');
+    table.text('webhook_secret');
+    table.boolean('is_active').notNullable().defaultTo(true);
+    table.jsonb('config');
     table
       .timestamp('created_at', { useTz: true })
       .notNullable()
       .defaultTo(knex.fn.now());
-    table
-      .timestamp('updated_at', { useTz: true })
-      .notNullable()
-      .defaultTo(knex.fn.now());
-    table.unique(['provider', 'provider_va_id']);
-    table.unique(['provider', 'account_number']);
-    table.index('user_id', 'idx_virtual_accounts_user_id');
-    table.index('provider_va_id', 'idx_virtual_accounts_provider_va_id');
   });
 
-  // Create incoming_payments table
-  await knex.schema.createTable('incoming_payments', table => {
-    table.bigIncrements('id').primary();
-    table.text('provider').notNullable();
-    table.text('provider_reference').notNullable();
-    table.text('provider_va_id').notNullable();
-    table
-      .bigInteger('virtual_account_id')
-      .unsigned()
-      .references('id')
-      .inTable('virtual_accounts')
-      .onDelete('SET NULL');
-    table
-      .uuid('user_id')
-      .references('id')
-      .inTable('users')
-      .onDelete('SET NULL');
-    table.decimal('amount', 14, 2).notNullable();
-    table.text('currency').notNullable().defaultTo('NGN');
-    table.text('status').notNullable().defaultTo('received');
-    table.jsonb('raw_payload');
-    table.timestamp('received_at', { useTz: true });
-    table
-      .timestamp('created_at', { useTz: true })
-      .notNullable()
-      .defaultTo(knex.fn.now());
-    table.unique(['provider', 'provider_reference'], 'uniq_provider_reference');
-    table.index('provider_va_id', 'idx_incoming_payments_provider_va_id');
-    table.index('user_id', 'idx_incoming_payments_user_id');
-  });
-
-  // Create wallets table
+  // Wallets (depends only on users)
   await knex.schema.createTable('wallets', table => {
     table
       .uuid('user_id')
@@ -77,9 +43,9 @@ export async function up(knex: Knex): Promise<void> {
       .defaultTo(knex.fn.now());
   });
 
-  // Create wallet_transactions table
+  // Wallet transactions
   await knex.schema.createTable('wallet_transactions', table => {
-    table.bigIncrements('id').primary();
+    table.uuid('id').primary().defaultTo(knex.raw('gen_random_uuid()'));
     table
       .uuid('user_id')
       .notNullable()
@@ -99,24 +65,115 @@ export async function up(knex: Knex): Promise<void> {
     table.index('user_id', 'idx_wallet_tx_user_id');
   });
 
-  // Create providers table
-  await knex.schema.createTable('providers', table => {
-    table.bigIncrements('id').primary();
-    table.text('name').notNullable().unique();
-    table.text('api_base');
-    table.text('webhook_secret');
-    table.boolean('is_active').notNullable().defaultTo(true);
-    table.jsonb('config');
+  // Virtual accounts
+  await knex.schema.createTable('virtual_accounts', table => {
+    table.uuid('id').primary().defaultTo(knex.raw('gen_random_uuid()'));
+
+    table
+      .uuid('user_id')
+      .notNullable()
+      .references('id')
+      .inTable('users')
+      .onDelete('CASCADE');
+
+    // normalize provider as FK
+    table
+      .uuid('provider_id')
+      .unsigned()
+      .notNullable()
+      .references('id')
+      .inTable('providers')
+      .onDelete('RESTRICT'); // choose RESTRICT (or SET NULL / CASCADE) per policy
+
+    table.text('provider_va_id').notNullable();
+    table.text('account_number').notNullable();
+    table.text('currency').notNullable().defaultTo('NGN');
+    table.text('status').notNullable().defaultTo('active');
+    table.jsonb('metadata');
     table
       .timestamp('created_at', { useTz: true })
       .notNullable()
       .defaultTo(knex.fn.now());
+    table
+      .timestamp('updated_at', { useTz: true })
+      .notNullable()
+      .defaultTo(knex.fn.now());
+
+    // Unique constraints using provider_id instead of raw provider text
+    table.unique(
+      ['provider_id', 'provider_va_id'],
+      'uniq_providerid_providervaid'
+    );
+    table.unique(
+      ['provider_id', 'account_number'],
+      'uniq_providerid_accountnumber'
+    );
+
+    table.index('user_id', 'idx_virtual_accounts_user_id');
+    table.index('provider_va_id', 'idx_virtual_accounts_provider_va_id');
+    table.index('provider_id', 'idx_virtual_accounts_provider_id');
   });
 
-  // Create webhook_events table
+  // Incoming payments
+  await knex.schema.createTable('incoming_payments', table => {
+    table.uuid('id').primary().defaultTo(knex.raw('gen_random_uuid()'));
+
+    // provider FK
+    table
+      .uuid('provider_id')
+      .unsigned()
+      .notNullable()
+      .references('id')
+      .inTable('providers')
+      .onDelete('RESTRICT');
+
+    table.text('provider_reference').notNullable();
+    table.text('provider_va_id').notNullable();
+
+    table
+      .uuid('virtual_account_id')
+      .unsigned()
+      .references('id')
+      .inTable('virtual_accounts')
+      .onDelete('SET NULL');
+
+    table
+      .uuid('user_id')
+      .references('id')
+      .inTable('users')
+      .onDelete('SET NULL');
+
+    table.decimal('amount', 14, 2).notNullable();
+    table.text('currency').notNullable().defaultTo('NGN');
+    table.text('status').notNullable().defaultTo('received');
+    table.jsonb('raw_payload');
+    table.timestamp('received_at', { useTz: true });
+    table
+      .timestamp('created_at', { useTz: true })
+      .notNullable()
+      .defaultTo(knex.fn.now());
+
+    table.unique(
+      ['provider_id', 'provider_reference'],
+      'uniq_incoming_provider_reference'
+    );
+    table.index('provider_va_id', 'idx_incoming_payments_provider_va_id');
+    table.index('user_id', 'idx_incoming_payments_user_id');
+    table.index('provider_id', 'idx_incoming_payments_provider_id');
+  });
+
+  // Webhook events (preserve event storage; provider_id FK)
   await knex.schema.createTable('webhook_events', table => {
-    table.bigIncrements('id').primary();
-    table.text('provider').notNullable();
+    table.uuid('id').primary().defaultTo(knex.raw('gen_random_uuid()'));
+
+    table
+      .uuid('provider_id')
+      .unsigned()
+      .notNullable()
+      .references('id')
+      .inTable('providers')
+      .onDelete('RESTRICT');
+
     table.text('event_type');
     table.text('event_id');
     table.jsonb('payload').notNullable();
@@ -128,13 +185,23 @@ export async function up(knex: Knex): Promise<void> {
       .timestamp('created_at', { useTz: true })
       .notNullable()
       .defaultTo(knex.fn.now());
+
     table.index('processed', 'idx_webhook_events_processed');
+    table.index('provider_id', 'idx_webhook_events_provider_id');
   });
 
-  // Create settlements table
+  // Settlements
   await knex.schema.createTable('settlements', table => {
-    table.bigIncrements('id').primary();
-    table.text('provider').notNullable();
+    table.uuid('id').primary().defaultTo(knex.raw('gen_random_uuid()'));
+
+    table
+      .uuid('provider_id')
+      .unsigned()
+      .notNullable()
+      .references('id')
+      .inTable('providers')
+      .onDelete('RESTRICT');
+
     table.date('settlement_date').notNullable();
     table.decimal('amount', 14, 2).notNullable();
     table.decimal('fees', 14, 2).defaultTo(0);
@@ -144,19 +211,21 @@ export async function up(knex: Knex): Promise<void> {
       .timestamp('created_at', { useTz: true })
       .notNullable()
       .defaultTo(knex.fn.now());
+
     table.index(
-      ['provider', 'settlement_date'],
-      'idx_settlements_provider_date'
+      ['provider_id', 'settlement_date'],
+      'idx_settlements_providerid_date'
     );
   });
 }
 
 export async function down(knex: Knex): Promise<void> {
+  // Drop in reverse dependency order
   await knex.schema.dropTableIfExists('settlements');
   await knex.schema.dropTableIfExists('webhook_events');
-  await knex.schema.dropTableIfExists('providers');
-  await knex.schema.dropTableIfExists('wallet_transactions');
-  await knex.schema.dropTableIfExists('wallets');
   await knex.schema.dropTableIfExists('incoming_payments');
   await knex.schema.dropTableIfExists('virtual_accounts');
+  await knex.schema.dropTableIfExists('wallet_transactions');
+  await knex.schema.dropTableIfExists('wallets');
+  await knex.schema.dropTableIfExists('providers');
 }

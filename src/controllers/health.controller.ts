@@ -4,6 +4,9 @@ import { redisClientInstance } from '../database/redis';
 
 export class HealthController {
   static async getHealth(req: Request, res: Response) {
+    // const accessSecret = process.env.JWT_SECRET;
+    // const refreshSecret = process.env.JWT_REFRESH_SECRET;
+    // console.log({ accessSecret, refreshSecret });
     try {
       // Check database connection
       const dbCheck = await db.raw('SELECT 1');

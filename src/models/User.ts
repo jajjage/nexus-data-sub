@@ -8,6 +8,9 @@ export interface User {
   backupId?: string;
   fullName: string;
   phoneNumber: string;
+  accountNumber: string;
+  providerName?: string;
+  balance?: string;
   pin?: string;
   email: string;
   password?: string;
@@ -86,6 +89,9 @@ const shapeUserFromRows = (rows: any[]): User | null => {
     phoneNumber: firstRow.phoneNumber,
     pin: firstRow.pin,
     email: firstRow.email,
+    accountNumber: firstRow.accountNumber,
+    providerName: firstRow.providerName,
+    balance: firstRow.balance,
     password: firstRow.password,
     role: firstRow.role,
     isVerified: firstRow.isVerified,
@@ -164,32 +170,40 @@ export class UserModel {
   static async findByEmail(email: string): Promise<User | null> {
     const trimmedEmail = email.trim().toLowerCase();
 
-    // Get basic user info
+    // Get basic user info + role + virtual account + wallet (all LEFT JOINs)
     const userRow = await db('users as u')
       .leftJoin('roles as r', 'u.role_id', 'r.id')
+      .leftJoin('virtual_accounts as v', 'v.user_id', 'u.id')
+      .leftJoin('providers as p', 'v.provider_id', 'p.id')
+      .leftJoin('wallets as w', 'w.user_id', 'u.id')
       .select([
         'u.id as userId',
         'u.email',
         'u.password',
         'u.role',
         'u.role_id',
+        'u.full_name as fullName',
+        'u.phone_number as phoneNumber',
         'u.is_verified as isVerified',
         'u.two_factor_enabled as twoFactorEnabled',
         'u.two_factor_secret as twoFactorSecret',
         'r.name as roleName',
+        'v.account_number as accountNumber',
+        'p.name as providerName', // provider from providers table
+        'w.balance as balance',
       ])
       .whereRaw('LOWER(u.email) = ?', [trimmedEmail])
       .first();
 
     if (!userRow) return null;
 
-    // Get permissions separately
+    // permissions query (same as you had)
     const permissions = await db('role_permissions as rp')
       .join('permissions as p', 'rp.permission_id', 'p.id')
       .select('p.name')
       .where('rp.role_id', userRow.role_id);
 
-    // Get backup codes if needed
+    // backup codes
     const backupCodes = await db('backup_code')
       .select(
         'id as backupId',
@@ -203,35 +217,44 @@ export class UserModel {
       backupCodes,
     };
   }
+
   static async findByPhoneNumber(phoneNumber: string): Promise<User | null> {
     const trimmedPhone = phoneNumber.trim();
 
-    // Get basic user info
+    // Get basic user info + role + virtual account + wallet (all LEFT JOINs)
     const userRow = await db('users as u')
       .leftJoin('roles as r', 'u.role_id', 'r.id')
+      .leftJoin('virtual_accounts as v', 'v.user_id', 'u.id')
+      .leftJoin('providers as p', 'v.provider_id', 'p.id')
+      .leftJoin('wallets as w', 'w.user_id', 'u.id')
       .select([
         'u.id as userId',
         'u.email',
         'u.password',
         'u.role',
         'u.role_id',
+        'u.full_name as fullName',
+        'u.phone_number as phoneNumber',
         'u.is_verified as isVerified',
         'u.two_factor_enabled as twoFactorEnabled',
         'u.two_factor_secret as twoFactorSecret',
         'r.name as roleName',
+        'v.account_number as accountNumber',
+        'p.name as providerName', // provider from providers table
+        'w.balance as balance',
       ])
-      .where('u.phone_number', trimmedPhone)
+      .whereRaw('u.phone_number = ?', [trimmedPhone])
       .first();
 
     if (!userRow) return null;
 
-    // Get permissions separately
+    // permissions query (same as you had)
     const permissions = await db('role_permissions as rp')
       .join('permissions as p', 'rp.permission_id', 'p.id')
       .select('p.name')
       .where('rp.role_id', userRow.role_id);
 
-    // Get backup codes if needed
+    // backup codes
     const backupCodes = await db('backup_code')
       .select(
         'id as backupId',
@@ -313,6 +336,9 @@ export class UserModel {
     return {
       userId: row.id,
       email: row.email,
+      accountNumber: row.account_number,
+      providerName: row.provider_name,
+      balance: row.balance,
       role: row.role,
       isVerified: row.is_verified,
       fullName: row.full_name,

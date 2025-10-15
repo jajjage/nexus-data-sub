@@ -104,9 +104,13 @@ export const webhookAuthMiddleware = async (
     const eventType = req.body.event_type || req.body.type || null;
     const eventId = req.body.event_id || req.body.id || req.body.txn_id || null;
 
+    // Since we already fetched the provider above and verified it exists and is active,
+    // we can use its ID directly
+    const providerId = provider.id;
+    
     const [webhookEvent] = await knex('webhook_events')
       .insert({
-        provider: providerName,
+        provider_id: providerId,
         event_type: eventType,
         event_id: eventId,
         payload: req.body,

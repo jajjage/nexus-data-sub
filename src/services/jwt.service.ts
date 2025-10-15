@@ -28,11 +28,21 @@ export class JwtService {
     const accessSecret = process.env.JWT_SECRET;
     const refreshSecret = process.env.JWT_REFRESH_SECRET;
 
-    if (!accessSecret || accessSecret === 'your-super-secret-jwt-key-change-in-production') {
-      throw new Error('JWT_SECRET environment variable must be set to a secure value');
+    if (
+      !accessSecret ||
+      accessSecret === 'your-super-secret-jwt-key-change-in-production'
+    ) {
+      throw new Error(
+        'JWT_SECRET environment variable must be set to a secure value'
+      );
     }
-    if (!refreshSecret || refreshSecret === 'your-super-secret-refresh-key-change-in-production') {
-      throw new Error('JWT_REFRESH_SECRET environment variable must be set to a secure value');
+    if (
+      !refreshSecret ||
+      refreshSecret === 'your-super-secret-refresh-key-change-in-production'
+    ) {
+      throw new Error(
+        'JWT_REFRESH_SECRET environment variable must be set to a secure value'
+      );
     }
 
     return { accessSecret, refreshSecret };
@@ -45,13 +55,13 @@ export class JwtService {
       const accessTokenOptions: jwt.SignOptions = {
         expiresIn: (process.env.JWT_EXPIRES_IN ||
           '24h') as jwt.SignOptions['expiresIn'],
-        issuer: 'election-auth-service',
+        issuer: 'nexus-service',
       };
 
       const refreshTokenOptions: jwt.SignOptions = {
         expiresIn: (process.env.JWT_REFRESH_EXPIRES_IN ||
           '7d') as jwt.SignOptions['expiresIn'],
-        issuer: 'election-auth-service',
+        issuer: 'nexus-service',
       };
 
       const accessToken = jwt.sign(payload, accessSecret, accessTokenOptions);
@@ -79,7 +89,7 @@ export class JwtService {
       const { accessSecret } = this.getSecrets();
 
       const decoded = jwt.verify(token, accessSecret, {
-        issuer: 'election-auth-service',
+        issuer: 'nexus-service',
       }) as JwtPayload;
 
       if (expectedEmail && decoded.aud !== expectedEmail) {
@@ -105,7 +115,7 @@ export class JwtService {
       const { refreshSecret } = this.getSecrets();
 
       const decoded = jwt.verify(token, refreshSecret, {
-        issuer: 'election-auth-service',
+        issuer: 'nexus-service',
       }) as JwtPayload;
 
       if (expectedEmail && decoded.aud !== expectedEmail) {

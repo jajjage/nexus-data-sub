@@ -90,8 +90,6 @@ export class MobileAuthController {
 
               twoFADisableTracker.recordAttempt(user.userId, clientIP);
 
-              
-
               await UserModel.disable2FA(user.userId);
               setImmediate(async () => {
                 try {
@@ -174,12 +172,18 @@ export class MobileAuthController {
         {
           id: user.userId,
           email: user.email,
+          fullName: user.fullName,
+          accountNumber: user.accountNumber,
+          phoneNumber: user.phoneNumber,
+          balance: user.balance,
           role: user.role,
+          twoFactorEnabled: user.twoFactorEnabled,
           accessToken,
           refreshToken,
         },
         200
       );
+      // eslint-disable-next-line @typescript-eslint/no-unused-vars
     } catch (error) {
       return sendError(res, 'Internal server error during login', 500);
     }
@@ -243,6 +247,7 @@ export class MobileAuthController {
         },
         200
       );
+      // eslint-disable-next-line @typescript-eslint/no-unused-vars
     } catch (error) {
       return sendError(
         res,

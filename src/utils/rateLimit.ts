@@ -37,4 +37,16 @@ const loginLimiter: RequestHandler =
         legacyHeaders: false,
       });
 
-export { authLimiter, loginLimiter, apiLimiter };
+// Rate limiter specifically for test webhooks (more restrictive)
+const testWebhookLimiter = rateLimit({
+  windowMs: 60 * 60 * 1000, // 1 hour
+  max: 20, // Only 20 test webhook calls per hour per IP
+  message: {
+    success: false,
+    message: 'Too many test webhook requests, please try again later.',
+  },
+  standardHeaders: true,
+  legacyHeaders: false,
+});
+
+export { authLimiter, loginLimiter, apiLimiter, testWebhookLimiter };

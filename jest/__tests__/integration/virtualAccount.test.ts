@@ -12,7 +12,15 @@ describe('Virtual Account Integration Tests', () => {
 
   afterAll(async () => {
     // Clean up test data
-    await knex('virtual_accounts').where({ provider: 'palmpay' }).delete();
+    // Delete virtual accounts for test providers
+    const providers = await knex('providers')
+      .whereIn('name', ['palmpay', 'TestProvider'])
+      .select('id');
+      
+    const providerIds = providers.map(p => p.id);
+    if (providerIds.length > 0) {
+      await knex('virtual_accounts').whereIn('provider_id', providerIds).delete();
+    }
     await knex('users').where({ email: testUser.email }).delete();
   });
 
@@ -31,12 +39,21 @@ describe('Virtual Account Integration Tests', () => {
       await new Promise(resolve => setTimeout(resolve, 1000));
 
       // Verify virtual account was created
-      const virtualAccount = await knex('virtual_accounts')
-        .where({
-          user_id: response.body.data.id,
-          provider: 'palmpay',
-        })
-        .first();
+      // Get provider ID first - it could be either palmpay or TestProvider depending on environment
+      const providers = await knex('providers')
+        .whereIn('name', ['palmpay', 'TestProvider'])
+        .select('id');
+      
+      let virtualAccount = null;
+      if (providers.length > 0) {
+        const providerIds = providers.map(p => p.id);
+        virtualAccount = await knex('virtual_accounts')
+          .where({
+            user_id: response.body.data.id,
+          })
+          .whereIn('provider_id', providerIds)
+          .first();
+      }
 
       expect(virtualAccount).toBeTruthy();
       expect(virtualAccount.account_number).toMatch(/^\d{10}$/); // Check for 10-digit account number
