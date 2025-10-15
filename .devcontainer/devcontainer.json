@@ -3,7 +3,7 @@
   "dockerComposeFile": "docker-compose.yml",
   "service": "app",
   "workspaceFolder": "/workspace",
-  "postCreateCommand": "npm ci",
+  // "postCreateCommand": "npm ci",
   "features": {
     "ghcr.io/devcontainers-extra/features/npm-package:1": {
       "packages": "typescript,@types/node,ts-node,nodemon"
@@ -38,7 +38,17 @@
         "eamodio.gitlens",
         "mikestead.dotenv",
         "mtxr.sqltools-driver-pg",
-        "github.vscode-github-actions"
+        "github.vscode-github-actions",
+        "ms-vscode.vscode-json",
+        "formulahendry.auto-rename-tag",
+        "christian-kohler.path-intellisense",
+        "github.copilot",
+        "ms-vscode.remote-containers",
+        "ms-vscode.remote-ssh",
+        "usernamehw.errorlens",
+        "gruntfuggly.todo-tree",
+        "redhat.vscode-yaml",
+        "ms-kubernetes-tools.vscode-kubernetes-tools"
       ],
       "settings": {
         "terminal.integrated.defaultProfile.linux": "zsh",
