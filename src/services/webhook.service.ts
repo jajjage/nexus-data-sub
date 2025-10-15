@@ -181,9 +181,13 @@ export class WebhookService {
           throw new ApiError(500, 'Wallet not found after creation');
         }
 
-        const newBalance = Number(
-          (Number(currentWallet.balance) + amount).toFixed(2)
-        );
+        // Ensure balance is a proper number to prevent JSON parsing issues
+        const currentBalance =
+          typeof currentWallet.balance === 'string'
+            ? parseFloat(currentWallet.balance)
+            : Number(currentWallet.balance);
+
+        const newBalance = parseFloat((currentBalance + amount).toFixed(2));
 
         await trx('wallets').where({ user_id: userId }).update({
           balance: newBalance,
@@ -194,8 +198,8 @@ export class WebhookService {
         await trx('wallet_transactions').insert({
           user_id: userId,
           kind: 'credit',
-          amount,
-          balance_after: newBalance,
+          amount: Number(amount),
+          balance_after: Number(newBalance),
           source: `${provider}_va`,
           reference: providerReference,
           metadata: { virtual_account_id: virtualAccountId },

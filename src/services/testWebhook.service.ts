@@ -15,9 +15,9 @@ export class TestWebhookService {
    * Process a test payment for simulating webhook functionality
    */
   public async processTestPayment(
-    userId: string, 
-    amount: number, 
-    provider: string = 'test-provider', 
+    userId: string,
+    amount: number,
+    provider: string = 'test-provider',
     providerVaId: string = 'test-va'
   ): Promise<TestPaymentResult> {
     const trx = await knex.transaction();
@@ -34,9 +34,7 @@ export class TestWebhookService {
       }
 
       // Check if user exists
-      const user = await trx('users')
-        .where({ id: userId })
-        .first();
+      const user = await trx('users').where({ id: userId }).first();
 
       if (!user) {
         await trx.rollback();
@@ -44,6 +42,20 @@ export class TestWebhookService {
           success: false,
           message: 'User not found',
           statusCode: 404,
+        };
+      }
+
+      // Get provider ID first - test webhook should fail if provider doesn't exist
+      const providerRecord = await trx('providers')
+        .where({ name: provider })
+        .first();
+
+      if (!providerRecord) {
+        await trx.rollback();
+        return {
+          success: false,
+          message: `Provider '${provider}' not found in system`,
+          statusCode: 400,
         };
       }
 
@@ -61,7 +73,7 @@ export class TestWebhookService {
       // Get current wallet and update balance atomically
       const currentWallet = await trx('wallets')
         .where({ user_id: userId })
-        .forUpdate()  // This ensures we lock the row during transaction
+        .forUpdate() // This ensures we lock the row during transaction
         .first();
 
       if (!currentWallet) {
@@ -69,47 +81,37 @@ export class TestWebhookService {
         throw new ApiError(500, 'Wallet not found after creation');
       }
 
-      const newBalance = Number((Number(currentWallet.balance) + amount).toFixed(2));
-      
-      await trx('wallets')
-        .where({ user_id: userId })
-        .update({
-          balance: newBalance,
-          updated_at: new Date(),
-        });
+      // Ensure balance is a proper number to prevent JSON parsing issues
+      const currentBalance =
+        typeof currentWallet.balance === 'string'
+          ? parseFloat(currentWallet.balance)
+          : Number(currentWallet.balance);
+
+      const newBalance = parseFloat((currentBalance + amount).toFixed(2));
+
+      await trx('wallets').where({ user_id: userId }).update({
+        balance: newBalance,
+        updated_at: new Date(),
+      });
 
       // Record wallet transaction
       await trx('wallet_transactions').insert({
         user_id: userId,
         kind: 'credit',
-        amount,
-        balance_after: newBalance,
+        amount: Number(amount),
+        balance_after: Number(newBalance),
         source: `${provider}_test`,
         reference: `test_${Date.now()}`,
-        metadata: { 
+        metadata: {
           provider_va_id: providerVaId,
           test_webhook: true,
-          provider
+          provider,
         },
         created_at: new Date(),
       });
 
-      // Get provider ID first, creating if it doesn't exist
-      let [providerRecord] = await trx('providers')
-        .where({ name: provider })
-        .first();
-      
-      if (!providerRecord) {
-        [providerRecord] = await trx('providers')
-          .insert({
-            name: provider,
-            is_active: true,
-            created_at: new Date(),
-          })
-          .returning('*');
-      }
-
       // Create a simulated webhook event for logging purposes
+      // eslint-disable-next-line @typescript-eslint/no-unused-vars
       const [webhookEvent] = await trx('webhook_events')
         .insert({
           provider_id: providerRecord.id,

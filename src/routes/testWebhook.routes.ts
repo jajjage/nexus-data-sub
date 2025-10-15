@@ -15,7 +15,7 @@ const webhookController = new TestWebhookController();
 
 /**
  * @swagger
- * /simulate-payment:
+ * /test-webhooks/simulate-payment:
  *   post:
  *     summary: Simulate a payment webhook for testing
  *     tags: [Test Webhook]

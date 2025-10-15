@@ -113,6 +113,7 @@ export class VirtualAccountService {
     let provider;
     if (process.env.NODE_ENV === 'development') {
       provider = 'TestProvider';
+      // eslint-disable-next-line no-console
       console.log(
         `Creating virtual account for user ${user.id} (${user.email})`
       );
