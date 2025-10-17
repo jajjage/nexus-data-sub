@@ -2,17 +2,19 @@ export interface TopupRequest {
   id: string;
   userId: string;
   recipientPhone: string;
-  operatorId: string;
+  externalId?: string;
+  operatorId?: string;
   amount: number;
   status: 'pending' | 'completed' | 'failed' | 'cancelled';
-  reference: string;
   requestPayload?: any;
-  responsePayload?: any;
+  operatorProductId?: string;
+  supplierId?: string;
+  supplierMappingId?: string;
+  cost?: number;
   attemptCount: number;
-  lastAttemptAt?: Date;
-  completedAt?: Date;
+  idempotencyKey?: string;
   createdAt: Date;
-  updatedAt: Date;
+  updatedAt?: Date;
 }
 
 export interface CreateTopupRequestData {
@@ -35,8 +37,9 @@ export interface TopupRequestFilters {
   userId?: string;
   operatorId?: string;
   status?: 'pending' | 'completed' | 'failed' | 'cancelled';
-  startDate?: Date;
-  endDate?: Date;
+  dateFrom?: string;
+  dateTo?: string;
+  page?: number;
   limit?: number;
   offset?: number;
 }
@@ -63,5 +66,7 @@ export interface TopupRequestQueryResult {
     limit: number;
     total: number;
     totalPages: number;
+    hasNextPage: boolean;
+    hasPrevPage: boolean;
   };
 }

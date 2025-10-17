@@ -5,18 +5,20 @@ export interface Settlement {
   fees: number;
   reference: string;
   settlementDate: Date;
-  status: 'pending' | 'completed' | 'failed';
+  status: 'pending' | 'completed' | 'failed' | 'processing';
+  rawReport?: any;
   createdAt: Date;
-  updatedAt: Date;
+  updatedAt?: Date;
 }
 
 export interface CreateSettlementData {
   providerId: string;
   amount: number;
-  fees: number;
+  fees?: number;
   reference: string;
   settlementDate: Date;
-  status?: 'pending' | 'completed' | 'failed';
+  status?: 'pending' | 'completed' | 'failed' | 'processing';
+  rawReport?: any;
 }
 
 export interface UpdateSettlementData {
@@ -24,12 +26,13 @@ export interface UpdateSettlementData {
   fees?: number;
   reference?: string;
   settlementDate?: Date;
-  status?: 'pending' | 'completed' | 'failed';
+  status?: 'pending' | 'completed' | 'failed' | 'processing';
+  rawReport?: any;
 }
 
 export interface SettlementFilters {
   providerId?: string;
-  status?: 'pending' | 'completed' | 'failed';
-  startDate?: Date;
-  endDate?: Date;
+  status?: 'pending' | 'completed' | 'failed' | 'processing';
+  dateFrom?: string;
+  dateTo?: string;
 }

@@ -44,6 +44,7 @@ export class SettlementModel {
       amount: parseFloat(result.amount),
       fees: parseFloat(result.fees),
       reference: result.reference,
+      status: result.status,
       rawReport: result.rawReport,
       createdAt: result.createdAt,
     };
@@ -88,6 +89,7 @@ export class SettlementModel {
       amount: parseFloat(result.amount),
       fees: parseFloat(result.fees),
       reference: result.reference,
+      status: result.status,
       rawReport: result.rawReport,
       createdAt: result.createdAt,
     }));
@@ -120,6 +122,7 @@ export class SettlementModel {
       providerId: result.provider_id,
       settlementDate: result.settlement_date,
       amount: parseFloat(result.amount),
+      status: result.status,
       fees: parseFloat(result.fees),
       reference: result.reference,
       rawReport: result.raw_report,
@@ -160,6 +163,7 @@ export class SettlementModel {
       providerId: result.provider_id,
       settlementDate: result.settlement_date,
       amount: parseFloat(result.amount),
+      status: result.status,
       fees: parseFloat(result.fees),
       reference: result.reference,
       rawReport: result.raw_report,

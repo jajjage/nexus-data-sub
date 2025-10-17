@@ -2,15 +2,21 @@ export interface Supplier {
   id: string;
   name: string;
   slug: string;
+  apiBase: string;
+  apiKey: string;
+  priorityInt: number;
   description?: string;
   isActive: boolean;
   createdAt: Date;
-  updatedAt: Date;
+  updatedAt?: Date;
 }
 
 export interface CreateSupplierData {
   name: string;
   slug: string;
+  apiBase?: string;
+  apiKey?: string;
+  priorityInt?: number;
   description?: string;
   isActive?: boolean;
 }
@@ -18,6 +24,9 @@ export interface CreateSupplierData {
 export interface UpdateSupplierData {
   name?: string;
   slug?: string;
+  apiBase?: string;
+  apiKey?: string;
+  priorityInt?: number;
   description?: string;
   isActive?: boolean;
 }

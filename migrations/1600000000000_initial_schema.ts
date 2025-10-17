@@ -6,7 +6,6 @@ export async function up(knex: Knex): Promise<void> {
     table.uuid('id').primary().defaultTo(knex.raw('gen_random_uuid()'));
     table.string('name', 50).unique().notNullable();
     table.text('description');
-    table.timestamp('updated_at', { useTz: true }).defaultTo(knex.fn.now());
     table.timestamps(true, true);
   });
 
@@ -14,7 +13,6 @@ export async function up(knex: Knex): Promise<void> {
     table.uuid('id').primary().defaultTo(knex.raw('gen_random_uuid()'));
     table.string('name', 100).unique().notNullable();
     table.text('description');
-    table.timestamp('updated_at', { useTz: true }).defaultTo(knex.fn.now());
     table.timestamps(true, true);
   });
 
@@ -26,7 +24,6 @@ export async function up(knex: Knex): Promise<void> {
       .inTable('permissions')
       .onDelete('CASCADE');
     table.primary(['role_id', 'permission_id']);
-    table.timestamp('updated_at', { useTz: true }).defaultTo(knex.fn.now());
     table.timestamps(true, true);
   });
 
@@ -46,7 +43,6 @@ export async function up(knex: Knex): Promise<void> {
     table.boolean('two_factor_enabled').defaultTo(false);
     table.string('password_reset_token', 255);
     table.timestamp('password_reset_token_expires_at');
-    table.timestamp('updated_at', { useTz: true }).defaultTo(knex.fn.now());
     table.timestamps(true, true);
   });
 
@@ -54,7 +50,6 @@ export async function up(knex: Knex): Promise<void> {
     table.uuid('id').primary().defaultTo(knex.raw('gen_random_uuid()'));
     table.uuid('user_id').references('id').inTable('users').onDelete('CASCADE');
     table.text('two_factor_backup_codes').nullable();
-    table.timestamp('updated_at', { useTz: true }).defaultTo(knex.fn.now());
     table.timestamps(true, true);
   });
 

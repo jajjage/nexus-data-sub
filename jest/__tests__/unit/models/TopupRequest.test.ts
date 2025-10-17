@@ -12,7 +12,7 @@ describe('TopupRequestModel', () => {
   // Start a transaction before each test
   beforeEach(async () => {
     trx = await db.transaction();
-    
+
     // Create a test user within this transaction
     const [user] = await trx('users')
       .insert({
@@ -27,10 +27,13 @@ describe('TopupRequestModel', () => {
     testUser = user;
 
     // Create a test operator within this transaction
-    testOperator = await OperatorModel.create({
-      code: 'TEST',
-      name: 'Test Operator',
-    }, trx);
+    testOperator = await OperatorModel.create(
+      {
+        code: 'TEST',
+        name: 'Test Operator',
+      },
+      trx
+    );
   });
 
   // Rollback the transaction after each test
@@ -40,15 +43,18 @@ describe('TopupRequestModel', () => {
 
   describe('create', () => {
     it('should create a new topup request', async () => {
-      testTopupRequest = await TopupRequestModel.create({
-        userId: testUser.id,
-        recipientPhone: '1234567890',
-        operatorId: testOperator.id,
-        amount: 1000,
-        status: 'pending',
-        attemptCount: 0,
-        requestPayload: undefined,
-      }, trx);
+      testTopupRequest = await TopupRequestModel.create(
+        {
+          userId: testUser.id,
+          recipientPhone: '1234567890',
+          operatorId: testOperator.id,
+          amount: 1000,
+          status: 'pending',
+          attemptCount: 0,
+          requestPayload: undefined,
+        },
+        trx
+      );
 
       expect(testTopupRequest).toBeDefined();
       expect(testTopupRequest.id).toBeDefined();
@@ -62,15 +68,18 @@ describe('TopupRequestModel', () => {
   describe('findById', () => {
     it('should retrieve a topup request by ID with responses', async () => {
       // Create a topup request for this test within the same transaction
-      testTopupRequest = await TopupRequestModel.create({
-        userId: testUser.id,
-        recipientPhone: '1234567890',
-        operatorId: testOperator.id,
-        amount: 1000,
-        status: 'pending',
-        attemptCount: 0,
-        requestPayload: undefined,
-      }, trx);
+      testTopupRequest = await TopupRequestModel.create(
+        {
+          userId: testUser.id,
+          recipientPhone: '1234567890',
+          operatorId: testOperator.id,
+          amount: 1000,
+          status: 'pending',
+          attemptCount: 0,
+          requestPayload: undefined,
+        },
+        trx
+      );
 
       // Add a response to test the responses fetching
       await trx('topup_responses').insert({
@@ -80,7 +89,10 @@ describe('TopupRequestModel', () => {
         response_payload: { success: true },
       });
 
-      const request = await TopupRequestModel.findById(testTopupRequest.id, trx);
+      const request = await TopupRequestModel.findById(
+        testTopupRequest.id,
+        trx
+      );
       expect(request).toBeDefined();
       expect(request?.id).toBe(testTopupRequest.id);
       expect(request?.userId).toBe(testUser.id);
@@ -97,26 +109,35 @@ describe('TopupRequestModel', () => {
   describe('findAll', () => {
     it('should retrieve all topup requests with pagination', async () => {
       // Create additional topup requests for this test within the same transaction
-      await TopupRequestModel.create({
-        userId: testUser.id,
-        recipientPhone: '1234567890',
-        operatorId: testOperator.id,
-        amount: 1500,
-        status: 'pending',
-        attemptCount: 0,
-        requestPayload: undefined,
-      }, trx);
-      await TopupRequestModel.create({
-        userId: testUser.id,
-        recipientPhone: '1234567890',
-        operatorId: testOperator.id,
-        amount: 2000,
-        status: 'success',
-        attemptCount: 1,
-        requestPayload: undefined,
-      }, trx);
+      await TopupRequestModel.create(
+        {
+          userId: testUser.id,
+          recipientPhone: '1234567890',
+          operatorId: testOperator.id,
+          amount: 1500,
+          status: 'pending',
+          attemptCount: 0,
+          requestPayload: undefined,
+        },
+        trx
+      );
+      await TopupRequestModel.create(
+        {
+          userId: testUser.id,
+          recipientPhone: '1234567890',
+          operatorId: testOperator.id,
+          amount: 2000,
+          status: 'completed',
+          attemptCount: 1,
+          requestPayload: undefined,
+        },
+        trx
+      );
 
-      const result = await TopupRequestModel.findAll({ page: 1, limit: 10 }, trx);
+      const result = await TopupRequestModel.findAll(
+        { page: 1, limit: 10 },
+        trx
+      );
       expect(result).toBeDefined();
       expect(result.requests).toBeDefined();
       expect(result.pagination).toBeDefined();
@@ -126,26 +147,35 @@ describe('TopupRequestModel', () => {
 
     it('should filter topup requests by user ID', async () => {
       // Create additional records for this test within the same transaction
-      await TopupRequestModel.create({
-        userId: testUser.id,
-        recipientPhone: '1234567890',
-        operatorId: testOperator.id,
-        amount: 3000,
-        status: 'pending',
-        attemptCount: 0,
-        requestPayload: undefined,
-      }, trx);
-      await TopupRequestModel.create({
-        userId: testUser.id,
-        recipientPhone: '1234567890',
-        operatorId: testOperator.id,
-        amount: 4000,
-        status: 'failed',
-        attemptCount: 1,
-        requestPayload: undefined,
-      }, trx);
-      
-      const result = await TopupRequestModel.findAll({ userId: testUser.id }, trx);
+      await TopupRequestModel.create(
+        {
+          userId: testUser.id,
+          recipientPhone: '1234567890',
+          operatorId: testOperator.id,
+          amount: 3000,
+          status: 'pending',
+          attemptCount: 0,
+          requestPayload: undefined,
+        },
+        trx
+      );
+      await TopupRequestModel.create(
+        {
+          userId: testUser.id,
+          recipientPhone: '1234567890',
+          operatorId: testOperator.id,
+          amount: 4000,
+          status: 'failed',
+          attemptCount: 1,
+          requestPayload: undefined,
+        },
+        trx
+      );
+
+      const result = await TopupRequestModel.findAll(
+        { userId: testUser.id },
+        trx
+      );
       expect(result).toBeDefined();
       expect(result.requests).toBeDefined();
       expect(result.requests.length).toBeGreaterThanOrEqual(2);
@@ -155,7 +185,10 @@ describe('TopupRequestModel', () => {
     });
 
     it('should filter topup requests by status', async () => {
-      const result = await TopupRequestModel.findAll({ status: 'pending' }, trx);
+      const result = await TopupRequestModel.findAll(
+        { status: 'pending' },
+        trx
+      );
       expect(result).toBeDefined();
       expect(result.requests).toBeDefined();
       result.requests.forEach(request => {
