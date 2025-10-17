@@ -1,0 +1,1157 @@
+import { Router } from 'express';
+import { AdminController } from '../controllers/admin.controller';
+import { authenticate } from '../middleware/auth.middleware';
+import { authorize, requireRole } from '../middleware/rbac.middleware';
+import { validateUserCreation } from '../middleware/validation.middleware';
+
+const router = Router();
+
+// Apply authentication and admin role middleware to all admin routes
+router.use(authenticate, requireRole('admin'));
+
+/**
+ * @swagger
+ * tags:
+ *   name: Administration
+ *   description: Administrative operations for managing the platform.
+ */
+
+// =================================================================
+// Dashboard
+// =================================================================
+
+/**
+ * @swagger
+ * /admin/dashboard/stats:
+ *   get:
+ *     summary: Get dashboard statistics
+ *     tags: [Administration]
+ *     security:
+ *       - bearerAuth: []
+ *     responses:
+ *       200:
+ *         description: Successfully retrieved dashboard stats.
+ */
+router.get(
+  '/dashboard/stats',
+  authorize('system.settings'),
+  AdminController.getDashboardStats
+);
+
+/**
+ * @swagger
+ * /admin/dashboard/failed-jobs:
+ *   get:
+ *     summary: Get a list of failed background jobs
+ *     tags: [Administration]
+ *     security:
+ *       - bearerAuth: []
+ *     responses:
+ *       200:
+ *         description: Successfully retrieved failed jobs.
+ */
+router.get(
+  '/dashboard/failed-jobs',
+  authorize('system.settings'),
+  AdminController.getFailedJobs
+);
+
+// =================================================================
+// User Management
+// =================================================================
+
+/**
+ * @swagger
+ * /admin/users/inactive:
+ *   get:
+ *     summary: Get inactive users
+ *     tags: [Administration]
+ *     security:
+ *       - bearerAuth: []
+ *     parameters:
+ *       - in: query
+ *         name: inactiveSince
+ *         schema:
+ *           type: string
+ *           format: date
+ *         description: The date to check for inactivity from.
+ *     responses:
+ *       200:
+ *         description: Successfully retrieved inactive users.
+ */
+// router.get(
+//   '/users/inactive',
+//   authorize('users.read.all'),
+//   AdminController.getInactiveUsers
+// );
+
+/**
+ * @swagger
+ * /admin/users:
+ *   post:
+ *     summary: Create a new user
+ *     tags: [Administration]
+ *     security:
+ *       - bearerAuth: []
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             $ref: '#/components/schemas/RegisterRequest'
+ *     responses:
+ *       201:
+ *         description: User created successfully.
+ */
+router.post(
+  '/users',
+  authorize('users.create'),
+  validateUserCreation,
+  AdminController.createUser
+);
+
+/**
+ * @swagger
+ * /admin/users:
+ *   get:
+ *     summary: Get all users
+ *     tags: [Administration]
+ *     security:
+ *       - bearerAuth: []
+ *     parameters:
+ *       - in: query
+ *         name: page
+ *         schema:
+ *           type: integer
+ *         description: Page number for pagination.
+ *       - in: query
+ *         name: limit
+ *         schema:
+ *           type: integer
+ *         description: Number of users per page.
+ *     responses:
+ *       200:
+ *         description: Successfully retrieved users.
+ */
+router.get('/users', authorize('users.read.all'), AdminController.getAllUsers);
+
+/**
+ * @swagger
+ * /admin/users/{userId}:
+ *   get:
+ *     summary: Get a single user by ID
+ *     tags: [Administration]
+ *     security:
+ *       - bearerAuth: []
+ *     parameters:
+ *       - in: path
+ *         name: userId
+ *         required: true
+ *         schema:
+ *           type: string
+ *           format: uuid
+ *     responses:
+ *       200:
+ *         description: Successfully retrieved user details.
+ *       404:
+ *         description: User not found.
+ */
+router.get(
+  '/users/:userId',
+  authorize('users.read.all'),
+  AdminController.getUserById
+);
+
+/**
+ * @swagger
+ * /admin/users/{userId}:
+ *   put:
+ *     summary: Update a user's details
+ *     tags: [Administration]
+ *     security:
+ *       - bearerAuth: []
+ *     parameters:
+ *       - in: path
+ *         name: userId
+ *         required: true
+ *         schema:
+ *           type: string
+ *           format: uuid
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             properties:
+ *               fullName:
+ *                 type: string
+ *               phoneNumber:
+ *                 type: string
+ *     responses:
+ *       200:
+ *         description: User updated successfully.
+ */
+router.put(
+  '/users/:userId',
+  authorize('users.update.all'),
+  AdminController.updateUser
+);
+
+/**
+ * @swagger
+ * /admin/users/{userId}/suspend:
+ *   post:
+ *     summary: Suspend a user's account
+ *     tags: [Administration]
+ *     security:
+ *       - bearerAuth: []
+ *     parameters:
+ *       - in: path
+ *         name: userId
+ *         required: true
+ *         schema:
+ *           type: string
+ *           format: uuid
+ *     responses:
+ *       200:
+ *         description: User suspended successfully.
+ */
+router.post(
+  '/users/:userId/suspend',
+  authorize('users.update.all'),
+  AdminController.suspendUser
+);
+
+/**
+ * @swagger
+ * /admin/users/{userId}/unsuspend:
+ *   post:
+ *     summary: Unsuspend a user's account
+ *     tags: [Administration]
+ *     security:
+ *       - bearerAuth: []
+ *     parameters:
+ *       - in: path
+ *         name: userId
+ *         required: true
+ *         schema:
+ *           type: string
+ *           format: uuid
+ *     responses:
+ *       200:
+ *         description: User unsuspended successfully.
+ */
+router.post(
+  '/users/:userId/unsuspend',
+  authorize('users.update.all'),
+  AdminController.unsuspendUser
+);
+
+/**
+ * @swagger
+ * /admin/users/{userId}/credit:
+ *   post:
+ *     summary: Manually credit a user's wallet
+ *     tags: [Administration]
+ *     security:
+ *       - bearerAuth: []
+ *     parameters:
+ *       - in: path
+ *         name: userId
+ *         required: true
+ *         schema:
+ *           type: string
+ *           format: uuid
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             properties:
+ *               amount:
+ *                 type: number
+ *                 format: double
+ *     responses:
+ *       200:
+ *         description: Wallet credited successfully.
+ */
+router.post(
+  '/users/:userId/credit',
+  authorize('users.update.all'),
+  AdminController.creditUserWallet
+);
+
+/**
+ * @swagger
+ * /admin/users/{userId}/debit:
+ *   post:
+ *     summary: Manually debit a user's wallet
+ *     tags: [Administration]
+ *     security:
+ *       - bearerAuth: []
+ *     parameters:
+ *       - in: path
+ *         name: userId
+ *         required: true
+ *         schema:
+ *           type: string
+ *           format: uuid
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             properties:
+ *               amount:
+ *                 type: number
+ *                 format: double
+ *     responses:
+ *       200:
+ *         description: Wallet debited successfully.
+ */
+router.post(
+  '/users/:userId/debit',
+  authorize('users.update.all'),
+  AdminController.debitUserWallet
+);
+
+// =================================================================
+// Session Management
+// =================================================================
+
+/**
+ * @swagger
+ * /admin/users/{userId}/sessions:
+ *   get:
+ *     summary: Get all active sessions for a user
+ *     tags: [Administration]
+ *     security:
+ *       - bearerAuth: []
+ *     parameters:
+ *       - in: path
+ *         name: userId
+ *         required: true
+ *         schema:
+ *           type: string
+ *           format: uuid
+ *     responses:
+ *       200:
+ *         description: Successfully retrieved user sessions.
+ */
+router.get(
+  '/users/:userId/sessions',
+  authorize('users.read.all'),
+  AdminController.getUserSessions
+);
+
+/**
+ * @swagger
+ * /admin/users/{userId}/sessions:
+ *   delete:
+ *     summary: Revoke all sessions for a user
+ *     tags: [Administration]
+ *     security:
+ *       - bearerAuth: []
+ *     parameters:
+ *       - in: path
+ *         name: userId
+ *         required: true
+ *         schema:
+ *           type: string
+ *           format: uuid
+ *     responses:
+ *       200:
+ *         description: Sessions revoked successfully.
+ */
+router.delete(
+  '/users/:userId/sessions',
+  authorize('users.update.all'),
+  AdminController.revokeUserSessions
+);
+
+// =================================================================
+// Role Management
+// =================================================================
+
+/**
+ * @swagger
+ * /admin/roles:
+ *   get:
+ *     summary: Get all roles
+ *     tags: [Administration]
+ *     security:
+ *       - bearerAuth: []
+ *     responses:
+ *       200:
+ *         description: Successfully retrieved roles.
+ */
+router.get('/roles', authorize('roles.assign'), AdminController.getRoles);
+
+/** @swagger
+ * /admin/assign-role:
+ *   post:
+ *     summary: Assign a role to a user
+ *     tags: [Administration]
+ *     security:
+ *       - bearerAuth: []
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             properties:
+ *               userId:
+ *                 type: string
+ *                 format: uuid
+ *               roleId:
+ *                 type: string
+ *                 format: uuid
+ *     responses:
+ *       200:
+ *         description: Role assigned successfully.
+ */
+router.post(
+  '/assign-role',
+  authorize('roles.assign'),
+  AdminController.assignRole
+);
+
+// =================================================================
+// Transaction Management
+// =================================================================
+
+/** @swagger
+ * /admin/transactions:
+ *   get:
+ *     summary: Get all transactions with optional filters
+ *     tags: [Administration]
+ *     security:
+ *       - bearerAuth: []
+ *     parameters:
+ *       - in: query
+ *         name: userId
+ *         schema:
+ *           type: string
+ *           format: uuid
+ *         description: Filter by user ID
+ *       - in: query
+ *         name: dateFrom
+ *         schema:
+ *           type: string
+ *           format: date
+ *         description: Filter from this date
+ *       - in: query
+ *         name: dateTo
+ *         schema:
+ *           type: string
+ *           format: date
+ *         description: Filter to this date
+ *       - in: query
+ *         name: direction
+ *         schema:
+ *           type: string
+ *           enum: [debit, credit]
+ *         description: Filter by transaction direction
+ *       - in: query
+ *         name: page
+ *         schema:
+ *           type: integer
+ *         description: Page number for pagination
+ *       - in: query
+ *         name: limit
+ *         schema:
+ *           type: integer
+ *         description: Number of transactions per page
+ *     responses:
+ *       200:
+ *         description: Successfully retrieved transactions.
+ */
+router.get(
+  '/transactions',
+  authorize('transactions.read.all'),
+  AdminController.getAllTransactions
+);
+
+/** @swagger
+ * /admin/transactions/{transactionId}:
+ *   get:
+ *     summary: Get a single transaction by ID
+ *     tags: [Administration]
+ *     security:
+ *       - bearerAuth: []
+ *     parameters:
+ *       - in: path
+ *         name: transactionId
+ *         required: true
+ *         schema:
+ *           type: string
+ *           format: uuid
+ *     responses:
+ *       200:
+ *         description: Successfully retrieved transaction.
+ *       404:
+ *         description: Transaction not found.
+ */
+router.get(
+  '/transactions/:transactionId',
+  authorize('transactions.read.all'),
+  AdminController.getTransactionById
+);
+
+// =================================================================
+// Topup Request Management
+// =================================================================
+
+/** @swagger
+ * /admin/topup-requests:
+ *   get:
+ *     summary: Get all topup requests with optional filters
+ *     tags: [Administration]
+ *     security:
+ *       - bearerAuth: []
+ *     parameters:
+ *       - in: query
+ *         name: status
+ *         schema:
+ *           type: string
+ *         description: Filter by status (pending, success, failed, reversed, retry)
+ *       - in: query
+ *         name: userId
+ *         schema:
+ *           type: string
+ *           format: uuid
+ *         description: Filter by user ID
+ *       - in: query
+ *         name: dateFrom
+ *         schema:
+ *           type: string
+ *           format: date
+ *         description: Filter from this date
+ *       - in: query
+ *         name: dateTo
+ *         schema:
+ *           type: string
+ *           format: date
+ *         description: Filter to this date
+ *       - in: query
+ *         name: page
+ *         schema:
+ *           type: integer
+ *         description: Page number for pagination
+ *       - in: query
+ *         name: limit
+ *         schema:
+ *           type: integer
+ *         description: Number of requests per page
+ *     responses:
+ *       200:
+ *         description: Successfully retrieved topup requests.
+ */
+router.get(
+  '/topup-requests',
+  authorize('topup-requests.read.all'),
+  AdminController.getAllTopupRequests
+);
+
+/** @swagger
+ * /admin/topup-requests/{requestId}:
+ *   get:
+ *     summary: Get a single topup request by ID
+ *     tags: [Administration]
+ *     security:
+ *       - bearerAuth: []
+ *     parameters:
+ *       - in: path
+ *         name: requestId
+ *         required: true
+ *         schema:
+ *           type: string
+ *           format: uuid
+ *     responses:
+ *       200:
+ *         description: Successfully retrieved topup request.
+ *       404:
+ *         description: Topup request not found.
+ */
+router.get(
+  '/topup-requests/:requestId',
+  authorize('topup-requests.read.all'),
+  AdminController.getTopupRequestById
+);
+
+/** @swagger
+ * /admin/topup-requests/{requestId}/retry:
+ *   post:
+ *     summary: Retry a failed topup request
+ *     tags: [Administration]
+ *     security:
+ *       - bearerAuth: []
+ *     parameters:
+ *       - in: path
+ *         name: requestId
+ *         required: true
+ *         schema:
+ *           type: string
+ *           format: uuid
+ *     responses:
+ *       200:
+ *         description: Topup request retry initiated successfully.
+ *       404:
+ *         description: Topup request not found.
+ */
+router.post(
+  '/topup-requests/:requestId/retry',
+  authorize('topup-requests.update'),
+  AdminController.retryTopupRequest
+);
+
+// =================================================================
+// Settlement Management
+// =================================================================
+
+/** @swagger
+ * /admin/settlements:
+ *   get:
+ *     summary: Get all settlements with optional filters
+ *     tags: [Administration]
+ *     security:
+ *       - bearerAuth: []
+ *     parameters:
+ *       - in: query
+ *         name: providerId
+ *         schema:
+ *           type: string
+ *           format: uuid
+ *         description: Filter by provider ID
+ *       - in: query
+ *         name: dateFrom
+ *         schema:
+ *           type: string
+ *           format: date
+ *         description: Filter from this date
+ *       - in: query
+ *         name: dateTo
+ *         schema:
+ *           type: string
+ *           format: date
+ *         description: Filter to this date
+ *     responses:
+ *       200:
+ *         description: Successfully retrieved settlements.
+ */
+router.get(
+  '/settlements',
+  authorize('settlements.read.all'),
+  AdminController.getAllSettlements
+);
+
+/** @swagger
+ * /admin/settlements/{settlementId}:
+ *   get:
+ *     summary: Get a single settlement by ID
+ *     tags: [Administration]
+ *     security:
+ *       - bearerAuth: []
+ *     parameters:
+ *       - in: path
+ *         name: settlementId
+ *         required: true
+ *         schema:
+ *           type: string
+ *           format: uuid
+ *     responses:
+ *       200:
+ *         description: Successfully retrieved settlement.
+ *       404:
+ *         description: Settlement not found.
+ */
+router.get(
+  '/settlements/:settlementId',
+  authorize('settlements.read.all'),
+  AdminController.getSettlementById
+);
+
+/** @swagger
+ * /admin/settlements:
+ *   post:
+ *     summary: Create a new settlement
+ *     tags: [Administration]
+ *     security:
+ *       - bearerAuth: []
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             properties:
+ *               providerId:
+ *                 type: string
+ *                 format: uuid
+ *               settlementDate:
+ *                 type: string
+ *                 format: date
+ *               amount:
+ *                 type: number
+ *               fees:
+ *                 type: number
+ *               reference:
+ *                 type: string
+ *               rawReport:
+ *                 type: object
+ *     responses:
+ *       201:
+ *         description: Settlement created successfully.
+ */
+router.post(
+  '/settlements',
+  authorize('settlements.create'),
+  AdminController.createSettlement
+);
+
+// =================================================================
+// Operator Management
+// =================================================================
+
+/** @swagger
+ * /admin/operators:
+ *   get:
+ *     summary: Get all operators
+ *     tags: [Administration]
+ *     security:
+ *       - bearerAuth: []
+ *     responses:
+ *       200:
+ *         description: Successfully retrieved operators.
+ */
+router.get(
+  '/operators',
+  authorize('operators.read.all'),
+  AdminController.getAllOperators
+);
+
+/** @swagger
+ * /admin/operators:
+ *   post:
+ *     summary: Create a new operator
+ *     tags: [Administration]
+ *     security:
+ *       - bearerAuth: []
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             properties:
+ *               code:
+ *                 type: string
+ *               name:
+ *                 type: string
+ *               isoCountry:
+ *                 type: string
+ *     responses:
+ *       201:
+ *         description: Operator created successfully.
+ */
+router.post(
+  '/operators',
+  authorize('operators.create'),
+  AdminController.createOperator
+);
+
+/** @swagger
+ * /admin/operators/{operatorId}:
+ *   get:
+ *     summary: Get a single operator by ID
+ *     tags: [Administration]
+ *     security:
+ *       - bearerAuth: []
+ *     parameters:
+ *       - in: path
+ *         name: operatorId
+ *         required: true
+ *         schema:
+ *           type: string
+ *           format: uuid
+ *     responses:
+ *       200:
+ *         description: Successfully retrieved operator.
+ *       404:
+ *         description: Operator not found.
+ */
+router.get(
+  '/operators/:operatorId',
+  authorize('operators.read.all'),
+  AdminController.getOperatorById
+);
+
+/** @swagger
+ * /admin/operators/{operatorId}:
+ *   put:
+ *     summary: Update an operator's details
+ *     tags: [Administration]
+ *     security:
+ *       - bearerAuth: []
+ *     parameters:
+ *       - in: path
+ *         name: operatorId
+ *         required: true
+ *         schema:
+ *           type: string
+ *           format: uuid
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             properties:
+ *               name:
+ *                 type: string
+ *               isoCountry:
+ *                 type: string
+ *     responses:
+ *       200:
+ *         description: Operator updated successfully.
+ */
+router.put(
+  '/operators/:operatorId',
+  authorize('operators.update'),
+  AdminController.updateOperator
+);
+
+// =================================================================
+// Supplier Management
+// =================================================================
+
+/** @swagger
+ * /admin/suppliers:
+ *   get:
+ *     summary: Get all suppliers
+ *     tags: [Administration]
+ *     security:
+ *       - bearerAuth: []
+ *     responses:
+ *       200:
+ *         description: Successfully retrieved suppliers.
+ */
+router.get(
+  '/suppliers',
+  authorize('suppliers.read.all'),
+  AdminController.getAllSuppliers
+);
+
+/** @swagger
+ * /admin/suppliers:
+ *   post:
+ *     summary: Create a new supplier
+ *     tags: [Administration]
+ *     security:
+ *       - bearerAuth: []
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             properties:
+ *               name:
+ *                 type: string
+ *               slug:
+ *                 type: string
+ *               apiBase:
+ *                 type: string
+ *               apiKey:
+ *                 type: string
+ *               priorityInt:
+ *                 type: number
+ *               isActive:
+ *                 type: boolean
+ *     responses:
+ *       201:
+ *         description: Supplier created successfully.
+ */
+router.post(
+  '/suppliers',
+  authorize('suppliers.create'),
+  AdminController.createSupplier
+);
+
+/** @swagger
+ * /admin/suppliers/{supplierId}:
+ *   get:
+ *     summary: Get a single supplier by ID
+ *     tags: [Administration]
+ *     security:
+ *       - bearerAuth: []
+ *     parameters:
+ *       - in: path
+ *         name: supplierId
+ *         required: true
+ *         schema:
+ *           type: string
+ *           format: uuid
+ *     responses:
+ *       200:
+ *         description: Successfully retrieved supplier.
+ *       404:
+ *         description: Supplier not found.
+ */
+router.get(
+  '/suppliers/:supplierId',
+  authorize('suppliers.read.all'),
+  AdminController.getSupplierById
+);
+
+/** @swagger
+ * /admin/suppliers/{supplierId}:
+ *   put:
+ *     summary: Update a supplier's details
+ *     tags: [Administration]
+ *     security:
+ *       - bearerAuth: []
+ *     parameters:
+ *       - in: path
+ *         name: supplierId
+ *         required: true
+ *         schema:
+ *           type: string
+ *           format: uuid
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             properties:
+ *               name:
+ *                 type: string
+ *               apiBase:
+ *                 type: string
+ *               apiKey:
+ *                 type: string
+ *               priorityInt:
+ *                 type: number
+ *               isActive:
+ *                 type: boolean
+ *     responses:
+ *       200:
+ *         description: Supplier updated successfully.
+ */
+router.put(
+  '/suppliers/:supplierId',
+  authorize('suppliers.update'),
+  AdminController.updateSupplier
+);
+
+// =================================================================
+// Product and Bundle Management
+// =================================================================
+
+/** @swagger
+ * /admin/products:
+ *   get:
+ *     summary: Get all operator products
+ *     tags: [Administration]
+ *     security:
+ *       - bearerAuth: []
+ *     responses:
+ *       200:
+ *         description: Successfully retrieved products.
+ */
+router.get(
+  '/products',
+  authorize('products.read.all'),
+  AdminController.getAllProducts
+);
+
+/** @swagger
+ * /admin/products:
+ *   post:
+ *     summary: Create a new product (with optional supplier mapping)
+ *     tags: [Administration]
+ *     security:
+ *       - bearerAuth: []
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             properties:
+ *               operatorId:
+ *                 type: string
+ *                 format: uuid
+ *               productCode:
+ *                 type: string
+ *               name:
+ *                 type: string
+ *               productType:
+ *                 type: string
+ *               denomAmount:
+ *                 type: number
+ *               dataMb:
+ *                 type: number
+ *               validityDays:
+ *                 type: number
+ *               isActive:
+ *                 type: boolean
+ *               metadata:
+ *                 type: object
+ *               supplierId:
+ *                 type: string
+ *                 format: uuid
+ *                 description: Optional supplier ID to create mapping with
+ *               supplierProductCode:
+ *                 type: string
+ *                 description: Optional supplier-specific product code
+ *               supplierPrice:
+ *                 type: number
+ *                 description: Optional supplier price for the mapping
+ *               minOrderAmount:
+ *                 type: number
+ *                 description: Optional minimum order amount
+ *               maxOrderAmount:
+ *                 type: number
+ *                 description: Optional maximum order amount
+ *               leadTimeSeconds:
+ *                 type: number
+ *                 description: Optional lead time in seconds
+ *               mappingIsActive:
+ *                 type: boolean
+ *                 description: Optional active status for the mapping
+ *     responses:
+ *       201:
+ *         description: Product (and optionally mapping) created successfully.
+ */
+router.post(
+  '/products',
+  authorize('products.create'),
+  AdminController.createProduct
+);
+
+/** @swagger
+ * /admin/products/{productId}:
+ *   get:
+ *     summary: Get a single product by ID
+ *     tags: [Administration]
+ *     security:
+ *       - bearerAuth: []
+ *     parameters:
+ *       - in: path
+ *         name: productId
+ *         required: true
+ *         schema:
+ *           type: string
+ *           format: uuid
+ *     responses:
+ *       200:
+ *         description: Successfully retrieved product.
+ *       404:
+ *         description: Product not found.
+ */
+router.get(
+  '/products/:productId',
+  authorize('products.read.all'),
+  AdminController.getProductById
+);
+
+/** @swagger
+ * /admin/products/{productId}:
+ *   put:
+ *     summary: Update a product's details
+ *     tags: [Administration]
+ *     security:
+ *       - bearerAuth: []
+ *     parameters:
+ *       - in: path
+ *         name: productId
+ *         required: true
+ *         schema:
+ *           type: string
+ *           format: uuid
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             properties:
+ *               name:
+ *                 type: string
+ *               productCode:
+ *                 type: string
+ *               productType:
+ *                 type: string
+ *               denomAmount:
+ *                 type: number
+ *               dataMb:
+ *                 type: number
+ *               validityDays:
+ *                 type: number
+ *               isActive:
+ *                 type: boolean
+ *               metadata:
+ *                 type: object
+ *     responses:
+ *       200:
+ *         description: Product updated successfully.
+ */
+router.put(
+  '/products/:productId',
+  authorize('products.update'),
+  AdminController.updateProduct
+);
+
+/** @swagger
+ * /admin/products/{productId}/map-to-supplier:
+ *   post:
+ *     summary: Link a product to a specific supplier
+ *     tags: [Administration]
+ *     security:
+ *       - bearerAuth: []
+ *     parameters:
+ *       - in: path
+ *         name: productId
+ *         required: true
+ *         schema:
+ *           type: string
+ *           format: uuid
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             properties:
+ *               supplierId:
+ *                 type: string
+ *                 format: uuid
+ *               supplierProductCode:
+ *                 type: string
+ *               supplierPrice:
+ *                 type: number
+ *               minOrderAmount:
+ *                 type: number
+ *               maxOrderAmount:
+ *                 type: number
+ *               leadTimeSeconds:
+ *                 type: number
+ *               isActive:
+ *                 type: boolean
+ *     responses:
+ *       201:
+ *         description: Product mapped to supplier successfully.
+ */
+router.post(
+  '/products/:productId/map-to-supplier',
+  authorize('products.update'),
+  AdminController.mapProductToSupplier
+);
+
+export default router;

@@ -1,0 +1,14 @@
+{
+  "extends": "./tsconfig.json",
+  "include": [
+    "src/**/*.ts",
+    "src/**/*.d.ts",
+    "jest/**/*.ts",
+    "jest/**/*.d.ts",
+    "migrations/**/*.ts",
+    "seeds/**/*.ts",
+    "types..d.ts",
+    "knexfile.ts"
+  ],
+  "exclude": ["node_modules", "dist", "coverage"]
+}
