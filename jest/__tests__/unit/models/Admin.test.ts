@@ -1,50 +1,22 @@
 import db from '../../../../src/database/connection';
-import { AdminModel } from '../../../../src/models/Admin';
 import { OperatorModel } from '../../../../src/models/Operator';
 import { SettlementModel } from '../../../../src/models/Settlement';
 import { SupplierModel } from '../../../../src/models/Supplier';
 import { TopupRequestModel } from '../../../../src/models/TopupRequest';
 import { TransactionModel } from '../../../../src/models/Transaction';
 import { CreateUserInput, UserModel } from '../../../../src/models/User';
+
+import { AdminModel } from '../../../../src/models/Admin';
+
+// Import for types only - the actual modules will be reset before tests
 import { SessionService } from '../../../../src/services/session.service';
-
-// Mock the Redis client to avoid actual Redis connections during tests
-jest.mock('../../../../src/database/redis', () => ({
-  redisClientInstance: {
-    getClient: () => ({
-      get: jest.fn(),
-      setex: jest.fn(),
-      del: jest.fn(),
-      smembers: jest.fn(),
-      mget: jest.fn(),
-      eval: jest.fn(),
-      sadd: jest.fn(),
-      expire: jest.fn(),
-      multi: () => ({
-        setex: jest.fn().mockReturnThis(),
-        sadd: jest.fn().mockReturnThis(),
-        expire: jest.fn().mockReturnThis(),
-        del: jest.fn().mockReturnThis(),
-        srem: jest.fn().mockReturnThis(),
-        exec: jest.fn().mockResolvedValue([]),
-      }),
-    }),
-  },
-}));
-
-// Mock the SessionService to avoid actual Redis calls
-jest.mock('../../../../src/services/session.service', () => ({
-  SessionService: {
-    getUserSessions: jest.fn(),
-    deleteAllUserSessions: jest.fn(),
-  },
-}));
 
 describe('AdminModel', () => {
   let testUser: any;
   let adminUser: any;
   let testOperator: any;
   let testSupplier: any;
+  let testProvider: any;
 
   beforeAll(async () => {
     // Create test operator
@@ -53,10 +25,22 @@ describe('AdminModel', () => {
       name: 'Test Operator',
     };
     testOperator = await OperatorModel.create(operatorData);
+
+    // Create test provider for settlements
+    const [providerResult] = await db('providers')
+      .insert({
+        name: 'Test Provider',
+        api_base: 'https://test-provider.com',
+        is_active: true,
+      })
+      .returning('*');
+    testProvider = providerResult;
   });
 
   afterAll(async () => {
     // Clean up test data
+    if (testProvider?.id)
+      await db('providers').where({ id: testProvider.id }).del();
     if (testOperator?.id)
       await db('operators').where({ id: testOperator.id }).del();
   });
@@ -71,7 +55,7 @@ describe('AdminModel', () => {
       role: 'user',
     };
     const createdUser = await UserModel.create(userData);
-    testUser = await UserModel.findByEmail(createdUser.email);
+    testUser = await UserModel.findForAuth(createdUser.email);
 
     // Create an admin user to perform actions
     const adminData: CreateUserInput = {
@@ -82,7 +66,7 @@ describe('AdminModel', () => {
       role: 'admin',
     };
     const createdAdmin = await UserModel.create(adminData);
-    adminUser = await UserModel.findByEmail(createdAdmin.email);
+    adminUser = await UserModel.findForAuth(createdAdmin.email);
 
     // Create a wallet for the test user
     await db('wallets').insert({ user_id: testUser.userId, balance: 100.0 });
@@ -310,7 +294,7 @@ describe('AdminModel', () => {
     beforeEach(async () => {
       // Create a test settlement
       testSettlement = await SettlementModel.create({
-        providerId: testSupplier.id,
+        providerId: testProvider.id,
         settlementDate: new Date(),
         amount: 5000,
         fees: 50,
@@ -339,7 +323,7 @@ describe('AdminModel', () => {
 
     it('should create a new settlement', async () => {
       const newSettlementData = {
-        providerId: testSupplier.id,
+        providerId: testProvider.id,
         settlementDate: new Date(),
         amount: 1000,
         fees: 10,
@@ -349,7 +333,7 @@ describe('AdminModel', () => {
         await AdminModel.createSettlement(newSettlementData);
       expect(newSettlement).toBeDefined();
       expect(newSettlement.id).toBeDefined();
-      expect(newSettlement.providerId).toBe(testSupplier.id);
+      expect(newSettlement.providerId).toBe(testProvider.id);
 
       // Clean up
       await db('settlements').where({ id: newSettlement.id }).del();

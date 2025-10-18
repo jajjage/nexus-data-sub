@@ -5,7 +5,13 @@ export interface TopupRequest {
   externalId?: string;
   operatorId?: string;
   amount: number;
-  status: 'pending' | 'completed' | 'failed' | 'cancelled';
+  status:
+    | 'pending'
+    | 'completed'
+    | 'failed'
+    | 'cancelled'
+    | 'reversed'
+    | 'retry';
   requestPayload?: any;
   operatorProductId?: string;
   supplierId?: string;
@@ -26,7 +32,13 @@ export interface CreateTopupRequestData {
 }
 
 export interface UpdateTopupRequestData {
-  status?: 'pending' | 'completed' | 'failed' | 'cancelled';
+  status?:
+    | 'pending'
+    | 'completed'
+    | 'failed'
+    | 'cancelled'
+    | 'reversed'
+    | 'retry';
   responsePayload?: any;
   attemptCount?: number;
   lastAttemptAt?: Date;
@@ -36,7 +48,13 @@ export interface UpdateTopupRequestData {
 export interface TopupRequestFilters {
   userId?: string;
   operatorId?: string;
-  status?: 'pending' | 'completed' | 'failed' | 'cancelled';
+  status?:
+    | 'pending'
+    | 'completed'
+    | 'failed'
+    | 'cancelled'
+    | 'reversed'
+    | 'retry'; // Status of the top-up request
   dateFrom?: string;
   dateTo?: string;
   page?: number;

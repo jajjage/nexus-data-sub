@@ -2,82 +2,105 @@ import db from '../../../../src/database/connection';
 import { CreateUserInput, UserModel } from '../../../../src/models/User';
 
 describe('UserModel', () => {
-  // The global setup in jest/setup.ts handles truncating tables, including 'users' and 'roles'.
-  // It also seeds the initial roles, so we don't need to insert them here.
+  let testUser: any;
+
+  beforeAll(async () => {
+    // Create a user that can be used by multiple tests
+    const userData: CreateUserInput = {
+      email: 'test.user@example.com',
+      fullName: 'Test User',
+      phoneNumber: '1234567890',
+      password: 'Password123!',
+      role: 'user',
+    };
+    testUser = await UserModel.create(userData);
+  });
 
   describe('create', () => {
-    it('should create a new user with the correct role and return the user data', async () => {
-      // Arrange
-      const userData: CreateUserInput = {
-        email: 'test.create@example.com',
-        fullName: 'Test User',
-        phoneNumber: '1234567890',
-        password: 'Password123!',
-        role: 'user',
+    it('should create a new user and return the registered user data', async () => {
+      const newUserInput: CreateUserInput = {
+        email: 'new.user@example.com',
+        fullName: 'New User',
+        phoneNumber: '1112223333',
+        password: 'PasswordSecure!',
+        role: 'staff',
       };
 
-      // Act
-      const user = await UserModel.create(userData);
+      const createdUser = await UserModel.create(newUserInput);
 
-      // Assert
-      expect(user).toBeDefined();
-      expect(user.email).toBe(userData.email);
-      expect(user.role).toBe('user');
-      expect(user.isVerified).toBe(true);
+      expect(createdUser).toBeDefined();
+      expect(createdUser.email).toBe(newUserInput.email);
+      expect(createdUser.role).toBe('staff');
+      expect(createdUser.isVerified).toBe(true);
 
-      // Verify the user was actually inserted into the database
-      const dbUser = await db('users').where({ email: userData.email }).first();
+      const dbUser = await db('users')
+        .where({ email: newUserInput.email })
+        .first();
       expect(dbUser).toBeDefined();
-      expect(dbUser.id).toBe(user.userId);
+      expect(dbUser.id).toBe(createdUser.userId);
     });
   });
 
-  describe('findByEmail', () => {
-    it('should find an existing user by email', async () => {
-      // Arrange
-      const userData: CreateUserInput = {
-        email: 'test.find@example.com',
-        fullName: 'Find User',
-        phoneNumber: '0987654321',
-        password: 'Password123!',
-        role: 'staff',
-      };
-      await UserModel.create(userData);
+  describe('findProfileById', () => {
+    it('should find a user by ID and return their public profile', async () => {
+      const profile = await UserModel.findProfileById(testUser.userId);
 
-      // Act
-      const user = await UserModel.findByEmail(userData.email);
-
-      // Assert
-      expect(user).toBeDefined();
-      expect(user?.email).toBe(userData.email);
-      expect(user?.role).toBe('staff');
+      expect(profile).toBeDefined();
+      expect(profile?.userId).toBe(testUser.userId);
+      expect(profile?.email).toBe(testUser.email);
+      expect(profile?.fullName).toBe(testUser.fullName);
+      // Ensure sensitive data is NOT present
+      expect(profile).not.toHaveProperty('password');
+      expect(profile).not.toHaveProperty('twoFactorSecret');
     });
 
-    it('should be case-insensitive when finding a user by email', async () => {
-      // Arrange
-      const userData: CreateUserInput = {
-        email: 'test.case@example.com',
-        fullName: 'Case User',
-        phoneNumber: '1122334455',
-        password: 'Password123!',
-        role: 'admin',
-      };
-      await UserModel.create(userData);
+    it('should return null if no user is found', async () => {
+      const profile = await UserModel.findProfileById(
+        '00000000-0000-0000-0000-000000000000'
+      );
+      expect(profile).toBeNull();
+    });
+  });
 
-      // Act
-      const user = await UserModel.findByEmail('TEST.CASE@EXAMPLE.COM');
+  describe('findForAuth', () => {
+    it('should find a user by email for authentication', async () => {
+      const authPayload = await UserModel.findForAuth(testUser.email);
 
-      // Assert
-      expect(user).toBeDefined();
-      expect(user?.email).toBe(userData.email);
+      expect(authPayload).toBeDefined();
+      expect(authPayload?.userId).toBe(testUser.userId);
+      expect(authPayload).toHaveProperty('password'); // Password hash should be present
+      expect(authPayload?.permissions).toBeInstanceOf(Array);
+    });
+
+    it('should find a user by phone number for authentication', async () => {
+      const authPayload = await UserModel.findForAuth(testUser.phoneNumber);
+
+      expect(authPayload).toBeDefined();
+      expect(authPayload?.userId).toBe(testUser.userId);
+      expect(authPayload?.email).toBe(testUser.email);
+    });
+
+    it('should be case-insensitive for email', async () => {
+      const authPayload = await UserModel.findForAuth('TEST.USER@EXAMPLE.COM');
+      expect(authPayload).toBeDefined();
+      expect(authPayload?.userId).toBe(testUser.userId);
     });
 
     it('should return null for a non-existent user', async () => {
-      // Act
-      const user = await UserModel.findByEmail('nonexistent@example.com');
+      const authPayload = await UserModel.findForAuth('not.exist@example.com');
+      expect(authPayload).toBeNull();
+    });
+  });
 
-      // Assert
-      expect(user).toBeNull();
+  describe('getPermissions', () => {
+    it("should retrieve the correct permissions for a user's role", async () => {
+      const userRole = await db('roles').where({ name: 'user' }).first();
+      const permissions = await UserModel.getPermissions(userRole.id);
+
+      expect(permissions).toBeInstanceOf(Array);
+      expect(permissions).toContain('profile.read');
+      expect(permissions).toContain('profile.update');
+      expect(permissions).not.toContain('system.settings'); // Admin permission
     });
   });
 });

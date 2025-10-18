@@ -3,55 +3,61 @@ import db from '../database/connection';
 import { generateSecureToken, generateUUID } from '../utils/crypto';
 import { hashPassword } from '../utils/security.utils';
 
-export interface User {
-  userId: string;
-  backupId?: string;
-  fullName: string;
-  phoneNumber: string;
-  accountNumber: string;
-  is_suspended: boolean;
-  providerName?: string;
-  balance?: string;
-  pin?: string;
-  email: string;
-  password?: string;
-  role: 'user' | 'staff' | 'admin';
-  roleId?: string;
-  isVerified: boolean;
-  twoFactorEnabled?: boolean;
-  twoFactorSecret?: string | null;
-  twoFactorBackupCodes?: string | null;
-  passwordResetToken?: string | null;
-  passwordResetTokenExpiresAt?: Date | null;
-  permissions?: {
-    id: string;
-    name: string;
-    description: string;
-  }[];
-  createdAt?: Date;
-  updatedAt?: Date;
-}
+// =================================================================
+// User-facing Interfaces (DTOs)
+// =================================================================
 
-export interface RegisterUser {
+/**
+ * Represents the data for a newly registered user.
+ */
+export interface RegisteredUser {
   userId: string;
   email: string;
-  fullName: string;
-  phoneNumber: string;
-  password?: string;
+  fullName: string | null;
+  phoneNumber: string | null;
   role: 'user' | 'staff' | 'admin';
-  roleId?: string;
   isVerified: boolean;
 }
 
-export interface BackupCode {
-  id: string;
+/**
+ * Represents the publicly safe view of a user's profile.
+ */
+export interface UserProfileView {
   userId: string;
-  twoFactorBackupCodes: string | null;
-  isUsed: boolean;
+  fullName: string | null;
+  email: string;
+  phoneNumber: string | null;
+  role: 'user' | 'staff' | 'admin';
+  isSuspended: boolean;
+  isVerified: boolean;
+  twoFactorEnabled: boolean;
+  accountNumber: string | null;
+  providerName: string | null;
+  balance: string;
+  pin: string | null;
   createdAt: Date;
   updatedAt: Date;
 }
 
+/**
+ * Represents the data required for authentication checks.
+ */
+export interface UserAuthPayload {
+  userId: string;
+  email: string;
+  password?: string;
+  role: 'user' | 'staff' | 'admin';
+  roleId: string;
+  isVerified: boolean;
+  isSuspended: boolean;
+  twoFactorEnabled: boolean;
+  twoFactorSecret: string | null;
+  permissions: string[];
+}
+
+/**
+ * Represents the input for creating a new user.
+ */
 export interface CreateUserInput {
   email: string;
   fullName?: string;
@@ -60,91 +66,57 @@ export interface CreateUserInput {
   role: 'user' | 'staff' | 'admin';
 }
 
-const userColumns = [
-  'u.id as userId',
-  'u.email',
-  'u.password',
-  'u.role',
-  'u.is_verified as isVerified',
-  'u.two_factor_enabled as twoFactorEnabled',
-  'u.two_factor_secret as twoFactorSecret',
-  'b.id as backupId',
-  'b.two_factor_backup_codes as twoFactorBackupCodes',
-];
-
-const permissionColumns = [
-  'p.id as permission_id',
-  'p.name as permission_name',
-  'p.description as permission_description',
-];
-
-const shapeUserFromRows = (rows: any[]): User | null => {
-  if (rows.length === 0) {
-    return null;
-  }
-  const firstRow = rows[0];
-  return {
-    userId: firstRow.userId,
-    backupId: firstRow.backupId,
-    fullName: firstRow.fullName,
-    is_suspended: firstRow.is_suspended,
-    phoneNumber: firstRow.phoneNumber,
-    pin: firstRow.pin,
-    email: firstRow.email,
-    accountNumber: firstRow.accountNumber,
-    providerName: firstRow.providerName,
-    balance: firstRow.balance,
-    password: firstRow.password,
-    role: firstRow.role,
-    isVerified: firstRow.isVerified,
-    twoFactorSecret: firstRow.twoFactorSecret,
-    twoFactorEnabled: firstRow.twoFactorEnabled,
-    twoFactorBackupCodes: firstRow.twoFactorBackupCodes,
-    permissions: rows[0].permission_id
-      ? rows.map(row => ({
-          id: row.permission_id,
-          name: row.permission_name,
-          description: row.permission_description,
-        }))
-      : [],
-  };
-};
+// =================================================================
+// User Model Class
+// =================================================================
 
 export class UserModel {
+  /**
+   * Creates a new user in the database.
+   * This is a transactional operation.
+   * @param userData - The data for the new user.
+   * @param client - An optional Knex transaction client.
+   * @returns The newly created user object.
+   */
   static async create(
     userData: CreateUserInput,
     client?: Knex.Transaction
-  ): Promise<RegisterUser> {
+  ): Promise<RegisteredUser> {
     const dbConnection = client || db;
     const hashedPassword = await hashPassword(userData.password);
     const userId = generateUUID();
-    // New users are immediately marked as verified
-    const isVerified = true;
 
-    let role = await dbConnection('roles').where('name', userData.role).first();
+    const role = await dbConnection('roles')
+      .where('name', userData.role)
+      .first();
     if (!role) {
-      role = await dbConnection('roles').where('name', 'user').first();
+      // Fallback to 'user' role if the provided role is invalid
+      const userRole = await dbConnection('roles')
+        .where('name', 'user')
+        .first();
+      if (!userRole) throw new Error('Default user role not found.'); // Should not happen
+      Object.assign(role, userRole);
     }
-
-    const phoneValue =
-      userData.phoneNumber !== undefined &&
-      userData.phoneNumber !== null &&
-      String(userData.phoneNumber).trim().length > 0
-        ? String(userData.phoneNumber).trim()
-        : null;
 
     const [newUser] = await dbConnection('users')
       .insert({
         id: userId,
-        email: userData.email,
-        full_name: userData.fullName ?? null,
-        phone_number: phoneValue,
+        email: userData.email.toLowerCase().trim(),
+        full_name: userData.fullName?.trim() ?? null,
+        phone_number: userData.phoneNumber?.replace(/\D/g, '') ?? null,
         password: hashedPassword,
-        role: userData.role,
+        role: role.name,
         role_id: role.id,
-        is_verified: isVerified,
+        is_verified: true, // Users are verified by default now
       })
-      .returning('*');
+      .returning([
+        'id',
+        'email',
+        'full_name',
+        'phone_number',
+        'role',
+        'is_verified',
+      ]);
 
     return {
       userId: newUser.id,
@@ -156,128 +128,78 @@ export class UserModel {
     };
   }
 
-  static async findById(id: string): Promise<User | null> {
-    const rows = await db('users as u')
-      .leftJoin('backup_code as b', 'u.id', 'b.user_id')
-      .leftJoin('roles as r', 'u.role_id', 'r.id')
-      .leftJoin('role_permissions as rp', 'r.id', 'rp.role_id')
-      .leftJoin('permissions as p', 'rp.permission_id', 'p.id')
-      .select([...userColumns, ...permissionColumns])
-      .where('u.id', id)
-      .orderBy('p.name');
-
-    return shapeUserFromRows(rows);
+  /**
+   * Finds a user by their ID and returns their public profile.
+   * @param userId - The ID of the user to find.
+   * @returns A user profile object or null if not found.
+   */
+  static async findProfileById(
+    userId: string
+  ): Promise<UserProfileView | null> {
+    const user = await this._baseQuery().where('u.id', userId).first();
+    return user || null;
   }
 
-  static async findByEmail(email: string): Promise<User | null> {
-    const trimmedEmail = email.trim().toLowerCase();
+  /**
+   * Finds a user by email or phone number for authentication purposes.
+   * Fetches all necessary details for login, including password and permissions.
+   * @param identifier - The user's email or phone number.
+   * @returns A user auth payload object or null if not found.
+   */
+  static async findForAuth(
+    identifier: string
+  ): Promise<UserAuthPayload | null> {
+    const isEmail = identifier.includes('@');
+    const column = isEmail ? 'u.email' : 'u.phone_number';
+    const value = isEmail
+      ? identifier.toLowerCase().trim()
+      : identifier.replace(/\D/g, '');
 
-    // Get basic user info + role + virtual account + wallet (all LEFT JOINs)
     const userRow = await db('users as u')
-      .leftJoin('roles as r', 'u.role_id', 'r.id')
-      .leftJoin('virtual_accounts as v', 'v.user_id', 'u.id')
-      .leftJoin('providers as p', 'v.provider_id', 'p.id')
-      .leftJoin('wallets as w', 'w.user_id', 'u.id')
-      .select([
+      .select(
         'u.id as userId',
         'u.email',
         'u.password',
         'u.role',
-        'u.role_id',
-        'u.full_name as fullName',
-        'u.phone_number as phoneNumber',
+        'u.role_id as roleId',
         'u.is_verified as isVerified',
+        'u.is_suspended as isSuspended',
         'u.two_factor_enabled as twoFactorEnabled',
-        'u.two_factor_secret as twoFactorSecret',
-        'r.name as roleName',
-        'v.account_number as accountNumber',
-        'p.name as providerName', // provider from providers table
-        'w.balance as balance',
-      ])
-      .whereRaw('LOWER(u.email) = ?', [trimmedEmail])
+        'u.two_factor_secret as twoFactorSecret'
+      )
+      .where(column, value)
       .first();
 
-    if (!userRow) return null;
+    if (!userRow) {
+      return null;
+    }
 
-    // permissions query (same as you had)
-    const permissions = await db('role_permissions as rp')
-      .join('permissions as p', 'rp.permission_id', 'p.id')
-      .select('p.name')
-      .where('rp.role_id', userRow.role_id);
-
-    // backup codes
-    const backupCodes = await db('backup_code')
-      .select(
-        'id as backupId',
-        'two_factor_backup_codes as twoFactorBackupCodes'
-      )
-      .where('user_id', userRow.userId);
+    const permissions = await this.getPermissions(userRow.roleId);
 
     return {
       ...userRow,
       permissions,
-      backupCodes,
     };
   }
 
-  static async findByPhoneNumber(phoneNumber: string): Promise<User | null> {
-    const trimmedPhone = phoneNumber.trim();
-
-    // Get basic user info + role + virtual account + wallet (all LEFT JOINs)
-    const userRow = await db('users as u')
-      .leftJoin('roles as r', 'u.role_id', 'r.id')
-      .leftJoin('virtual_accounts as v', 'v.user_id', 'u.id')
-      .leftJoin('providers as p', 'v.provider_id', 'p.id')
-      .leftJoin('wallets as w', 'w.user_id', 'u.id')
-      .select([
-        'u.id as userId',
-        'u.email',
-        'u.password',
-        'u.role',
-        'u.role_id',
-        'u.full_name as fullName',
-        'u.phone_number as phoneNumber',
-        'u.is_verified as isVerified',
-        'u.two_factor_enabled as twoFactorEnabled',
-        'u.two_factor_secret as twoFactorSecret',
-        'r.name as roleName',
-        'v.account_number as accountNumber',
-        'p.name as providerName', // provider from providers table
-        'w.balance as balance',
-      ])
-      .whereRaw('u.phone_number = ?', [trimmedPhone])
-      .first();
-
-    if (!userRow) return null;
-
-    // permissions query (same as you had)
+  /**
+   * Retrieves a list of permission names for a given role ID.
+   * @param roleId - The ID of the role.
+   * @returns An array of permission strings.
+   */
+  static async getPermissions(roleId: string): Promise<string[]> {
     const permissions = await db('role_permissions as rp')
       .join('permissions as p', 'rp.permission_id', 'p.id')
-      .select('p.name')
-      .where('rp.role_id', userRow.role_id);
-
-    // backup codes
-    const backupCodes = await db('backup_code')
-      .select(
-        'id as backupId',
-        'two_factor_backup_codes as twoFactorBackupCodes'
-      )
-      .where('user_id', userRow.userId);
-
-    return {
-      ...userRow,
-      permissions,
-      backupCodes,
-    };
+      .where('rp.role_id', roleId)
+      .select('p.name');
+    return permissions.map(p => p.name);
   }
 
-  // eslint-disable-next-line @typescript-eslint/no-unused-vars
-  static async verifyEmail(token: string): Promise<boolean> {
-    // Email verification is no longer required in this application.
-    // Keep method for compatibility but always return false.
-    return false;
-  }
-
+  /**
+   * Updates a user's password.
+   * @param userId - The ID of the user.
+   * @param newPassword - The new password.
+   */
   static async updatePassword(
     userId: string,
     newPassword: string
@@ -291,6 +213,11 @@ export class UserModel {
     });
   }
 
+  /**
+   * Generates and stores a password reset token for a user.
+   * @param userId - The ID of the user.
+   * @returns The generated token.
+   */
   static async generatePasswordResetToken(userId: string): Promise<string> {
     const token = generateSecureToken();
     const expires = new Date(Date.now() + 60 * 60 * 1000); // 1 hour
@@ -301,35 +228,28 @@ export class UserModel {
     return token;
   }
 
-  static async findByPasswordResetToken(token: string): Promise<User | null> {
-    const row = await db('users')
+  /**
+   * Finds a user by a valid password reset token.
+   * @param token - The password reset token.
+   * @returns The user's profile or null if not found or token is expired.
+   */
+  static async findByPasswordResetToken(
+    token: string
+  ): Promise<UserProfileView | null> {
+    const user = await this._baseQuery()
       .where({ password_reset_token: token })
       .andWhere('password_reset_token_expires_at', '>', db.fn.now())
       .first();
 
-    if (!row) return null;
-
-    return {
-      userId: row.id,
-      email: row.email,
-      accountNumber: row.account_number,
-      providerName: row.provider_name,
-      balance: row.balance,
-      is_suspended: row.is_suspended,
-      role: row.role,
-      isVerified: row.is_verified,
-      fullName: row.full_name,
-      phoneNumber: row.phone_number,
-      pin: row.pin,
-    };
+    return user || null;
   }
 
-  // eslint-disable-next-line @typescript-eslint/no-unused-vars
-  static async generateVerificationToken(_userId: string): Promise<string> {
-    // Verification tokens are no longer used. Return empty string for compatibility.
-    return '';
-  }
-
+  /**
+   * Enables 2FA for a user and stores the secret and backup codes.
+   * @param userId - The ID of the user.
+   * @param secret - The 2FA secret.
+   * @param backupCodes - The hashed backup codes.
+   */
   static async enable2FA(
     userId: string,
     secret: string,
@@ -341,6 +261,8 @@ export class UserModel {
         two_factor_secret: secret,
         updated_at: db.fn.now(),
       });
+      // Clear old codes and insert new ones
+      await trx('backup_code').where({ user_id: userId }).delete();
       await trx('backup_code').insert({
         user_id: userId,
         two_factor_backup_codes: backupCodes,
@@ -348,6 +270,10 @@ export class UserModel {
     });
   }
 
+  /**
+   * Disables 2FA for a user.
+   * @param userId - The ID of the user.
+   */
   static async disable2FA(userId: string): Promise<void> {
     await db.transaction(async trx => {
       await trx('users').where({ id: userId }).update({
@@ -359,6 +285,11 @@ export class UserModel {
     });
   }
 
+  /**
+   * Updates the backup codes for a user.
+   * @param userId - The ID of the user.
+   * @param backupCodes - The new hashed backup codes.
+   */
   static async updateBackupCodes(
     userId: string,
     backupCodes: string
@@ -367,5 +298,36 @@ export class UserModel {
       two_factor_backup_codes: backupCodes,
       updated_at: db.fn.now(),
     });
+  }
+
+  // =================================================================
+  // Private Helper Methods
+  // =================================================================
+
+  /**
+   * Creates a base Knex query for fetching user profile data.
+   * This helps avoid code duplication.
+   */
+  private static _baseQuery() {
+    return db('users as u')
+      .leftJoin('wallets as w', 'u.id', 'w.user_id')
+      .leftJoin('virtual_accounts as va', 'u.id', 'va.user_id')
+      .leftJoin('providers as p', 'va.provider_id', 'p.id')
+      .select(
+        'u.id as userId',
+        'u.full_name as fullName',
+        'u.email',
+        'u.phone_number as phoneNumber',
+        'u.role',
+        'u.is_suspended as isSuspended',
+        'u.is_verified as isVerified',
+        'u.two_factor_enabled as twoFactorEnabled',
+        'u.pin',
+        'u.created_at as createdAt',
+        'u.updated_at as updatedAt',
+        'w.balance',
+        'va.account_number as accountNumber',
+        'p.name as providerName'
+      );
   }
 }

@@ -16,6 +16,7 @@ import passwordRoutes from './routes/password.routes';
 import sessionRoutes from './routes/session.routes';
 import testWebhookRoutes from './routes/testWebhook.routes';
 import twoFactorRoutes from './routes/twoFactor.routes';
+import userRoutes from './routes/user.routes';
 import webhookRoutes from './routes/webhook.routes';
 import { ApiError } from './utils/ApiError';
 import {
@@ -77,6 +78,7 @@ app.use('/api/v1/docs', swaggerUi.serve, swaggerUi.setup(specs));
 // Routes
 app.use('/api/v1/auth', authRoutes);
 app.use('/api/v1/admin', adminRoutes);
+app.use('/api/v1/user', userRoutes);
 app.use('/api/v1', healthRoutes);
 app.use('/api/v1/password', passwordRoutes);
 app.use('/api/v1/session', sessionRoutes);

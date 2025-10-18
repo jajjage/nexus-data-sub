@@ -3,6 +3,7 @@ import { AdminModel } from '../models/Admin';
 import { RoleModel } from '../models/Role';
 import { UserModel } from '../models/User';
 // import { AdminService } from '../services/admin.service';
+import { comparePassword } from '@/utils/security.utils';
 import { sendError, sendSuccess } from '../utils/response.utils';
 import { validatePassword } from '../utils/validation.utils';
 
@@ -36,6 +37,7 @@ export class AdminController {
         return sendError(res, 'Invalid role specified', 400);
       }
 
+      const identifier = email || phoneNumber;
       const passwordValidation = validatePassword(password);
       if (!passwordValidation.isValid) {
         return sendError(
@@ -44,23 +46,19 @@ export class AdminController {
           400
         );
       }
-
       const normalizedEmail = email.toLowerCase().trim();
       const normalizedPhone = String(phoneNumber || '').replace(/\D/g, '');
+      const existingUser = await UserModel.findForAuth(identifier);
 
-      const existingUser = await UserModel.findByEmail(normalizedEmail);
-      if (existingUser) {
-        return sendError(res, 'User with this email already exists', 409);
+      if (
+        !existingUser ||
+        !(await comparePassword(password, existingUser.password ?? ''))
+      ) {
+        return sendError(res, 'Invalid credentials', 401);
       }
-      const existingUserByPhone =
-        await UserModel.findByPhoneNumber(normalizedPhone);
-      if (existingUserByPhone) {
-        return sendError(
-          res,
-          'User with this phone number already exists',
-          409,
-          []
-        );
+
+      if (existingUser.isSuspended) {
+        return sendError(res, 'Your account has been suspended.', 403);
       }
 
       const user = await AdminModel.createUser({

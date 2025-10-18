@@ -3,7 +3,7 @@ export interface Settlement {
   providerId: string;
   amount: number;
   fees: number;
-  reference: string;
+  reference?: string;
   settlementDate: Date;
   status: 'pending' | 'completed' | 'failed' | 'processing';
   rawReport?: any;
@@ -15,7 +15,7 @@ export interface CreateSettlementData {
   providerId: string;
   amount: number;
   fees?: number;
-  reference: string;
+  reference?: string;
   settlementDate: Date;
   status?: 'pending' | 'completed' | 'failed' | 'processing';
   rawReport?: any;
