@@ -12,71 +12,77 @@ describe('Admin Product And Bundle Management API', () => {
   let testProductId: string;
 
   beforeAll(async () => {
-    // Create a test operator
-    const [operator] = await db('operators')
-      .insert({
-        code: 'TEST',
-        name: 'Test Operator',
-        iso_country: 'NG',
-      })
-      .returning('id');
+    try {
+      // Create a test operator
+      const [operator] = await db('operators')
+        .insert({
+          code: 'TEST',
+          name: 'Test Operator',
+          iso_country: 'NG',
+        })
+        .returning('id');
 
-    testOperatorId = operator.id;
+      testOperatorId = operator.id;
 
-    // Create a test supplier
-    const [supplier] = await db('suppliers')
-      .insert({
-        name: 'Test Supplier',
-        slug: 'test-supplier',
-        api_base: 'https://api.test.com',
-        api_key: 'test-key',
-      })
-      .returning('id');
+      // Create a test supplier
+      const [supplier] = await db('suppliers')
+        .insert({
+          name: 'Test Supplier',
+          slug: 'test-supplier',
+          api_base: 'https://api.test.com',
+          api_key: 'test-key',
+        })
+        .returning('id');
 
-    testSupplierId = supplier.id;
+      testSupplierId = supplier.id;
 
-    // Create an admin user and log in to get a token
-    const adminData: CreateUserInput = {
-      email: 'admin.product.test@example.com',
-      fullName: 'Product Admin Test',
-      phoneNumber: '1234567890',
-      password: 'Password123!',
-      role: 'admin',
-    };
-    // Create admin user
-    const admin = await UserModel.create(adminData);
+      // Create an admin user and log in to get a token
+      const adminData: CreateUserInput = {
+        email: 'admin.product.test@example.com',
+        fullName: 'Product Admin Test',
+        phoneNumber: '1234567890',
+        password: 'Password123!',
+        role: 'admin',
+      };
+      // Create admin user
+      const admin = await UserModel.create(adminData);
 
-    // Get the admin role and ensure user has the role_id set
-    const adminRole = await db('roles').where('name', 'admin').first();
-    await db('users').where({ id: admin.userId }).update({
-      is_verified: true,
-      role_id: adminRole.id,
-    });
-    const adminLoginResponse = await request(app)
-      .post('/api/v1/auth/login')
-      .send({ email: adminData.email, password: adminData.password });
-    adminToken = getCookie(adminLoginResponse, 'accessToken');
+      // Get the admin role and ensure user has the role_id set
+      const adminRole = await db('roles').where('name', 'admin').first();
+      await db('users').where({ id: admin.userId }).update({
+        is_verified: true,
+        role_id: adminRole.id,
+      });
+      const adminLoginResponse = await request(app)
+        .post('/api/v1/auth/login')
+        .send({ email: adminData.email, password: adminData.password });
+      adminToken = getCookie(adminLoginResponse, 'accessToken');
 
-    expect(adminToken).toBeDefined();
+      expect(adminToken).toBeDefined();
 
-    // Create a user user and log in to get a token
-    const userData: CreateUserInput = {
-      email: 'user.product.test@example.com',
-      fullName: 'Product User Test',
-      phoneNumber: '0987654321',
-      password: 'Password123!',
-      role: 'user',
-    };
-    const user = await UserModel.create(userData);
-    await db('users').where({ id: user.userId }).update({ is_verified: true });
-    const userLoginResponse = await request(app)
-      .post('/api/v1/auth/login')
-      .send({ email: userData.email, password: userData.password });
-    userToken = getCookie(userLoginResponse, 'accessToken');
+      // Create a user user and log in to get a token
+      const userData: CreateUserInput = {
+        email: 'user.product.test@example.com',
+        fullName: 'Product User Test',
+        phoneNumber: '0987654321',
+        password: 'Password123!',
+        role: 'user',
+      };
+      const user = await UserModel.create(userData);
+      await db('users')
+        .where({ id: user.userId })
+        .update({ is_verified: true });
+      const userLoginResponse = await request(app)
+        .post('/api/v1/auth/login')
+        .send({ email: userData.email, password: userData.password });
+      userToken = getCookie(userLoginResponse, 'accessToken');
 
-    expect(userToken).toBeDefined();
+      expect(userToken).toBeDefined();
+    } catch (error) {
+      console.error('Failed to set up test data:', error);
+      throw error;
+    }
   });
-
   afterAll(async () => {
     // Clean up: delete test data in reverse dependency order
     await db('supplier_product_mapping').del();
@@ -86,7 +92,6 @@ describe('Admin Product And Bundle Management API', () => {
     await db('users')
       .where('email', 'like', '%.product.test@example.com')
       .del();
-    await db.destroy();
   });
 
   describe('POST /api/v1/admin/products', () => {
@@ -122,6 +127,13 @@ describe('Admin Product And Bundle Management API', () => {
       expect(response.body.data.metadata).toEqual({ test: 'value' });
 
       testProductId = response.body.data.id;
+
+      // Verify product was actually created in DB
+      const dbProduct = await db('operator_products')
+        .where({ id: testProductId })
+        .first();
+      console.log('Created product verified in DB:', dbProduct?.product_code);
+      expect(dbProduct).toBeDefined();
     });
 
     it('should create a new operator product with supplier mapping in a single request', async () => {
@@ -160,7 +172,7 @@ describe('Admin Product And Bundle Management API', () => {
       expect(response.body.data.mapping.operatorProductId).toBe(
         response.body.data.product.id
       );
-      expect(response.body.data.mapping.supplierPrice).toBe(1400);
+      expect(parseFloat(response.body.data.mapping.supplierPrice)).toBe(1400);
     });
 
     it('should return 400 if required fields are missing', async () => {
@@ -193,6 +205,14 @@ describe('Admin Product And Bundle Management API', () => {
 
   describe('GET /api/v1/admin/products', () => {
     it('should get all operator products', async () => {
+      // Debug: Check what products exist in the database
+      const dbProducts = await db('operator_products').select('*');
+      console.log(
+        'Products in DB:',
+        dbProducts.length,
+        dbProducts.map(p => p.product_code)
+      );
+
       const response = await request(app)
         .get('/api/v1/admin/products')
         .set('Authorization', `Bearer ${adminToken}`)
@@ -200,6 +220,11 @@ describe('Admin Product And Bundle Management API', () => {
 
       expect(response.body.success).toBe(true);
       expect(response.body.data.products).toBeInstanceOf(Array);
+      console.log(
+        'Response products:',
+        response.body.data.products.length,
+        response.body.data.products.map((p: any) => p.productCode)
+      );
       expect(response.body.data.products.length).toBeGreaterThanOrEqual(2); // We created at least 2 above
     });
 

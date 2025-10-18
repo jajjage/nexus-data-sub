@@ -5,6 +5,12 @@ import db from '../src/database/connection';
 import { redisClientInstance } from '../src/database/redis';
 import { tokenCleanupJob } from '../src/jobs/token_cleanup.job';
 
+import { Knex } from 'knex';
+
+declare global {
+  var db: Knex;
+}
+
 // Set default test environment variables
 process.env.NODE_ENV = 'test';
 process.env.JWT_SECRET =
@@ -15,6 +21,17 @@ process.env.JWT_REFRESH_SECRET =
 
 // Set a longer timeout for tests that might involve database operations
 jest.setTimeout(30000);
+
+// Configure test transactions for database operations
+beforeAll(async () => {
+  // Start a transaction
+  await db.raw('BEGIN');
+});
+
+afterAll(async () => {
+  // Rollback the transaction
+  await db.raw('ROLLBACK');
+});
 
 // Global setup hook
 import knex from '../src/database/connection';
@@ -88,9 +105,9 @@ beforeAll(async () => {
 
 // Hook to clean the database before each test
 beforeEach(async () => {
-  // Truncate tables with user-specific data to ensure a clean slate before each test
+  // Truncate only transaction and request tables, preserving product data between tests
   await db.raw(
-    'TRUNCATE TABLE users, backup_code, suppliers, settlements RESTART IDENTITY CASCADE'
+    'TRUNCATE TABLE transactions, topup_requests, topup_responses, epins_inventory, commissions RESTART IDENTITY CASCADE'
   );
 });
 
@@ -112,10 +129,8 @@ afterAll(async () => {
     if (refreshKeys.length > 0) await redis.del(refreshKeys);
 
     await redisClientInstance.disconnect();
-    console.log('Redis connection closed successfully.');
   }
 
-  // Close the database connection
+  // Close database connection last
   await db.destroy();
-  console.log('Database pool closed successfully.');
 });
