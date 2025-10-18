@@ -38,7 +38,8 @@ describe('AdminModel', () => {
   });
 
   afterAll(async () => {
-    // Clean up test data
+    // Clean up test data in correct order (respecting foreign key constraints)
+    await db('settlements').where({ provider_id: testProvider?.id }).del();
     if (testProvider?.id)
       await db('providers').where({ id: testProvider.id }).del();
     if (testOperator?.id)
@@ -87,7 +88,7 @@ describe('AdminModel', () => {
       await db('users').where({ id: adminUser.userId }).del();
     if (testSupplier?.id)
       await db('suppliers').where({ id: testSupplier.id }).del();
-    jest.clearAllMocks();
+    jest.restoreAllMocks();
   });
 
   describe('getUserById', () => {
@@ -178,17 +179,19 @@ describe('AdminModel', () => {
 
   describe('Session Management', () => {
     it('should call SessionService to get user sessions', async () => {
+      const getUserSessionsSpy = jest
+        .spyOn(SessionService, 'getUserSessions')
+        .mockResolvedValue([]);
       await AdminModel.getUserSessions(testUser.userId);
-      expect(SessionService.getUserSessions).toHaveBeenCalledWith(
-        testUser.userId
-      );
+      expect(getUserSessionsSpy).toHaveBeenCalledWith(testUser.userId);
     });
 
     it('should call SessionService to revoke user sessions', async () => {
+      const deleteAllUserSessionsSpy = jest
+        .spyOn(SessionService, 'deleteAllUserSessions')
+        .mockResolvedValue(1);
       await AdminModel.revokeUserSessions(testUser.userId);
-      expect(SessionService.deleteAllUserSessions).toHaveBeenCalledWith(
-        testUser.userId
-      );
+      expect(deleteAllUserSessionsSpy).toHaveBeenCalledWith(testUser.userId);
     });
   });
 

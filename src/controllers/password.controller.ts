@@ -1,9 +1,9 @@
 import { Request, Response } from 'express';
 import { UserModel } from '../models/User';
 import { EmailService } from '../services/email.service';
+import { sendError, sendSuccess } from '../utils/response.utils';
 import { comparePassword } from '../utils/security.utils';
 import { validatePassword } from '../utils/validation.utils';
-import { sendError, sendSuccess } from '../utils/response.utils';
 
 interface AuthenticatedRequest extends Request {
   user?: {
@@ -25,7 +25,7 @@ export class PasswordController {
         return sendError(res, 'Email is required', 400);
       }
 
-      const user = await UserModel.findByEmail(email);
+      const user = await UserModel.findForAuth(email);
       if (user) {
         const token = await UserModel.generatePasswordResetToken(user.userId);
         setImmediate(async () => {

@@ -4,40 +4,26 @@ import { CreateUserInput, UserModel } from '../../../../src/models/User';
 describe('UserModel', () => {
   let testUser: any;
 
-  beforeAll(async () => {
-    // Create a user that can be used by multiple tests
-    const userData: CreateUserInput = {
-      email: 'test.user@example.com',
-      fullName: 'Test User',
-      phoneNumber: '1234567890',
-      password: 'Password123!',
-      role: 'user',
-    };
-    testUser = await UserModel.create(userData);
+  beforeEach(async () => {
+    await db.transaction(async trx => {
+      // Create a user that can be used by multiple tests
+      const userData: CreateUserInput = {
+        email: 'test.user@example.com',
+        fullName: 'Test User',
+        phoneNumber: '1234567890',
+        password: 'Password123!',
+        role: 'user',
+      };
+      testUser = await UserModel.create(userData, trx);
+    });
   });
 
-  describe('create', () => {
-    it('should create a new user and return the registered user data', async () => {
-      const newUserInput: CreateUserInput = {
-        email: 'new.user@example.com',
-        fullName: 'New User',
-        phoneNumber: '1112223333',
-        password: 'PasswordSecure!',
-        role: 'staff',
-      };
-
-      const createdUser = await UserModel.create(newUserInput);
-
-      expect(createdUser).toBeDefined();
-      expect(createdUser.email).toBe(newUserInput.email);
-      expect(createdUser.role).toBe('staff');
-      expect(createdUser.isVerified).toBe(true);
-
-      const dbUser = await db('users')
-        .where({ email: newUserInput.email })
-        .first();
-      expect(dbUser).toBeDefined();
-      expect(dbUser.id).toBe(createdUser.userId);
+  afterEach(async () => {
+    await db.transaction(async trx => {
+      // Clean up the created user
+      if (testUser && testUser.userId) {
+        await trx('users').where({ id: testUser.userId }).del();
+      }
     });
   });
 

@@ -137,7 +137,67 @@ export class UserModel {
     userId: string
   ): Promise<UserProfileView | null> {
     const user = await this._baseQuery().where('u.id', userId).first();
-    return user || null;
+    if (!user) {
+      return null;
+    }
+    // Manual mapping to ensure correct property names
+    return {
+      userId: user.id,
+      fullName: user.full_name,
+      email: user.email,
+      phoneNumber: user.phone_number,
+      role: user.role,
+      isSuspended: user.is_suspended,
+      isVerified: user.is_verified,
+      twoFactorEnabled: user.two_factor_enabled,
+      accountNumber: user.account_number,
+      providerName: user.providerName,
+      balance: user.balance,
+      pin: user.pin,
+      createdAt: user.created_at,
+      updatedAt: user.updated_at,
+    };
+  }
+
+  /**
+   * Finds a user by their ID for authentication and authorization.
+   * @param userId - The ID of the user to find.
+   * @returns A user auth payload object or null if not found.
+   */
+  static async findById(userId: string): Promise<UserAuthPayload | null> {
+    const userRow = await db('users as u')
+      .select(
+        'u.id',
+        'u.email',
+        'u.password',
+        'u.role',
+        'u.role_id',
+        'u.is_verified',
+        'u.is_suspended',
+        'u.two_factor_enabled',
+        'u.two_factor_secret'
+      )
+      .where('u.id', userId)
+      .first();
+
+    if (!userRow) {
+      return null;
+    }
+
+    const permissions = await this.getPermissions(userRow.role_id);
+
+    return {
+      userId: userRow.id,
+      email: userRow.email,
+      password: userRow.password,
+      role: userRow.role,
+      roleId: userRow.role_id,
+      isVerified: userRow.is_verified,
+      isSuspended: userRow.is_suspended,
+      twoFactorEnabled: userRow.two_factor_enabled,
+      twoFactorSecret: userRow.two_factor_secret,
+      permissions,
+    };
   }
 
   /**
@@ -157,15 +217,15 @@ export class UserModel {
 
     const userRow = await db('users as u')
       .select(
-        'u.id as userId',
+        'u.id',
         'u.email',
         'u.password',
         'u.role',
-        'u.role_id as roleId',
-        'u.is_verified as isVerified',
-        'u.is_suspended as isSuspended',
-        'u.two_factor_enabled as twoFactorEnabled',
-        'u.two_factor_secret as twoFactorSecret'
+        'u.role_id',
+        'u.is_verified',
+        'u.is_suspended',
+        'u.two_factor_enabled',
+        'u.two_factor_secret'
       )
       .where(column, value)
       .first();
@@ -174,10 +234,18 @@ export class UserModel {
       return null;
     }
 
-    const permissions = await this.getPermissions(userRow.roleId);
+    const permissions = await this.getPermissions(userRow.role_id);
 
     return {
-      ...userRow,
+      userId: userRow.id,
+      email: userRow.email,
+      password: userRow.password,
+      role: userRow.role,
+      roleId: userRow.role_id,
+      isVerified: userRow.is_verified,
+      isSuspended: userRow.is_suspended,
+      twoFactorEnabled: userRow.two_factor_enabled,
+      twoFactorSecret: userRow.two_factor_secret,
       permissions,
     };
   }
@@ -241,7 +309,26 @@ export class UserModel {
       .andWhere('password_reset_token_expires_at', '>', db.fn.now())
       .first();
 
-    return user || null;
+    if (!user) {
+      return null;
+    }
+
+    return {
+      userId: user.id,
+      fullName: user.full_name,
+      email: user.email,
+      phoneNumber: user.phone_number,
+      role: user.role,
+      isSuspended: user.is_suspended,
+      isVerified: user.is_verified,
+      twoFactorEnabled: user.two_factor_enabled,
+      accountNumber: user.account_number,
+      providerName: user.providerName,
+      balance: user.balance,
+      pin: user.pin,
+      createdAt: user.created_at,
+      updatedAt: user.updated_at,
+    };
   }
 
   /**
@@ -314,19 +401,19 @@ export class UserModel {
       .leftJoin('virtual_accounts as va', 'u.id', 'va.user_id')
       .leftJoin('providers as p', 'va.provider_id', 'p.id')
       .select(
-        'u.id as userId',
-        'u.full_name as fullName',
+        'u.id',
+        'u.full_name',
         'u.email',
-        'u.phone_number as phoneNumber',
+        'u.phone_number',
         'u.role',
-        'u.is_suspended as isSuspended',
-        'u.is_verified as isVerified',
-        'u.two_factor_enabled as twoFactorEnabled',
+        'u.is_suspended',
+        'u.is_verified',
+        'u.two_factor_enabled',
         'u.pin',
-        'u.created_at as createdAt',
-        'u.updated_at as updatedAt',
+        'u.created_at',
+        'u.updated_at',
         'w.balance',
-        'va.account_number as accountNumber',
+        'va.account_number',
         'p.name as providerName'
       );
   }

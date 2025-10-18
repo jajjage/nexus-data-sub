@@ -1,5 +1,5 @@
 import { body } from 'express-validator';
-import { validationMiddleware } from './validation.middleware';
+import { handleValidationErrors } from './validation.middleware';
 
 export const validatePin = [
   body('pin')
@@ -9,5 +9,5 @@ export const validatePin = [
     .withMessage('PIN must be 4 digits')
     .matches(/^\d{4}$/)
     .withMessage('PIN must be numeric'),
-  validationMiddleware,
+  handleValidationErrors,
 ];

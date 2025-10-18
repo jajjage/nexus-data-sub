@@ -1,10 +1,10 @@
 import { Router } from 'express';
 import { AuthController } from '../controllers/auth.controller';
-import {
-  validateRegistration,
-  validateLogin,
-} from '../middleware/validation.middleware';
 import { authenticateRefresh } from '../middleware/auth.middleware';
+import {
+  validateLogin,
+  validateRegistration,
+} from '../middleware/validation.middleware';
 
 const router = Router();
 
@@ -237,7 +237,7 @@ router.post('/refresh', authenticateRefresh, AuthController.refresh);
  *             schema:
  *               $ref: '#/components/schemas/ErrorResponse'
  */
-router.get('/verify', AuthController.verifyEmail);
+// router.get('/verify', AuthController.verifyEmail);
 
 /**
  * @swagger
@@ -278,6 +278,6 @@ router.get('/verify', AuthController.verifyEmail);
  *             schema:
  *               $ref: '#/components/schemas/ErrorResponse'
  */
-router.post('/resend-verification', AuthController.resendVerification);
+// router.post('/resend-verification', AuthController.resendVerification);
 
 export default router;

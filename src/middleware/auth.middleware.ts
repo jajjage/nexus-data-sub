@@ -53,7 +53,7 @@ export const authenticate = async (
       userId: user.userId,
       email: user.email,
       role: user.role,
-      permissions: user.permissions?.map(p => p.name) ?? [],
+      permissions: user.permissions ?? [],
       sessionId: decoded.sessionId ?? '',
     };
 
@@ -105,7 +105,7 @@ export const authenticateRefresh = async (
       userId: user.userId,
       email: user.email,
       role: user.role,
-      permissions: user.permissions?.map(p => p.name) || [],
+      permissions: user.permissions || [],
       sessionId: session.id,
     };
 
