@@ -57,9 +57,6 @@ export const authenticate = async (
       sessionId: decoded.sessionId ?? '',
     };
 
-    // Debug log for permissions
-    console.log('User permissions:', req.user.permissions);
-
     return next();
   } catch (_error) {
     return next(new ApiError(500, `Authentication error ${_error}`));
