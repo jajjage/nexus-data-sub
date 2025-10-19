@@ -1,5 +1,5 @@
-import { AdminModel } from '@/models/Admin';
 import { CronJob } from 'cron';
+import { AdminModel } from '../models/Admin';
 import { logger } from '../utils/logger.utils';
 
 // Runs every hour

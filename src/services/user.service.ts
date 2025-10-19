@@ -61,11 +61,11 @@ export class UserService {
     pin: string,
     currentPassword?: string
   ): Promise<void> {
-    if (!/^\d{5}$/.test(pin)) {
-      throw new ApiError(400, 'PIN must be a 5-digit number.');
+    if (!/^\d{4}$/.test(pin)) {
+      throw new ApiError(400, 'PIN must be a 4-digit number.');
     }
 
-    const userAuth = await UserModel.findForAuth(userId);
+    const userAuth = await UserModel.findById(userId);
     if (!userAuth) {
       throw new ApiError(404, 'User not found');
     }

@@ -1,8 +1,8 @@
 import { Router } from 'express';
 import { UserController } from '../controllers/user.controller';
 import { authenticate } from '../middleware/auth.middleware';
-import { authorize } from '../middleware/rbac.middleware';
 import { validatePin } from '../middleware/pin.validation.middleware';
+import { authorize } from '../middleware/rbac.middleware';
 
 const router = Router();
 
@@ -32,7 +32,11 @@ router.use(authenticate);
  *       200:
  *         description: Successfully retrieved user profile.
  */
-router.get('/profile/me', authorize('profile.read'), UserController.getMyProfile);
+router.get(
+  '/profile/me',
+  authorize('profile.read'),
+  UserController.getMyProfile
+);
 
 /**
  * @swagger
