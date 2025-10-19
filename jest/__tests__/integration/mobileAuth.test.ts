@@ -5,6 +5,16 @@ import { CreateUserInput, UserModel } from '../../../src/models/User';
 import { TotpService } from '../../../src/services/topt.service';
 
 describe('Mobile Auth API', () => {
+  beforeEach(async () => {
+    // Clean the users table before each test to ensure isolation
+    await db('users').del();
+  });
+
+  afterEach(async () => {
+    // Clean the users table after each test
+    await db('users').del();
+  });
+
   describe('POST /api/v1/mobile/auth/login', () => {
     it('should login successfully and return tokens', async () => {
       const userData: CreateUserInput = {
@@ -33,7 +43,7 @@ describe('Mobile Auth API', () => {
       const response = await request(app)
         .post('/api/v1/mobile/auth/login')
         .send({ email: 'nonexistent@example.com', password: 'wrongpassword' })
-        .expect(400);
+        .expect(401);
       expect(response.body.success).toBe(false);
     });
   });
@@ -43,7 +53,7 @@ describe('Mobile Auth API', () => {
       const userData: CreateUserInput = {
         email: 'test.mobile.refresh@example.com',
         fullName: 'Test Mobile Refresh',
-        phoneNumber: '1234567890',
+        phoneNumber: '1234567891', // Use a different phone number to avoid conflicts
         password: 'Password123!',
         role: 'user',
       };
@@ -81,7 +91,7 @@ describe('Mobile Auth API', () => {
       const userData: CreateUserInput = {
         email: 'test.2fa@example.com',
         fullName: 'Test 2FA',
-        phoneNumber: '1234567890',
+        phoneNumber: '1234567892', // Use a different phone number
         password: 'Password123!',
         role: 'staff',
       };
@@ -119,7 +129,7 @@ describe('Mobile Auth API', () => {
       const userData: CreateUserInput = {
         email: 'test.2fadisable@example.com',
         fullName: 'Test 2FADisable',
-        phoneNumber: '1234567890',
+        phoneNumber: '1234567893', // Use a different phone number
         password: 'Password123!',
         role: 'staff',
       };

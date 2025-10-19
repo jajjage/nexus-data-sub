@@ -5,6 +5,7 @@ import { JwtService } from '../services/jwt.service';
 import { SessionService } from '../services/session.service';
 import { TotpService } from '../services/topt.service';
 import { generateSecureToken } from '../utils/crypto';
+import { handleBackupCodeReset } from '../utils/handle2fa';
 import { sendError, sendSuccess } from '../utils/response.utils';
 import {
   clearAuthCookies,
@@ -45,45 +46,63 @@ export class AuthController {
         return sendError(res, 'User with this email already exists', 409);
       }
 
-      const user = await UserModel.create({
-        email,
-        phoneNumber,
-        fullName,
-        password,
-        role: 'user', // Public registration defaults to 'user'
-      });
+      // Create the user inside a transaction so related VA persistence can
+      // reuse the same transaction when needed.
+      const { default: db } = await import('../database/connection');
+      const createdUser = await db.transaction(async trx => {
+        const user = await UserModel.create(
+          {
+            email,
+            phoneNumber,
+            fullName,
+            password,
+            role: 'user', // Public registration defaults to 'user'
+          },
+          trx
+        );
 
-      // Asynchronously send welcome email and create virtual account
-      setImmediate(async () => {
-        try {
-          const emailService = new EmailService();
-          await emailService.sendWelcomeEmail(user.email, user.fullName || '');
-        } catch (error) {
-          console.error('Failed to send welcome email:', error);
-        }
+        // Fire-and-forget welcome email (outside trx)
+        setImmediate(async () => {
+          try {
+            const emailService = new EmailService();
+            await emailService.sendWelcomeEmail(
+              user.email,
+              user.fullName || ''
+            );
+          } catch (error) {
+            console.error('Failed to send welcome email:', error);
+          }
+        });
 
+        // Attempt to create virtual account within the same transaction
         try {
           const { VirtualAccountService } = await import(
             '../services/virtualAccount.service'
           );
           const vaService = new VirtualAccountService();
-          await vaService.createAndPersistVirtualAccount({
-            id: user.userId,
-            name: user.fullName || '',
-            email: user.email,
-          });
+          await vaService.createAndPersistVirtualAccount(
+            {
+              id: user.userId,
+              name: user.fullName || '',
+              email: user.email,
+            },
+            trx
+          );
         } catch (error) {
           console.error(
             `Failed to create virtual account for user ${user.userId}:`,
             error
           );
+          // Don't rethrow; we don't want VA failure to block registration
         }
+
+        return user;
       });
 
       return sendSuccess(
         res,
         'User registered successfully.',
-        { userId: user.userId, email: user.email },
+        { id: createdUser.userId, email: createdUser.email },
         201
       );
     } catch (error: any) {
@@ -145,7 +164,27 @@ export class AuthController {
         } else if (backupCode) {
           isValid = await TotpService.verifyBackupCode(user.userId, backupCode);
           if (isValid) {
-            // Handle 2FA reset/disable logic if needed
+            try {
+              const result = await handleBackupCodeReset(req, {
+                userId: user.userId,
+                email: user.email,
+              });
+              (req as any).__twofaResult = result;
+            } catch (err: any) {
+              if (err.message === 'RESET_PARAM_INVALID') {
+                return sendError(res, 'Reset parameter must be a boolean', 400);
+              }
+              if (err.message === 'TOO_MANY_ATTEMPTS') {
+                const remaining = err.remaining ?? 0;
+                return sendError(
+                  res,
+                  `Too many 2FA disable attempts. Try again tomorrow. (${remaining} attempts remaining)`,
+                  429
+                );
+              }
+              console.error('Error handling backup-code reset:', err);
+              return sendError(res, 'Failed processing 2FA reset', 500);
+            }
           }
         }
 
@@ -182,7 +221,19 @@ export class AuthController {
       // Fetch the public profile for the response
       const userProfile = await UserModel.findProfileById(user.userId);
 
-      return sendSuccess(res, 'Login successful', { user: userProfile });
+      const twofaResult = (req as any).__twofaResult as
+        | {
+            reconfigure2fa?: true;
+            qrCode?: string;
+            backupCodes?: string[];
+            twoFactorDisabled?: true;
+          }
+        | undefined;
+
+      const payload: any = { user: userProfile };
+      if (twofaResult) Object.assign(payload, twofaResult);
+
+      return sendSuccess(res, 'Login successful', payload);
     } catch (error) {
       console.error('Login error:', error);
       return sendError(res, 'Internal server error during login', 500);

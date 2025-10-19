@@ -153,10 +153,10 @@ describe('Admin API', () => {
     });
   });
 
-  describe('GET /api/v1/admin/users/:userId/get-sessions', () => {
+  describe('GET /api/v1/admin/users/:userId/sessions', () => {
     it('should get user sessions', async () => {
       const response = await request(app)
-        .get(`/api/v1/admin/users/${userUserId}/get-sessions`)
+        .get(`/api/v1/admin/users/${userUserId}/sessions`)
         .set('Authorization', `Bearer ${adminToken}`)
         .expect(200);
 
@@ -165,16 +165,16 @@ describe('Admin API', () => {
     });
   });
 
-  describe('DELETE /api/v1/admin/users/:userId/delete-sessions', () => {
+  describe('DELETE /api/v1/admin/users/:userId/sessions', () => {
     it('should revoke user sessions', async () => {
       const response = await request(app)
-        .delete(`/api/v1/admin/users/${userUserId}/delete-sessions`)
+        .delete(`/api/v1/admin/users/${userUserId}/sessions`)
         .set('Authorization', `Bearer ${adminToken}`)
         .expect(200);
 
       expect(response.body.success).toBe(true);
       expect(response.body.message).toMatch(
-        /Revoked \d+ active session\(s\) for user/
+        /Revoked \d+ session\(s\) for user/
       );
     });
   });

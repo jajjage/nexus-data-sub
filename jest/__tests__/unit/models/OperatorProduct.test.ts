@@ -23,7 +23,6 @@ describe('OperatorProductModel', () => {
     // Clean up: delete test data
     await db('operator_products').where('operator_id', testOperatorId).del();
     await db('operators').where('id', testOperatorId).del();
-    await db.destroy();
   });
 
   describe('create', () => {

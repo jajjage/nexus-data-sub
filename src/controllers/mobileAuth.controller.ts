@@ -4,6 +4,7 @@ import { JwtService } from '../services/jwt.service';
 import { SessionService } from '../services/session.service';
 import { TotpService } from '../services/topt.service';
 import { generateSecureToken } from '../utils/crypto';
+import { handleBackupCodeReset } from '../utils/handle2fa';
 import { sendError, sendSuccess } from '../utils/response.utils';
 import { comparePassword, getClientIP } from '../utils/security.utils';
 
@@ -53,7 +54,29 @@ export class MobileAuthController {
           isValid = TotpService.verifyToken(user.twoFactorSecret!, totpCode);
         } else if (backupCode) {
           isValid = await TotpService.verifyBackupCode(user.userId, backupCode);
-          // Handle 2FA reset/disable logic if needed for mobile
+          if (isValid) {
+            try {
+              const result = await handleBackupCodeReset(req, {
+                userId: user.userId,
+                email: user.email,
+              });
+              (req as any).__twofaResult = result;
+            } catch (err: any) {
+              if (err.message === 'RESET_PARAM_INVALID') {
+                return sendError(res, 'Reset parameter must be a boolean', 400);
+              }
+              if (err.message === 'TOO_MANY_ATTEMPTS') {
+                const remaining = err.remaining ?? 0;
+                return sendError(
+                  res,
+                  `Too many 2FA disable attempts. Try again tomorrow. (${remaining} attempts remaining)`,
+                  429
+                );
+              }
+              console.error('Error handling backup-code reset:', err);
+              return sendError(res, 'Failed processing 2FA reset', 500);
+            }
+          }
         }
 
         if (!isValid) {
@@ -87,11 +110,24 @@ export class MobileAuthController {
 
       const userProfile = await UserModel.findProfileById(user.userId);
 
-      return sendSuccess(res, 'Login successful', {
+      const twofaResult = (req as any).__twofaResult as
+        | {
+            reconfigure2fa?: true;
+            qrCode?: string;
+            backupCodes?: string[];
+            twoFactorDisabled?: true;
+          }
+        | undefined;
+
+      const responsePayload: any = {
         user: userProfile,
         accessToken,
         refreshToken,
-      });
+      };
+
+      if (twofaResult) Object.assign(responsePayload, twofaResult);
+
+      return sendSuccess(res, 'Login successful', responsePayload);
     } catch (error) {
       console.error('Mobile login error:', error);
       return sendError(res, 'Internal server error during login', 500);

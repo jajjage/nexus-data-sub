@@ -1,3 +1,4 @@
+import { Knex } from 'knex';
 import { v4 as uuidv4 } from 'uuid';
 import knex from '../database/connection';
 import { ApiError } from '../utils/ApiError';
@@ -58,9 +59,12 @@ export class VirtualAccountService {
   public async persistVirtualAccount(
     userId: string,
     providerName: string,
-    vaResponse: VirtualAccountResponse
+    vaResponse: VirtualAccountResponse,
+    trxProvided?: Knex.Transaction
   ): Promise<{ id: number }> {
-    const trx = await knex.transaction();
+    const localTrx = trxProvided;
+    const shouldCommit = !localTrx;
+    const trx = localTrx ?? (await knex.transaction());
 
     try {
       // Get or create provider record
@@ -92,10 +96,10 @@ export class VirtualAccountService {
         })
         .returning('id');
 
-      await trx.commit();
+      if (shouldCommit) await trx.commit();
       return virtualAccount;
     } catch (error) {
-      await trx.rollback();
+      if (shouldCommit) await trx.rollback();
       throw new ApiError(
         500,
         'Failed to persist virtual account: ' + (error as Error).message
@@ -106,7 +110,10 @@ export class VirtualAccountService {
   /**
    * Create and persist a virtual account for a user
    */
-  public async createAndPersistVirtualAccount(user: User): Promise<{
+  public async createAndPersistVirtualAccount(
+    user: User,
+    trx?: Knex.Transaction
+  ): Promise<{
     virtualAccountId: number;
     vaDetails: VirtualAccountResponse;
   }> {
@@ -143,11 +150,12 @@ export class VirtualAccountService {
     // Create VA with provider
     const vaResponse = await this.createVirtualAccount(user);
 
-    // Persist VA details
+    // Persist VA details using optional transaction if provided
     const saved = await this.persistVirtualAccount(
       user.id,
       provider,
-      vaResponse
+      vaResponse,
+      trx
     );
 
     return {

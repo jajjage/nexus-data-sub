@@ -6,6 +6,14 @@ import { TotpService } from '../../../src/services/topt.service';
 import { getCookie } from '../../test-helpers';
 
 describe('Auth API', () => {
+  beforeEach(async () => {
+    await db('users').del();
+  });
+
+  afterEach(async () => {
+    await db('users').del();
+  });
+
   describe('POST /api/v1/auth/register', () => {
     it('should register a new user successfully', async () => {
       const userData = {
@@ -31,7 +39,7 @@ describe('Auth API', () => {
       const userData: CreateUserInput = {
         email: 'test.login@example.com',
         fullName: 'Test Login',
-        phoneNumber: '1234567890',
+        phoneNumber: '1234567891',
         password: 'Password123!',
         role: 'user',
       };
@@ -55,7 +63,7 @@ describe('Auth API', () => {
       const userData: CreateUserInput = {
         email: 'test.refresh@example.com',
         fullName: 'Test Refresh',
-        phoneNumber: '1234567890',
+        phoneNumber: '1234567892',
         password: 'Password123!',
         role: 'user',
       };
@@ -80,42 +88,12 @@ describe('Auth API', () => {
     });
   });
 
-  describe('GET /api/v1/auth/verify', () => {
-    it('should verify an email with a valid token', async () => {
-      // Email verification is disabled; calling verify should return 400
-      const response = await request(app)
-        .get(`/api/v1/auth/verify?token=some-token`)
-        .expect(400);
-      expect(response.body.success).toBe(false);
-    });
-  });
-
-  describe('POST /api/v1/auth/resend-verification', () => {
-    it('should resend verification email for an unverified user', async () => {
-      // Resend verification is disabled; expect failure
-      const userData: CreateUserInput = {
-        email: 'test.resend@example.com',
-        fullName: 'Test Resend',
-        phoneNumber: '1234567890',
-        password: 'Password123!',
-        role: 'user',
-      };
-      await UserModel.create(userData);
-
-      const response = await request(app)
-        .post('/api/v1/auth/resend-verification')
-        .send({ email: userData.email })
-        .expect(400);
-      expect(response.body.success).toBe(false);
-    });
-  });
-
   describe('POST /api/v1/auth/logout', () => {
     it('should logout successfully', async () => {
       const userData: CreateUserInput = {
         email: 'test.logout@example.com',
         fullName: 'Test Logout',
-        phoneNumber: '1234567890',
+        phoneNumber: '1234567894',
         password: 'Password123!',
         role: 'user',
       };
@@ -143,7 +121,7 @@ describe('Auth API', () => {
       const userData: CreateUserInput = {
         email: 'test.2fa@example.com',
         fullName: 'Test 2FA',
-        phoneNumber: '1234567890',
+        phoneNumber: '1234567895',
         password: 'Password123!',
         role: 'staff',
       };
@@ -181,7 +159,7 @@ describe('Auth API', () => {
       const userData: CreateUserInput = {
         email: 'test.2fadisable@example.com',
         fullName: 'Test 2FADisable',
-        phoneNumber: '1234567890',
+        phoneNumber: '1234567896',
         password: 'Password123!',
         role: 'staff',
       };

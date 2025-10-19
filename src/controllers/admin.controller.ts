@@ -2,28 +2,27 @@ import { Request, Response } from 'express';
 import { AdminModel } from '../models/Admin';
 import { RoleModel } from '../models/Role';
 import { UserModel } from '../models/User';
-// import { AdminService } from '../services/admin.service';
-import { comparePassword } from '@/utils/security.utils';
+import { AdminService } from '../services/admin.service';
 import { sendError, sendSuccess } from '../utils/response.utils';
 import { validatePassword } from '../utils/validation.utils';
 
 export class AdminController {
-  // static async getInactiveUsers(req: Request, res: Response) {
-  //   try {
-  //     const { inactiveSince } = req.query;
-  //     if (!inactiveSince || typeof inactiveSince !== 'string') {
-  //       return sendError(res, 'Invalid date parameter', 400);
-  //     }
-  //     const since = new Date(inactiveSince);
-  //     const inactiveUsers = await AdminService.getInactiveUsers(since);
-  //     return sendSuccess(res, 'Inactive users retrieved successfully', {
-  //       inactiveUsers,
-  //     });
-  //   } catch (error) {
-  //     console.error('Get inactive users error:', error);
-  //     return sendError(res, 'Internal server error');
-  //   }
-  // }
+  static async getInactiveUsers(req: Request, res: Response) {
+    try {
+      const { inactiveSince } = req.query;
+      if (!inactiveSince || typeof inactiveSince !== 'string') {
+        return sendError(res, 'Invalid date parameter', 400);
+      }
+      const since = new Date(inactiveSince);
+      const inactiveUsers = await AdminService.getInactiveUsers(since);
+      return sendSuccess(res, 'Inactive users retrieved successfully', {
+        inactiveUsers,
+      });
+    } catch (error) {
+      console.error('Get inactive users error:', error);
+      return sendError(res, 'Internal server error');
+    }
+  }
 
   static async createUser(req: Request, res: Response) {
     try {
@@ -50,15 +49,12 @@ export class AdminController {
       const normalizedPhone = String(phoneNumber || '').replace(/\D/g, '');
       const existingUser = await UserModel.findForAuth(identifier);
 
-      if (
-        !existingUser ||
-        !(await comparePassword(password, existingUser.password ?? ''))
-      ) {
-        return sendError(res, 'Invalid credentials', 401);
-      }
-
-      if (existingUser.isSuspended) {
-        return sendError(res, 'Your account has been suspended.', 403);
+      if (existingUser) {
+        return sendError(
+          res,
+          'User with this email or phone number already exists',
+          409
+        );
       }
 
       const user = await AdminModel.createUser({

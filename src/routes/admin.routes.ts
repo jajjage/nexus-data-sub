@@ -79,11 +79,11 @@ router.get(
  *       200:
  *         description: Successfully retrieved inactive users.
  */
-// router.get(
-//   '/users/inactive',
-//   authorize('users.read.all'),
-//   AdminController.getInactiveUsers
-// );
+router.get(
+  '/users/inactive',
+  authorize('users.read.all'),
+  AdminController.getInactiveUsers
+);
 
 /**
  * @swagger
@@ -316,6 +316,31 @@ router.post(
   '/users/:userId/debit',
   authorize('users.update.all'),
   AdminController.debitUserWallet
+);
+
+/**
+ * @swagger
+ * /admin/users/{userId}/disable-2fa:
+ *   post:
+ *     summary: Disable a user's 2FA by an admin
+ *     tags: [Administration]
+ *     security:
+ *       - bearerAuth: []
+ *     parameters:
+ *       - in: path
+ *         name: userId
+ *         required: true
+ *         schema:
+ *           type: string
+ *           format: uuid
+ *     responses:
+ *       200:
+ *         description: 2FA disabled successfully for the user.
+ */
+router.post(
+  '/users/:userId/disable-2fa',
+  authorize('users.update.all'),
+  AdminController.disable2FAByAdmin
 );
 
 // =================================================================

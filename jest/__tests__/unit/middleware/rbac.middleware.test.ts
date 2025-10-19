@@ -146,7 +146,7 @@ describe('RBAC Middleware', () => {
         userId: '123',
         email: 'test@example.com',
         role: 'admin',
-        permissions: ['users.create', 'reports.create'],
+        permissions: [{ name: 'users.create' }, { name: 'reports.create' }],
         sessionId: 'session-id-123',
       });
       expect(mockNext).toHaveBeenCalled();
@@ -186,7 +186,7 @@ describe('RBAC Middleware', () => {
         userId: '789',
         email: 'viewer@example.com',
         role: 'viewer',
-        permissions: ['reports.read.public'],
+        permissions: [{ name: 'reports.read.public' }],
         sessionId: 'session-id-456',
       });
 

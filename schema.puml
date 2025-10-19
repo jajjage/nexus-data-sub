@@ -1,0 +1,278 @@
+@startuml
+' VTU / Airtime & Data bundle schema (Postgres, UUID PKs)
+' Extended PlantUML ERD including RBAC (roles, permissions, mappings), reports & incidents
+
+skinparam linetype ortho
+skinparam roundcorner 5
+
+entity "operators" as operators {
+  * id : uuid <<PK>>
+  --
+  code : varchar
+  name : text
+  iso_country : char(2)
+  created_at : timestamptz
+}
+
+entity "operator_products" as operator_products {
+  * id : uuid <<PK>>
+  --
+  operator_id : uuid <<FK operators.id>>
+  product_code : varchar
+  name : text
+  product_type : varchar
+  denom_amount : numeric
+  data_mb : int
+  validity_days : int
+  is_active : bool
+  metadata : jsonb
+  created_at : timestamptz
+}
+
+entity "suppliers" as suppliers {
+  * id : uuid <<PK>>
+  --
+  name : text
+  slug : varchar
+  api_base : text
+  api_key : text
+  priority_int : int
+  is_active : bool
+  created_at : timestamptz
+}
+
+entity "supplier_product_mapping" as supplier_product_mapping {
+  * id : uuid <<PK>>
+  --
+  supplier_id : uuid <<FK suppliers.id>>
+  operator_product_id : uuid <<FK operator_products.id>>
+  supplier_product_code : varchar
+  supplier_price : numeric
+  min_order_amount : numeric
+  max_order_amount : numeric
+  lead_time_seconds : int
+  is_active : bool
+  created_at : timestamptz
+}
+
+entity "users" as users {
+  * id : uuid <<PK>>
+  --
+  email : text
+  phone : varchar
+  fullname : text
+  role_hint : varchar
+  is_active : bool
+  created_at : timestamptz
+}
+
+entity "roles" as roles {
+  * id : uuid <<PK>>
+  --
+  name : varchar UNIQUE
+  level : int  'roleHierarchy level (user=0,staff=1,admin=2)'
+  description : text
+  created_at : timestamptz
+}
+
+entity "permissions" as permissions {
+  * id : uuid <<PK>>
+  --
+  code : varchar UNIQUE  'e.g. topup-requests.read.all'
+  description : text
+  created_at : timestamptz
+}
+
+entity "role_permissions" as role_permissions {
+  * id : uuid <<PK>>
+  --
+  role_id : uuid <<FK roles.id>>
+  permission_id : uuid <<FK permissions.id>>
+  created_at : timestamptz
+}
+
+entity "user_roles" as user_roles {
+  * id : uuid <<PK>>
+  --
+  user_id : uuid <<FK users.id>>
+  role_id : uuid <<FK roles.id>>
+  assigned_by : uuid <<FK users.id>>
+  assigned_at : timestamptz
+}
+
+entity "wallets" as wallets {
+  * id : uuid <<PK>>
+  --
+  user_id : uuid <<FK users.id>> (unique)
+  balance : numeric
+  currency : char(3)
+  updated_at : timestamptz
+}
+
+entity "transactions" as transactions {
+  * id : uuid <<PK>>
+  --
+  wallet_id : uuid <<FK wallets.id>>
+  related_type : varchar
+  related_id : uuid
+  amount : numeric
+  direction : varchar
+  reference : varchar
+  note : text
+  created_at : timestamptz
+}
+
+entity "topup_requests" as topup_requests {
+  * id : uuid <<PK>>
+  --
+  external_id : uuid
+  user_id : uuid <<FK users.id>> 'who initiated'
+  recipient_phone : varchar
+  operator_id : uuid <<FK operators.id>>
+  operator_product_id : uuid <<FK operator_products.id>>
+  supplier_id : uuid <<FK suppliers.id>>
+  supplier_mapping_id : uuid <<FK supplier_product_mapping.id>>
+  amount : numeric
+  cost : numeric
+  status : varchar
+  attempt_count : int
+  idempotency_key : varchar
+  request_payload : jsonb
+  created_at : timestamptz
+  updated_at : timestamptz
+}
+
+entity "topup_responses" as topup_responses {
+  * id : uuid <<PK>>
+  --
+  topup_request_id : uuid <<FK topup_requests.id>>
+  supplier_id : uuid <<FK suppliers.id>>
+  response_code : varchar
+  response_message : text
+  response_payload : jsonb
+  created_at : timestamptz
+}
+
+entity "epins_inventory" as epins_inventory {
+  * id : uuid <<PK>>
+  --
+  operator_id : uuid <<FK operators.id>>
+  supplier_id : uuid <<FK suppliers.id>>
+  pin_code : bytea  'encrypted'
+  serial_number : text
+  denomination : numeric
+  status : varchar
+  allocated_to_topup_id : uuid <<FK topup_requests.id>>
+  created_at : timestamptz
+}
+
+entity "commissions" as commissions {
+  * id : uuid <<PK>>
+  --
+  agent_id : uuid <<FK users.id>>
+  operator_product_id : uuid <<FK operator_products.id>>
+  rate_percent : numeric
+  fixed_amount : numeric
+  created_at : timestamptz
+}
+
+entity "settlements" as settlements {
+  * id : uuid <<PK>>
+  --
+  supplier_id : uuid <<FK suppliers.id>>
+  settlement_date : date
+  total_amount : numeric
+  status : varchar
+  details : jsonb
+  created_at : timestamptz
+}
+
+entity "webhook_events" as webhook_events {
+  * id : uuid <<PK>>
+  --
+  source : varchar
+  event_type : varchar
+  payload : jsonb
+  received_at : timestamptz
+  processed : bool
+}
+
+entity "reports" as reports {
+  * id : uuid <<PK>>
+  --
+  created_by : uuid <<FK users.id>>
+  title : text
+  body : text
+  visibility : varchar  'public|private|internal'
+  status : varchar
+  created_at : timestamptz
+  updated_at : timestamptz
+}
+
+entity "incidents" as incidents {
+  * id : uuid <<PK>>
+  --
+  created_by : uuid <<FK users.id>>
+  title : text
+  description : text
+  severity : varchar
+  status : varchar
+  created_at : timestamptz
+  updated_at : timestamptz
+}
+
+entity "audit_logs" as audit_logs {
+  * id : uuid <<PK>>
+  --
+  actor_id : uuid <<FK users.id>>
+  action : varchar
+  object_type : varchar
+  object_id : uuid
+  before : jsonb
+  after : jsonb
+  created_at : timestamptz
+}
+
+' --- relationships -------------------------------------------------
+operators ||--o{ operator_products : "has >"
+operator_products ||--o{ supplier_product_mapping : "mapped by >"
+suppliers ||--o{ supplier_product_mapping : "provides >"
+
+users ||--|| wallets : "one-to-one >"
+users ||--o{ topup_requests : "initiates >"
+wallets ||--o{ transactions : "records >"
+transactions }o--|| topup_requests : "may reference >"
+
+topup_requests ||--o{ topup_responses : "has callbacks >"
+operator_products ||--o{ epins_inventory : "epins for >"
+suppliers ||--o{ epins_inventory : "supplies >"
+
+users ||--o{ commissions : "agents have >"
+suppliers ||--o{ settlements : "daily settlements >"
+
+users ||--o{ reports : "authors >"
+users ||--o{ incidents : "authors >"
+
+roles ||--o{ role_permissions : "grants >"
+permissions ||--o{ role_permissions : "linked to >"
+roles ||--o{ user_roles : "assigned to >"
+users ||--o{ user_roles : "has >"
+
+' Notes and RBAC guidance
+note right of roles
+  Store role.level to reflect roleHierarchy: \n  user=0, staff=1, admin=2.\n  Use role_permissions to evaluate permissions at runtime.\n  RLS (row-level security) in Postgres can enforce access:\n   - users see their own transactions\n   - staff/admin can read-all depending on permission
+end note
+
+note right of topup_requests
+  Partition topup_requests by created_at (monthly) for scale.\n  Use external_id + idempotency_key to dedupe retries.\n  Locking / optimistic concurrency when allocating epins to avoid double-assign.
+end note
+
+note left of epins_inventory
+  pin_code stored encrypted. Access-controlled via RLS & application-level audit.\n  Consider separate vault or encrypted column with KMS.
+end note
+
+note bottom
+  - Audit all role assignments and sensitive actions into audit_logs.\n  - Evaluate permissions by joining user_roles -> role_permissions -> permissions,\n    but cache in-memory for performance.\n  - Keep permission codes stable (use PERMISSION_DESCRIPTIONS for docs).
+end note
+
+@enduml
