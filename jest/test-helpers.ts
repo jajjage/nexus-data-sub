@@ -23,7 +23,7 @@ export const generateTestUsers = async () => {
     const adminData: CreateUserInput = {
       email: 'admin.test@example.com',
       fullName: 'Admin Test',
-      phoneNumber: '1234567890',
+      phoneNumber: '1234567891',
       password: 'Password123!',
       role: 'admin',
     };
@@ -35,7 +35,7 @@ export const generateTestUsers = async () => {
     const userData: CreateUserInput = {
       email: 'user.test@example.com',
       fullName: 'User Test',
-      phoneNumber: '1234567890',
+      phoneNumber: '1234567892',
       password: 'Password123!',
       role: 'user',
     };
@@ -43,7 +43,8 @@ export const generateTestUsers = async () => {
     await db('users').where({ id: user.userId }).update({ is_verified: true });
 
     return { admin, user };
-  } catch {
+  } catch (error) {
+    console.error('Error generating test users:', error);
     throw new Error('Failed to generate test users');
   }
 };

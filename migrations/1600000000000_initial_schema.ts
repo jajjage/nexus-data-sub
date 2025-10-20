@@ -32,7 +32,7 @@ export async function up(knex: Knex): Promise<void> {
     table.string('full_name', 255).nullable();
     // Store phone numbers as strings to preserve formatting and avoid integer overflow
     table.string('phone_number', 20).unique().nullable();
-    table.string('pin', 5).nullable();
+    table.string('pin', 255).nullable();
     table.string('email', 255).unique().notNullable();
     table.string('password', 255).notNullable();
     table.boolean('is_suspended').defaultTo(false);
