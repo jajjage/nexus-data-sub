@@ -12,6 +12,7 @@ interface User {
 interface VirtualAccountResponse {
   id?: string;
   provider_va_id?: string;
+  tx_ref: string;
   account_number: string;
   currency?: string;
   status?: string;
@@ -30,15 +31,16 @@ export class VirtualAccountService {
       const accountNumber = Math.floor(
         1000000000 + Math.random() * 9000000000
       ).toString();
+      const customer_reference = `user_${user.id}`;
       const name = user.name.split(' ').slice(0, 2).join(' ');
       const bankName = name + 'Test Bank';
       const virtualAccount: VirtualAccountResponse = {
         provider_va_id: uuidv4(),
         account_number: accountNumber,
+        tx_ref: customer_reference,
         currency: 'NGN',
         status: 'active',
         customer_name: bankName,
-        customer_reference: `user_${user.id}`,
       };
 
       return Promise.resolve(virtualAccount);
@@ -87,6 +89,7 @@ export class VirtualAccountService {
           user_id: userId,
           provider_id: provider.id,
           provider_va_id: vaResponse.id || vaResponse.provider_va_id,
+          tx_ref: vaResponse.tx_ref || '',
           account_number: vaResponse.account_number,
           currency: vaResponse.currency || 'NGN',
           status: vaResponse.status || 'active',

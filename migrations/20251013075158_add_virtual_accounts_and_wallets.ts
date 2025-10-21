@@ -54,19 +54,22 @@ export async function up(knex: Knex): Promise<void> {
       .inTable('users')
       .onDelete('CASCADE');
 
-    // normalize provider as FK
     table
       .uuid('provider_id')
-      .unsigned()
       .notNullable()
       .references('id')
       .inTable('providers')
-      .onDelete('RESTRICT'); // choose RESTRICT (or SET NULL / CASCADE) per policy
+      .onDelete('RESTRICT');
 
     table.text('provider_va_id').notNullable();
     table.text('account_number').notNullable();
     table.text('currency').notNullable().defaultTo('NGN');
     table.text('status').notNullable().defaultTo('active');
+
+    // NEW: Store the tx_ref returned by provider for static VAs
+    table.text('tx_ref').nullable(); // null for dynamic VAs, populated for static VAs
+    table.boolean('is_static').defaultTo(false); // Track if this is static or dynamic
+
     table.jsonb('metadata');
     table
       .timestamp('created_at', { useTz: true })
@@ -77,7 +80,6 @@ export async function up(knex: Knex): Promise<void> {
       .notNullable()
       .defaultTo(knex.fn.now());
 
-    // Unique constraints using provider_id instead of raw provider text
     table.unique(
       ['provider_id', 'provider_va_id'],
       'uniq_providerid_providervaid'
@@ -86,6 +88,7 @@ export async function up(knex: Knex): Promise<void> {
       ['provider_id', 'account_number'],
       'uniq_providerid_accountnumber'
     );
+    table.index('tx_ref', 'idx_virtual_accounts_tx_ref'); // Index for quick lookup
 
     table.index('user_id', 'idx_virtual_accounts_user_id');
     table.index('provider_va_id', 'idx_virtual_accounts_provider_va_id');

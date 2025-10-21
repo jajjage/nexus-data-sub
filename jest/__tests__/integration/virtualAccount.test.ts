@@ -16,10 +16,12 @@ describe('Virtual Account Integration Tests', () => {
     const providers = await knex('providers')
       .whereIn('name', ['palmpay', 'TestProvider'])
       .select('id');
-      
+
     const providerIds = providers.map(p => p.id);
     if (providerIds.length > 0) {
-      await knex('virtual_accounts').whereIn('provider_id', providerIds).delete();
+      await knex('virtual_accounts')
+        .whereIn('provider_id', providerIds)
+        .delete();
     }
     await knex('users').where({ email: testUser.email }).delete();
   });
@@ -43,7 +45,7 @@ describe('Virtual Account Integration Tests', () => {
       const providers = await knex('providers')
         .whereIn('name', ['palmpay', 'TestProvider'])
         .select('id');
-      
+
       let virtualAccount = null;
       if (providers.length > 0) {
         const providerIds = providers.map(p => p.id);
