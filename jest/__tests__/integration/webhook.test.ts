@@ -53,6 +53,7 @@ describe('Webhook Integration Tests', () => {
     const webhookPayload = {
       event_type: 'payment.received',
       event_id: 'evt_123456',
+      tx_ref: 'user_uy123832894',
       transaction_id: 'txn_123456',
       virtual_account_id: 'VA123456',
       amount: '1000.00',
