@@ -3,6 +3,7 @@
 export interface TestWebhookPayload {
   userId: string;
   amount: number;
+  tx_ref: string;
   provider?: string;
   providerVaId?: string;
   [key: string]: any;

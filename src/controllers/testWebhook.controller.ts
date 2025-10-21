@@ -22,6 +22,7 @@ export class TestWebhookController {
       const {
         userId,
         amount,
+        tx_ref,
         provider = 'test-provider',
         providerVaId = 'test-va',
       } = req.body;
@@ -50,6 +51,7 @@ export class TestWebhookController {
       const result = await this.testWebhookService.processTestPayment(
         userId,
         amount,
+        tx_ref,
         provider,
         providerVaId
       );

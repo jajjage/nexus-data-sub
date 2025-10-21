@@ -17,6 +17,7 @@ export class TestWebhookService {
   public async processTestPayment(
     userId: string,
     amount: number,
+    txRef: string,
     provider: string = 'test-provider',
     providerVaId: string = 'test-va'
   ): Promise<TestPaymentResult> {
@@ -72,7 +73,7 @@ export class TestWebhookService {
 
       // Get current wallet and update balance atomically
       const currentWallet = await trx('wallets')
-        .where({ user_id: userId })
+        .where({ tx_ref: txRef })
         .forUpdate() // This ensures we lock the row during transaction
         .first();
 
