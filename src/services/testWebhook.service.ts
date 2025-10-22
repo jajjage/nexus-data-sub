@@ -1,10 +1,11 @@
+import { TestWebhookRequest } from '@/types/testWebhook.types';
 import knex from '../database/connection';
 import { ApiError } from '../utils/ApiError';
 
 interface TestPaymentResult {
   success: boolean;
   message: string;
-  userId?: string;
+  txRef?: string;
   newBalance?: number;
   amountCredited?: number;
   statusCode?: number;
@@ -15,11 +16,11 @@ export class TestWebhookService {
    * Process a test payment for simulating webhook functionality
    */
   public async processTestPayment(
-    userId: string,
-    amount: number,
     txRef: string,
+    amount: number,
     provider: string = 'test-provider',
-    providerVaId: string = 'test-va'
+    providerVaId: string = 'test-va',
+    req: TestWebhookRequest
   ): Promise<TestPaymentResult> {
     const trx = await knex.transaction();
 
@@ -31,18 +32,6 @@ export class TestWebhookService {
           success: false,
           message: 'Invalid amount provided',
           statusCode: 400,
-        };
-      }
-
-      // Check if user exists
-      const user = await trx('users').where({ id: userId }).first();
-
-      if (!user) {
-        await trx.rollback();
-        return {
-          success: false,
-          message: 'User not found',
-          statusCode: 404,
         };
       }
 
@@ -60,10 +49,32 @@ export class TestWebhookService {
         };
       }
 
+      const va = await knex('virtual_accounts').where('tx_ref', txRef).first();
+
+      if (!va) {
+        await trx.rollback();
+        return {
+          success: false,
+          message: 'Virtual account not found',
+          statusCode: 400,
+        };
+      }
+      await knex('incoming_payments').insert({
+        provider_id: va.provider_id,
+        provider_reference: `${txRef}_${Date.now()}`, // Make unique per payment
+        provider_va_id: va.provider_va_id,
+        virtual_account_id: va.id,
+        user_id: va.user_id,
+        amount: amount,
+        currency: va.currency,
+        status: 'received',
+        raw_payload: req.body,
+        received_at: new Date(),
+      });
       // Ensure wallet exists
       await trx('wallets')
         .insert({
-          user_id: userId,
+          user_id: va.user_id,
           balance: 0,
           currency: 'NGN',
           updated_at: new Date(),
@@ -73,7 +84,7 @@ export class TestWebhookService {
 
       // Get current wallet and update balance atomically
       const currentWallet = await trx('wallets')
-        .where({ tx_ref: txRef })
+        .where({ user_id: va.user_id })
         .forUpdate() // This ensures we lock the row during transaction
         .first();
 
@@ -90,14 +101,14 @@ export class TestWebhookService {
 
       const newBalance = parseFloat((currentBalance + amount).toFixed(2));
 
-      await trx('wallets').where({ user_id: userId }).update({
+      await trx('wallets').where({ user_id: va.user_id }).update({
         balance: newBalance,
         updated_at: new Date(),
       });
 
       // Record transaction
       await trx('transactions').insert({
-        user_id: userId,
+        user_id: va.user_id,
         wallet_id: currentWallet.user_id, // Assuming wallet_id is the same as user_id
         direction: 'credit',
         amount: Number(amount),
@@ -120,7 +131,7 @@ export class TestWebhookService {
           event_type: 'payment.success',
           event_id: `test_${Date.now()}`,
           payload: {
-            user_id: userId,
+            user_id: va.user_id,
             amount: amount,
             provider_va_id: providerVaId,
             simulated: true,
@@ -138,7 +149,7 @@ export class TestWebhookService {
       return {
         success: true,
         message: 'Test payment processed successfully',
-        userId,
+        txRef,
         newBalance,
         amountCredited: amount,
       };

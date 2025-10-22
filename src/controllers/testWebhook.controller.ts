@@ -20,16 +20,15 @@ export class TestWebhookController {
   ): Promise<void> {
     try {
       const {
-        userId,
+        txRef,
         amount,
-        tx_ref,
         provider = 'test-provider',
         providerVaId = 'test-va',
       } = req.body;
 
       // Validate required fields
-      if (!userId || !amount) {
-        sendError(res, 'userId and amount are required', 400);
+      if (!txRef || !amount) {
+        sendError(res, 'txRef and amount are required', 400);
         return;
       }
 
@@ -40,20 +39,20 @@ export class TestWebhookController {
       }
 
       // Validate user ID format (UUID)
-      const uuidRegex =
-        /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
-      if (!uuidRegex.test(userId)) {
-        sendError(res, 'Invalid user ID format', 400);
-        return;
-      }
+      // const uuidRegex =
+      //   /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
+      // if (!uuidRegex.test(txRef)) {
+      //   sendError(res, 'Invalid user tx ref format', 400);
+      //   return;
+      // }
 
       // Process the test payment
       const result = await this.testWebhookService.processTestPayment(
-        userId,
+        txRef,
         amount,
-        tx_ref,
         provider,
-        providerVaId
+        providerVaId,
+        req
       );
 
       if (result.success) {
@@ -61,7 +60,7 @@ export class TestWebhookController {
           res,
           result.message,
           {
-            userId: result.userId,
+            txRef: result.txRef,
             newBalance: result.newBalance,
             amountCredited: result.amountCredited,
           },

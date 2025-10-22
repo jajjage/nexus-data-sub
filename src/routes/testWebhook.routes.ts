@@ -26,13 +26,13 @@ const webhookController = new TestWebhookController();
  *           schema:
  *             type: object
  *             required:
- *               - userId
+ *               - txRef
  *               - amount
  *             properties:
- *               userId:
+ *               txRef:
  *                 type: string
- *                 description: User ID to credit
- *                 example: "123e4567-e89b-12d3-a456-426614174000"
+ *                 description: User tx_ref to credit
+ *                 example: "user_123e4567-e89b-12d3-a456-426614174000"
  *               amount:
  *                 type: number
  *                 description: Amount to credit
@@ -60,7 +60,7 @@ const webhookController = new TestWebhookController();
  *                 data:
  *                   type: object
  *                   properties:
- *                     userId:
+ *                     txRef:
  *                       type: string
  *                     newBalance:
  *                       type: number

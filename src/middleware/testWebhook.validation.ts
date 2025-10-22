@@ -18,7 +18,7 @@ export const handleValidationErrors = (
 };
 
 export const validateTestWebhook = [
-  body('userId').isUUID().withMessage('userId must be a valid UUID'),
+  body('txRef').isString().withMessage('user tx ref must be a valid string'),
   body('amount')
     .isFloat({ min: 0.01 })
     .withMessage('amount must be a positive number greater than 0'),

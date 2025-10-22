@@ -32,8 +32,8 @@ export class VirtualAccountService {
         1000000000 + Math.random() * 9000000000
       ).toString();
       const customer_reference = `user_${user.id}`;
-      const name = user.name.split(' ').slice(0, 2).join(' ');
-      const bankName = name + 'Test Bank';
+      const name = user.name.split(' ')[0];
+      const bankName = `${name}-TestBank`;
       const virtualAccount: VirtualAccountResponse = {
         provider_va_id: uuidv4(),
         account_number: accountNumber,
