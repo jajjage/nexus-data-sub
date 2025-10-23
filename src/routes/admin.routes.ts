@@ -1,7 +1,7 @@
 import { Router } from 'express';
 import { AdminController } from '../controllers/admin.controller';
 import { authenticate } from '../middleware/auth.middleware';
-import { authorize, requireRole } from '../middleware/rbac.middleware';
+import { hasPermission, requireRole } from '../middleware/rbac.middleware';
 import { validateUserCreation } from '../middleware/validation.middleware';
 
 const router = Router();
@@ -34,7 +34,7 @@ router.use(authenticate, requireRole('admin'));
  */
 router.get(
   '/dashboard/stats',
-  authorize('system.settings'),
+  hasPermission('system.settings'),
   AdminController.getDashboardStats
 );
 
@@ -52,7 +52,7 @@ router.get(
  */
 router.get(
   '/dashboard/failed-jobs',
-  authorize('system.settings'),
+  hasPermission('system.settings'),
   AdminController.getFailedJobs
 );
 
@@ -81,7 +81,7 @@ router.get(
  */
 router.get(
   '/users/inactive',
-  authorize('users.read.all'),
+  hasPermission('users.read.all'),
   AdminController.getInactiveUsers
 );
 
@@ -105,7 +105,7 @@ router.get(
  */
 router.post(
   '/users',
-  authorize('users.create'),
+  hasPermission('users.create'),
   validateUserCreation,
   AdminController.createUser
 );
@@ -133,7 +133,11 @@ router.post(
  *       200:
  *         description: Successfully retrieved users.
  */
-router.get('/users', authorize('users.read.all'), AdminController.getAllUsers);
+router.get(
+  '/users',
+  hasPermission('users.read.all'),
+  AdminController.getAllUsers
+);
 
 /**
  * @swagger
@@ -158,7 +162,7 @@ router.get('/users', authorize('users.read.all'), AdminController.getAllUsers);
  */
 router.get(
   '/users/:userId',
-  authorize('users.read.all'),
+  hasPermission('users.read.all'),
   AdminController.getUserById
 );
 
@@ -194,7 +198,7 @@ router.get(
  */
 router.put(
   '/users/:userId',
-  authorize('users.update.all'),
+  hasPermission('users.update.all'),
   AdminController.updateUser
 );
 
@@ -219,7 +223,7 @@ router.put(
  */
 router.post(
   '/users/:userId/suspend',
-  authorize('users.update.all'),
+  hasPermission('users.update.all'),
   AdminController.suspendUser
 );
 
@@ -244,7 +248,7 @@ router.post(
  */
 router.post(
   '/users/:userId/unsuspend',
-  authorize('users.update.all'),
+  hasPermission('users.update.all'),
   AdminController.unsuspendUser
 );
 
@@ -279,7 +283,7 @@ router.post(
  */
 router.post(
   '/users/:userId/credit',
-  authorize('users.update.all'),
+  hasPermission('users.update.all'),
   AdminController.creditUserWallet
 );
 
@@ -314,7 +318,7 @@ router.post(
  */
 router.post(
   '/users/:userId/debit',
-  authorize('users.update.all'),
+  hasPermission('users.update.all'),
   AdminController.debitUserWallet
 );
 
@@ -339,7 +343,7 @@ router.post(
  */
 router.post(
   '/users/:userId/disable-2fa',
-  authorize('users.update.all'),
+  hasPermission('users.update.all'),
   AdminController.disable2FAByAdmin
 );
 
@@ -368,7 +372,7 @@ router.post(
  */
 router.get(
   '/users/:userId/sessions',
-  authorize('users.read.all'),
+  hasPermission('users.read.all'),
   AdminController.getUserSessions
 );
 
@@ -393,7 +397,7 @@ router.get(
  */
 router.delete(
   '/users/:userId/sessions',
-  authorize('users.update.all'),
+  hasPermission('users.update.all'),
   AdminController.revokeUserSessions
 );
 
@@ -413,7 +417,7 @@ router.delete(
  *       200:
  *         description: Successfully retrieved roles.
  */
-router.get('/roles', authorize('roles.assign'), AdminController.getRoles);
+router.get('/roles', hasPermission('roles.assign'), AdminController.getRoles);
 
 /** @swagger
  * /admin/assign-role:
@@ -441,7 +445,7 @@ router.get('/roles', authorize('roles.assign'), AdminController.getRoles);
  */
 router.post(
   '/assign-role',
-  authorize('roles.assign'),
+  hasPermission('roles.assign'),
   AdminController.assignRole
 );
 
@@ -497,7 +501,7 @@ router.post(
  */
 router.get(
   '/transactions',
-  authorize('transactions.read.all'),
+  hasPermission('transactions.read.all'),
   AdminController.getAllTransactions
 );
 
@@ -523,7 +527,7 @@ router.get(
  */
 router.get(
   '/transactions/:transactionId',
-  authorize('transactions.read.all'),
+  hasPermission('transactions.read.all'),
   AdminController.getTransactionById
 );
 
@@ -578,7 +582,7 @@ router.get(
  */
 router.get(
   '/topup-requests',
-  authorize('topup-requests.read.all'),
+  hasPermission('topup-requests.read.all'),
   AdminController.getAllTopupRequests
 );
 
@@ -604,7 +608,7 @@ router.get(
  */
 router.get(
   '/topup-requests/:requestId',
-  authorize('topup-requests.read.all'),
+  hasPermission('topup-requests.read.all'),
   AdminController.getTopupRequestById
 );
 
@@ -630,7 +634,7 @@ router.get(
  */
 router.post(
   '/topup-requests/:requestId/retry',
-  authorize('topup-requests.update'),
+  hasPermission('topup-requests.update'),
   AdminController.retryTopupRequest
 );
 
@@ -670,7 +674,7 @@ router.post(
  */
 router.get(
   '/settlements',
-  authorize('settlements.read.all'),
+  hasPermission('settlements.read.all'),
   AdminController.getAllSettlements
 );
 
@@ -696,7 +700,7 @@ router.get(
  */
 router.get(
   '/settlements/:settlementId',
-  authorize('settlements.read.all'),
+  hasPermission('settlements.read.all'),
   AdminController.getSettlementById
 );
 
@@ -734,7 +738,7 @@ router.get(
  */
 router.post(
   '/settlements',
-  authorize('settlements.create'),
+  hasPermission('settlements.create'),
   AdminController.createSettlement
 );
 
@@ -755,7 +759,7 @@ router.post(
  */
 router.get(
   '/operators',
-  authorize('operators.read.all'),
+  hasPermission('operators.read.all'),
   AdminController.getAllOperators
 );
 
@@ -785,7 +789,7 @@ router.get(
  */
 router.post(
   '/operators',
-  authorize('operators.create'),
+  hasPermission('operators.create'),
   AdminController.createOperator
 );
 
@@ -811,7 +815,7 @@ router.post(
  */
 router.get(
   '/operators/:operatorId',
-  authorize('operators.read.all'),
+  hasPermission('operators.read.all'),
   AdminController.getOperatorById
 );
 
@@ -846,7 +850,7 @@ router.get(
  */
 router.put(
   '/operators/:operatorId',
-  authorize('operators.update'),
+  hasPermission('operators.update'),
   AdminController.updateOperator
 );
 
@@ -867,7 +871,7 @@ router.put(
  */
 router.get(
   '/suppliers',
-  authorize('suppliers.read.all'),
+  hasPermission('suppliers.read.all'),
   AdminController.getAllSuppliers
 );
 
@@ -903,7 +907,7 @@ router.get(
  */
 router.post(
   '/suppliers',
-  authorize('suppliers.create'),
+  hasPermission('suppliers.create'),
   AdminController.createSupplier
 );
 
@@ -929,7 +933,7 @@ router.post(
  */
 router.get(
   '/suppliers/:supplierId',
-  authorize('suppliers.read.all'),
+  hasPermission('suppliers.read.all'),
   AdminController.getSupplierById
 );
 
@@ -970,7 +974,7 @@ router.get(
  */
 router.put(
   '/suppliers/:supplierId',
-  authorize('suppliers.update'),
+  hasPermission('suppliers.update'),
   AdminController.updateSupplier
 );
 
@@ -991,7 +995,7 @@ router.put(
  */
 router.get(
   '/products',
-  authorize('products.read.all'),
+  hasPermission('products.read.all'),
   AdminController.getAllProducts
 );
 
@@ -1056,7 +1060,7 @@ router.get(
  */
 router.post(
   '/products',
-  authorize('products.create'),
+  hasPermission('products.create'),
   AdminController.createProduct
 );
 
@@ -1082,7 +1086,7 @@ router.post(
  */
 router.get(
   '/products/:productId',
-  authorize('products.read.all'),
+  hasPermission('products.read.all'),
   AdminController.getProductById
 );
 
@@ -1129,7 +1133,7 @@ router.get(
  */
 router.put(
   '/products/:productId',
-  authorize('products.update'),
+  hasPermission('products.update'),
   AdminController.updateProduct
 );
 
@@ -1175,7 +1179,7 @@ router.put(
  */
 router.post(
   '/products/:productId/map-to-supplier',
-  authorize('products.update'),
+  hasPermission('products.update'),
   AdminController.mapProductToSupplier
 );
 

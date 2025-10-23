@@ -2,7 +2,7 @@ import { Router } from 'express';
 import { UserController } from '../controllers/user.controller';
 import { authenticate } from '../middleware/auth.middleware';
 import { validatePin } from '../middleware/pin.validation.middleware';
-import { authorize } from '../middleware/rbac.middleware';
+import { hasPermission } from '../middleware/rbac.middleware';
 
 const router = Router();
 
@@ -34,7 +34,7 @@ router.use(authenticate);
  */
 router.get(
   '/profile/me',
-  authorize('profile.read'),
+  hasPermission('profile.read'),
   UserController.getMyProfile
 );
 
@@ -61,7 +61,7 @@ router.get(
  */
 router.put(
   '/profile/me',
-  authorize('profile.update'),
+  hasPermission('profile.update'),
   UserController.updateMyProfile
 );
 
@@ -92,7 +92,7 @@ router.put(
  */
 router.put(
   '/profile/pin',
-  authorize('profile.update'),
+  hasPermission('profile.update'),
   validatePin,
   UserController.setTransactionPin
 );
@@ -129,7 +129,7 @@ router.put(
  */
 router.get(
   '/wallet/transactions',
-  authorize('transactions.read.own'),
+  hasPermission('transactions.read.own'),
   UserController.getMyTransactions
 );
 
@@ -165,7 +165,7 @@ router.get(
  */
 router.get(
   '/purchases',
-  authorize('transactions.read.own'),
+  hasPermission('transactions.read.own'),
   UserController.getMyPurchases
 );
 

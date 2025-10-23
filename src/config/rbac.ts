@@ -62,6 +62,7 @@ export const ROLE_PERMISSIONS = {
     'products.read.all',
     'products.create',
     'products.update',
+    'create_notification',
   ],
 };
 
@@ -103,4 +104,5 @@ export const PERMISSION_DESCRIPTIONS = {
   'products.read.all': 'View all products',
   'products.create': 'Create new products',
   'products.update': 'Update products',
+  'create_notification': 'Create and send notifications to users',
 };

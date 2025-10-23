@@ -1,6 +1,6 @@
-import { Request, Response, NextFunction } from 'express';
-import { UserPayload } from '../types/auth.types';
+import { NextFunction, Request, Response } from 'express';
 import { roleHierarchy } from '../config/rbac';
+import { UserPayload } from '../types/auth.types';
 
 declare module 'express-serve-static-core' {
   interface Request {
@@ -8,7 +8,7 @@ declare module 'express-serve-static-core' {
   }
 }
 
-export const authorize = (...requiredPermissions: string[]) => {
+export const hasPermission = (...requiredPermissions: string[]) => {
   return (req: Request, res: Response, next: NextFunction) => {
     if (!req.user) {
       return res.status(401).json({
@@ -18,11 +18,11 @@ export const authorize = (...requiredPermissions: string[]) => {
     }
 
     const userPermissions = req.user.permissions;
-    const hasPermission = requiredPermissions.some(permission =>
+    const hasPermissions = requiredPermissions.some(permission =>
       userPermissions.includes(permission)
     );
 
-    if (!hasPermission) {
+    if (!hasPermissions) {
       return res.status(403).json({
         success: false,
         message: 'Insufficient permissions',

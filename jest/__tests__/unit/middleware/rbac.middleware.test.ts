@@ -31,13 +31,13 @@ jest.mock('../../../../src/services/session.service', () => ({
 }));
 
 // Import after mocking
+import { authenticate } from '../../../../src/middleware/auth.middleware';
 import {
-  authorize,
+  hasPermission,
   requireRole,
 } from '../../../../src/middleware/rbac.middleware';
-import { authenticate } from '../../../../src/middleware/auth.middleware';
-import { JwtService } from '../../../../src/services/jwt.service';
 import { UserModel } from '../../../../src/models/User';
+import { JwtService } from '../../../../src/services/jwt.service';
 import { SessionService } from '../../../../src/services/session.service';
 
 describe('RBAC Middleware', () => {
@@ -274,9 +274,9 @@ describe('RBAC Middleware', () => {
     });
   });
 
-  describe('authorize', () => {
+  describe('hasPermission', () => {
     it('should return 401 if user not authenticated', () => {
-      const middleware = authorize('users.create');
+      const middleware = hasPermission('users.create');
       middleware(mockRequest as Request, mockResponse as Response, mockNext);
 
       expect(mockResponse.status).toHaveBeenCalledWith(401);
@@ -296,7 +296,7 @@ describe('RBAC Middleware', () => {
         sessionId: 'session123',
       };
 
-      const middleware = authorize('users.create');
+      const middleware = hasPermission('users.create');
       middleware(mockRequest as Request, mockResponse as Response, mockNext);
 
       expect(mockResponse.status).toHaveBeenCalledWith(403);
@@ -316,7 +316,7 @@ describe('RBAC Middleware', () => {
         sessionId: 'session123',
       };
 
-      const middleware = authorize('users.create');
+      const middleware = hasPermission('users.create');
       middleware(mockRequest as Request, mockResponse as Response, mockNext);
 
       expect(mockNext).toHaveBeenCalled();
@@ -332,7 +332,7 @@ describe('RBAC Middleware', () => {
         sessionId: 'session123',
       };
 
-      const middleware = authorize('users.create', 'reports.create');
+      const middleware = hasPermission('users.create', 'reports.create');
       middleware(mockRequest as Request, mockResponse as Response, mockNext);
 
       expect(mockNext).toHaveBeenCalled();
@@ -347,7 +347,7 @@ describe('RBAC Middleware', () => {
         sessionId: 'session123',
       };
 
-      const middleware = authorize('users.create', 'reports.delete.all');
+      const middleware = hasPermission('users.create', 'reports.delete.all');
       middleware(mockRequest as Request, mockResponse as Response, mockNext);
 
       expect(mockResponse.status).toHaveBeenCalledWith(403);

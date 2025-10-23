@@ -1,8 +1,15 @@
 /* eslint-disable no-console */
+import http from 'http';
 import app from './app';
 import { config } from './config/env';
 import { close as closeDb, testConnection } from './database/connection';
 import { redisClientInstance } from './database/redis';
+import { initChatService } from './services/chat.service';
+import { initSocket } from './socket';
+
+const server = http.createServer(app);
+const io = initSocket(server);
+initChatService(io);
 
 const startServer = async () => {
   try {
@@ -13,7 +20,7 @@ const startServer = async () => {
     await redisClientInstance.ensureConnected();
 
     // Start server
-    const server = app.listen(config.port, '0.0.0.0', () => {
+    server.listen(config.port, '0.0.0.0', () => {
       console.log(`🚀 Server running on port ${config.port}`);
       console.log(
         `🏥 Health check: http://localhost:${config.port}/api/v1/health`
@@ -41,3 +48,5 @@ const startServer = async () => {
 };
 
 startServer();
+
+export default server;

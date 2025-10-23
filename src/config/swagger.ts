@@ -250,6 +250,87 @@ export const swaggerOptions = {
             },
           },
         },
+        // Chat & message schemas
+        Channel: {
+          type: 'object',
+          properties: {
+            id: { type: 'string', format: 'uuid' },
+            name: { type: 'string' },
+            isSupport: { type: 'boolean' },
+            createdAt: { type: 'string', format: 'date-time' },
+          },
+        },
+        Message: {
+          type: 'object',
+          properties: {
+            id: { type: 'string', format: 'uuid' },
+            clientMsgId: { type: 'string' },
+            channelId: { type: 'string', format: 'uuid' },
+            senderId: { type: 'string', format: 'uuid' },
+            body: { type: 'string' },
+            attachments: { type: 'array', items: { type: 'object' } },
+            metadata: { type: 'object' },
+            seq: { type: 'integer', format: 'int64' },
+            status: { type: 'string' },
+            createdAt: { type: 'string', format: 'date-time' },
+          },
+        },
+        ChannelListResponse: {
+          type: 'object',
+          properties: {
+            success: { type: 'boolean' },
+            message: { type: 'string' },
+            data: {
+              type: 'array',
+              items: { $ref: '#/components/schemas/Channel' },
+            },
+          },
+        },
+        MessagesListResponse: {
+          type: 'object',
+          properties: {
+            success: { type: 'boolean' },
+            message: { type: 'string' },
+            data: {
+              type: 'array',
+              items: { $ref: '#/components/schemas/Message' },
+            },
+          },
+        },
+
+        // Notification schemas
+        Notification: {
+          type: 'object',
+          properties: {
+            id: { type: 'string', format: 'uuid' },
+            title: { type: 'string' },
+            body: { type: 'string' },
+            target: { type: 'object' },
+            publishAt: { type: 'string', format: 'date-time' },
+            createdBy: { type: 'string', format: 'uuid' },
+            createdAt: { type: 'string', format: 'date-time' },
+            sent: { type: 'boolean' },
+            archived: { type: 'boolean' },
+          },
+        },
+        CreateNotificationRequest: {
+          type: 'object',
+          required: ['title'],
+          properties: {
+            title: { type: 'string' },
+            body: { type: 'string' },
+            target: { type: 'object' },
+            publishAt: { type: 'string', format: 'date-time' },
+          },
+        },
+        PushTokenRegisterRequest: {
+          type: 'object',
+          required: ['platform', 'token'],
+          properties: {
+            platform: { type: 'string', enum: ['ios', 'android', 'web'] },
+            token: { type: 'string' },
+          },
+        },
       },
     },
     security: [

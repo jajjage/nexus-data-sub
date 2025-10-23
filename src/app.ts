@@ -18,6 +18,8 @@ import testWebhookRoutes from './routes/testWebhook.routes';
 import twoFactorRoutes from './routes/twoFactor.routes';
 import userRoutes from './routes/user.routes';
 import webhookRoutes from './routes/webhook.routes';
+import chatRoutes from './routes/chat.routes';
+import notificationRoutes from './routes/notification.routes';
 import { ApiError } from './utils/ApiError';
 import {
   apiLimiter,
@@ -86,6 +88,8 @@ app.use('/api/v1/2fa', twoFactorRoutes);
 app.use('/api/v1/mobile/auth', mobileAuthRoutes);
 app.use('/api/v1/webhooks', webhookRoutes);
 app.use('/api/v1/test-webhooks', testWebhookLimiter, testWebhookRoutes);
+app.use('/api/v1/chat', chatRoutes);
+app.use('/api/v1/notifications', notificationRoutes);
 
 app.get('/', (req, res) => {
   res.redirect('/api/v1/docs');
