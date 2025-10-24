@@ -196,5 +196,20 @@ router.post('/logout', AuthController.logout);
  *               $ref: '#/components/schemas/ErrorResponse'
  */
 router.post('/refresh', authenticateRefresh, AuthController.refresh);
+// DEBUG: ensure handlers are defined during test runtime
+// (temporary - will be removed once root cause is found)
+/* istanbul ignore next */
+if (process.env.NODE_ENV === 'test') {
+  // eslint-disable-next-line no-console
+  console.log(
+    '[DEBUG] auth.routes - authenticateRefresh:',
+    typeof authenticateRefresh
+  );
+  // eslint-disable-next-line no-console
+  console.log(
+    '[DEBUG] auth.routes - AuthController.refresh:',
+    typeof (AuthController as any).refresh
+  );
+}
 
 export default router;

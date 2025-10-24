@@ -11,7 +11,7 @@ const knexConfig: { [key: string]: Knex.Config } = {
       extension: 'ts',
     },
     seeds: {
-      directory: './seeds',
+      directory: '../seeds',
     },
   },
 

@@ -1,6 +1,6 @@
 # Chat System Implementation Plan
 
-## Sprint 1: Foundation (2 weeks)
+## Sprint 1: Foundation
 
 ### Core Infrastructure
 
@@ -43,7 +43,7 @@
    ALTER TABLE messages ADD COLUMN read_at TIMESTAMP;
    ```
 
-## Sprint 2: Message Management (2 weeks)
+## Sprint 2: Message Management
 
 ### Message Queue System
 

@@ -8,6 +8,7 @@ import {
   RegisterPushTokenInput,
 } from '../types/notification.types';
 import { generateUUID } from '../utils/crypto';
+import { jsonb } from '../utils/db.utils';
 
 export class NotificationModel {
   /**
@@ -20,12 +21,25 @@ export class NotificationModel {
     notificationData: CreateNotificationInput,
     createdBy: string
   ): Promise<Notification> {
+    const insertData: any = {
+      id: generateUUID(),
+      title: notificationData.title,
+      body: notificationData.body,
+      created_by: createdBy,
+    };
+
+    // publish_at is optional; if provided, include it, otherwise DB default will apply
+    if (notificationData.publish_at) {
+      insertData.publish_at = notificationData.publish_at;
+    }
+
+    // Map targetCriteria -> target (JSONB column)
+    if (notificationData.targetCriteria) {
+      insertData.target = jsonb(notificationData.targetCriteria);
+    }
+
     const [notification] = await db('notifications')
-      .insert({
-        id: generateUUID(),
-        ...notificationData,
-        created_by: createdBy,
-      })
+      .insert(insertData)
       .returning('*');
     return notification;
   }

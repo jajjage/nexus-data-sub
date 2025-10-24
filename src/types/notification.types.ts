@@ -45,3 +45,30 @@ export interface RegisterPushTokenInput {
   platform: 'ios' | 'android' | 'web';
   token: string;
 }
+
+export interface NotificationTemplate {
+  id: string; // Changed to string since we're using UUID in the migration
+  template_id: string;
+  title: string;
+  body: string;
+  locales: string[]; // Keep as string[] since we handle the JSONB conversion in the service
+  created_at: Date;
+  updated_at: Date;
+}
+
+export interface UserNotificationPreference {
+  id: number;
+  userId: string;
+  category: string;
+  subscribed: boolean;
+  created_at: Date;
+  updated_at: Date;
+}
+
+export interface NotificationAnalytics {
+  id: number;
+  notification_id: string;
+  user_id: string;
+  status: 'sent' | 'delivered' | 'opened' | 'failed';
+  created_at: Date;
+}

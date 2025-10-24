@@ -1,6 +1,10 @@
 import { Router } from 'express';
 import { ChatController } from '../controllers/chat.controller';
 import { authenticate } from '../middleware/auth.middleware';
+import {
+  channelCreationLimiter,
+  messageRateLimiter,
+} from '../middleware/rateLimiter.middleware';
 
 const router = Router();
 
@@ -29,7 +33,11 @@ router.use(authenticate);
  *             schema:
  *               $ref: '#/components/schemas/Channel'
  */
-router.post('/support', ChatController.createSupportChannel);
+router.post(
+  '/support',
+  channelCreationLimiter,
+  ChatController.createSupportChannel
+);
 
 /**
  * @swagger
@@ -72,6 +80,10 @@ router.get('/channels', ChatController.getUserChannels);
  *             schema:
  *               $ref: '#/components/schemas/MessagesListResponse'
  */
-router.get('/channels/:channelId/messages', ChatController.getMessages);
+router.get(
+  '/channels/:channelId/messages',
+  messageRateLimiter,
+  ChatController.getMessages
+);
 
 export default router;

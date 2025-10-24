@@ -128,7 +128,28 @@ global.beforeAll(async () => {
     ('roles.assign', 'Assign roles to users'),
     ('profile.read', 'View own profile'),
     ('profile.update', 'Update own profile'),
-    ('system.settings', 'Manage system settings')
+    ('system.settings', 'Manage system settings'),
+    ('create_notification', 'Create and send notifications to users'),
+    ('manage_notification_templates', 'Manage notification templates'),
+    ('view_notification_analytics', 'View notification analytics'),
+    ('topup-requests.read.all', 'View all topup requests'),
+    ('topup-requests.update', 'Update topup requests'),
+    ('settlements.read.all', 'View all settlements'),
+    ('settlements.create', 'Create new settlements'),
+    ('operators.read.all', 'View all operators'),
+    ('operators.create', 'Create new operators'),
+    ('operators.update', 'Update operators'),
+    ('suppliers.read.all', 'View all suppliers'),
+    ('suppliers.create', 'Create new suppliers'),
+    ('suppliers.update', 'Update suppliers'),
+    ('products.read.all', 'View all products'),
+    ('products.create', 'Create new products'),
+    ('products.update', 'Update products'),
+    ('transactions.read.own', 'View own transactions'),
+    ('transactions.read.all', 'View all transactions'),
+    ('transactions.create', 'Create new transactions'),
+    ('transactions.update', 'Update transactions'),
+    ('transactions.delete', 'Delete transactions')
     ON CONFLICT (name) DO NOTHING;
   `);
   await connection_1.default.query(`
@@ -142,7 +163,9 @@ global.beforeAll(async () => {
       'reports.delete.own',
       'incidents.read',
       'profile.read',
-      'profile.update'
+      'profile.update',
+      'transactions.read.own',
+      'transactions.create'
     )
     ON CONFLICT (role_id, permission_id) DO NOTHING;
   `);
@@ -157,7 +180,12 @@ global.beforeAll(async () => {
       'incidents.read.all',
       'incidents.update.own',
       'profile.read',
-      'profile.update'
+      'profile.update',
+      'topup-requests.read.all',
+      'settlements.read.all',
+      'create_notification',
+      'manage_notification_templates',
+      'view_notification_analytics'
     )
     ON CONFLICT (role_id, permission_id) DO NOTHING;
   `);
@@ -178,6 +206,10 @@ global.beforeAll(async () => {
       'reports.update.all',
       'reports.delete.all',
       'reports.verify',
+      'transactions.read.all',
+      'transactions.create',
+      'transactions.update',
+      'transactions.delete',
       'incidents.create',
       'incidents.read.all',
       'incidents.update.all',
@@ -189,7 +221,23 @@ global.beforeAll(async () => {
       'roles.assign',
       'profile.read',
       'profile.update',
-      'system.settings'
+      'system.settings',
+      'topup-requests.read.all',
+      'topup-requests.update',
+      'settlements.read.all',
+      'settlements.create',
+      'operators.read.all',
+      'operators.create',
+      'operators.update',
+      'suppliers.read.all',
+      'suppliers.create',
+      'suppliers.update',
+      'products.read.all',
+      'products.create',
+      'products.update',
+      'create_notification',
+      'manage_notification_templates',
+      'view_notification_analytics'
     )
     ON CONFLICT (role_id, permission_id) DO NOTHING;
   `);

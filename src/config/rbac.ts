@@ -26,6 +26,9 @@ export const ROLE_PERMISSIONS = {
     'profile.update',
     'topup-requests.read.all',
     'settlements.read.all',
+    'create_notification',
+    'manage_notification_templates',
+    'view_notification_analytics',
   ],
   admin: [
     'reports.create',
@@ -63,6 +66,8 @@ export const ROLE_PERMISSIONS = {
     'products.create',
     'products.update',
     'create_notification',
+    'manage_notification_templates',
+    'view_notification_analytics',
   ],
 };
 
@@ -104,5 +109,7 @@ export const PERMISSION_DESCRIPTIONS = {
   'products.read.all': 'View all products',
   'products.create': 'Create new products',
   'products.update': 'Update products',
-  'create_notification': 'Create and send notifications to users',
+  create_notification: 'Create and send notifications to users',
+  manage_notification_templates: 'Manage notification templates',
+  view_notification_analytics: 'View notification analytics',
 };
