@@ -1,8 +1,8 @@
-import speakeasy from 'speakeasy';
 import QRCode from 'qrcode';
+import speakeasy from 'speakeasy';
+import db from '../database/connection';
 import { UserModel } from '../models/User';
 import { hashBackupCode, safeCompare } from '../utils/crypto';
-import db from '../database/connection';
 
 export interface TotpSetup {
   secret: string;
@@ -120,7 +120,7 @@ export class TotpService {
         .where({ user_id: userId })
         .select('two_factor_backup_codes as two_factor_backup_codes')
         .first();
-      
+
       if (!currentRecord) {
         await trx.rollback();
         return false;
@@ -129,27 +129,28 @@ export class TotpService {
       const currentBackupCodes: { code: string; used: boolean }[] = JSON.parse(
         currentRecord.two_factor_backup_codes
       );
-      
+
       const currentIndex = currentBackupCodes.findIndex(
         c => safeCompare(c.code, hashedCode) && !c.used
       );
-      
+
       if (currentIndex === -1) {
         await trx.rollback();
         return false;
       }
 
       currentBackupCodes[currentIndex].used = true;
-      
+
       await trx('backup_code')
         .where({ user_id: userId })
-        .update({ 
+        .update({
           two_factor_backup_codes: JSON.stringify(currentBackupCodes),
-          updated_at: db.fn.now()
+          updated_at: db.fn.now(),
         });
 
       await trx.commit();
       return true;
+      // eslint-disable-next-line @typescript-eslint/no-unused-vars
     } catch (error) {
       await trx.rollback();
       return false;

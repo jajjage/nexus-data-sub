@@ -1,7 +1,7 @@
-import { Request, Response, NextFunction } from 'express';
+import { NextFunction, Request, Response } from 'express';
+import { ApiError } from '../utils/ApiError';
 import { logger } from '../utils/logger.utils';
 import { sendError } from '../utils/response.utils';
-import { ApiError } from '../utils/ApiError';
 
 const handleApiError = (err: ApiError, res: Response) => {
   const { statusCode, message, isOperational } = err;

@@ -1,16 +1,22 @@
 import * as admin from 'firebase-admin';
+import { FirebaseMulticastResponse } from '../types/firebase.types';
+import { logger } from '../utils/logger.utils';
 
-// Note: You'll need to set up a Firebase project and get your service account credentials.
-// Store them securely, for example, in environment variables.
-const serviceAccount = JSON.parse(
-  process.env.FIREBASE_SERVICE_ACCOUNT_KEY || '{}'
+// Firebase service account credentials are stored in a JSON file
+import * as fs from 'fs';
+import * as path from 'path';
+
+const serviceAccountPath = path.join(
+  __dirname,
+  '../../nexus-1837e-firebase-adminsdk-fbsvc-9d77ea24dd.json'
 );
+const serviceAccount = JSON.parse(fs.readFileSync(serviceAccountPath, 'utf8'));
 
 if (Object.keys(serviceAccount).length) {
   admin.initializeApp({
     credential: admin.credential.cert(serviceAccount),
   });
-  console.log('Firebase Admin SDK initialized.');
+  logger.info('Firebase Admin SDK initialized.');
 }
 
 export class FirebaseService {
@@ -58,16 +64,24 @@ export class FirebaseService {
     tokens: string[],
     title: string,
     body: string
-  ) {
+  ): Promise<FirebaseMulticastResponse> {
     if (!admin.apps.length) {
       console.warn(
         'Firebase Admin SDK not initialized. Skipping notification.'
       );
-      return;
+      return {
+        responses: [],
+        successCount: 0,
+        failureCount: 0,
+      };
     }
 
     if (!tokens.length) {
-      return;
+      return {
+        responses: [],
+        successCount: 0,
+        failureCount: 0,
+      };
     }
 
     const message = {
@@ -79,9 +93,24 @@ export class FirebaseService {
     };
 
     try {
-      await admin.messaging().sendEachForMulticast(message);
+      const response = await admin.messaging().sendEachForMulticast(message);
+
+      return {
+        responses: response.responses.map(r => ({
+          success: r.success,
+          error: r.error
+            ? {
+                code: r.error.code,
+                message: r.error.message,
+              }
+            : undefined,
+        })),
+        successCount: response.successCount,
+        failureCount: response.failureCount,
+      };
     } catch (error) {
       console.error('Error sending multicast push notification:', error);
+      throw error;
     }
   }
 }

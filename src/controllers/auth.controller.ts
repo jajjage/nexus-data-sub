@@ -2,6 +2,7 @@ import { Request, Response } from 'express';
 import { UserModel } from '../models/User';
 import { EmailService } from '../services/email.service';
 import { JwtService } from '../services/jwt.service';
+import { NotificationService } from '../services/notification.service';
 import { SessionService } from '../services/session.service';
 import { TotpService } from '../services/topt.service';
 import { generateSecureToken } from '../utils/crypto';
@@ -21,7 +22,8 @@ export class AuthController {
    */
   public static async register(req: Request, res: Response): Promise<Response> {
     try {
-      const { email, password, phoneNumber, fullName } = req.body;
+      const { email, password, phoneNumber, fullName, fcmToken, platform } =
+        req.body;
 
       if (!email || !password || !phoneNumber || !fullName) {
         return sendError(
@@ -99,6 +101,20 @@ export class AuthController {
         return user;
       });
 
+      // Register FCM token if provided
+      if (fcmToken && platform) {
+        try {
+          await NotificationService.registerPushToken({
+            userId: createdUser.userId,
+            token: fcmToken,
+            platform: platform as 'ios' | 'android' | 'web',
+          });
+        } catch (error) {
+          console.error('Failed to register FCM token:', error);
+          // Don't fail registration if FCM token registration fails
+        }
+      }
+
       return sendSuccess(
         res,
         'User registered successfully.',
@@ -124,7 +140,15 @@ export class AuthController {
    */
   static async login(req: Request, res: Response): Promise<Response> {
     try {
-      const { email, password, phoneNumber, totpCode, backupCode } = req.body;
+      const {
+        email,
+        password,
+        phoneNumber,
+        totpCode,
+        backupCode,
+        fcmToken,
+        platform,
+      } = req.body;
       const identifier = email || phoneNumber;
 
       if (!identifier || !password) {
@@ -229,6 +253,20 @@ export class AuthController {
             twoFactorDisabled?: true;
           }
         | undefined;
+
+      // Register or update FCM token if provided
+      if (fcmToken && platform) {
+        try {
+          await NotificationService.registerPushToken({
+            userId: user.userId,
+            token: fcmToken,
+            platform: platform as 'ios' | 'android' | 'web',
+          });
+        } catch (error) {
+          console.error('Failed to register FCM token:', error);
+          // Don't fail login if FCM token registration fails
+        }
+      }
 
       const payload: any = { user: userProfile };
       if (twofaResult) Object.assign(payload, twofaResult);

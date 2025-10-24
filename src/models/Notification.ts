@@ -1,11 +1,13 @@
 import db from '../database/connection';
-import { generateUUID } from '../utils/crypto';
+import { TokenStatusUpdate } from '../types/firebase.types';
 import {
   CreateNotificationInput,
   Notification,
+  NotificationTargetCriteria,
   PushToken,
   RegisterPushTokenInput,
 } from '../types/notification.types';
+import { generateUUID } from '../utils/crypto';
 
 export class NotificationModel {
   /**
@@ -75,10 +77,133 @@ export class NotificationModel {
   }
 
   /**
+   * Updates the status of a push token.
+   * @param token - The token to update
+   * @param update - The status update data
+   */
+  static async updateTokenStatus(
+    token: string,
+    update: TokenStatusUpdate
+  ): Promise<void> {
+    await db('push_tokens').where({ token }).update({
+      status: update.status,
+      last_failure: update.last_failure,
+      failure_reason: update.failure_reason,
+    });
+  }
+
+  /**
+   * Updates the status of all tokens for a user on a specific platform
+   * @param userId - The ID of the user
+   * @param platform - The platform to update tokens for
+   * @param update - The status update data
+   */
+  static async updateUserTokensStatus(
+    userId: string,
+    platform: string,
+    update: TokenStatusUpdate
+  ): Promise<void> {
+    await db('push_tokens')
+      .where({
+        user_id: userId,
+        platform,
+      })
+      .update({
+        status: update.status,
+        last_failure: update.last_failure,
+        failure_reason: update.failure_reason,
+      });
+  }
+
+  /**
    * Finds all push tokens for all users.
    * @returns A list of all push tokens.
    */
-  static async findAllPushTokens(): Promise<PushToken[]> {
-    return db('push_tokens');
+  static async findAllPushTokens(
+    targetCriteria?: NotificationTargetCriteria
+  ): Promise<PushToken[]> {
+    let query = db('push_tokens')
+      .select('push_tokens.*')
+      .join('users', 'users.id', '=', 'push_tokens.user_id');
+
+    if (targetCriteria) {
+      if (targetCriteria.registrationDateRange) {
+        query = query.whereBetween('users.created_at', [
+          targetCriteria.registrationDateRange.start,
+          targetCriteria.registrationDateRange.end,
+        ]);
+      }
+
+      if (
+        targetCriteria.minTransactionCount ||
+        targetCriteria.maxTransactionCount
+      ) {
+        const transactionSubquery = db('transactions')
+          .select('user_id')
+          .count('* as transaction_count')
+          .groupBy('user_id')
+          .as('transaction_counts');
+
+        query = query.leftJoin(
+          transactionSubquery,
+          'users.id',
+          'transaction_counts.user_id'
+        );
+
+        if (targetCriteria.minTransactionCount) {
+          query = query.where(
+            'transaction_counts.transaction_count',
+            '>=',
+            targetCriteria.minTransactionCount
+          );
+        }
+        if (targetCriteria.maxTransactionCount) {
+          query = query.where(
+            'transaction_counts.transaction_count',
+            '<=',
+            targetCriteria.maxTransactionCount
+          );
+        }
+      }
+
+      if (targetCriteria.minTopupCount || targetCriteria.maxTopupCount) {
+        const topupSubquery = db('topup_requests')
+          .select('user_id')
+          .count('* as topup_count')
+          .groupBy('user_id')
+          .as('topup_counts');
+
+        query = query.leftJoin(
+          topupSubquery,
+          'users.id',
+          'topup_counts.user_id'
+        );
+
+        if (targetCriteria.minTopupCount) {
+          query = query.where(
+            'topup_counts.topup_count',
+            '>=',
+            targetCriteria.minTopupCount
+          );
+        }
+        if (targetCriteria.maxTopupCount) {
+          query = query.where(
+            'topup_counts.topup_count',
+            '<=',
+            targetCriteria.maxTopupCount
+          );
+        }
+      }
+
+      if (targetCriteria.lastActiveWithinDays) {
+        const cutoffDate = new Date();
+        cutoffDate.setDate(
+          cutoffDate.getDate() - targetCriteria.lastActiveWithinDays
+        );
+        query = query.where('push_tokens.last_seen', '>=', cutoffDate);
+      }
+    }
+
+    return query;
   }
 }

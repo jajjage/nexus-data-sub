@@ -1,6 +1,7 @@
 import { Router } from 'express';
 import { NotificationController } from '../controllers/notification.controller';
 import { authenticate } from '../middleware/auth.middleware';
+import { validatePushToken } from '../middleware/pushToken.validation.middleware';
 import { hasPermission } from '../middleware/rbac.middleware';
 
 const router = Router();
@@ -62,7 +63,11 @@ router.get('/', NotificationController.getUserNotifications);
  *       400:
  *         description: Validation error
  */
-router.post('/tokens', NotificationController.registerPushToken);
+router.post(
+  '/tokens',
+  validatePushToken,
+  NotificationController.registerPushToken
+);
 
 /**
  * @swagger

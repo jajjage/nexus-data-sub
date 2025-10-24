@@ -1,4 +1,3 @@
-/* eslint-disable no-console */
 import http from 'http';
 import app from './app';
 import { config } from './config/env';
@@ -6,6 +5,7 @@ import { close as closeDb, testConnection } from './database/connection';
 import { redisClientInstance } from './database/redis';
 import { initChatService } from './services/chat.service';
 import { initSocket } from './socket';
+import { logger } from './utils/logger.utils';
 
 const server = http.createServer(app);
 const io = initSocket(server);
@@ -21,19 +21,21 @@ const startServer = async () => {
 
     // Start server
     server.listen(config.port, '0.0.0.0', () => {
-      console.log(`🚀 Server running on port ${config.port}`);
-      console.log(
+      logger.info(`🚀 Server running on port ${config.port}`);
+      logger.info(
         `🏥 Health check: http://localhost:${config.port}/api/v1/health`
       );
-      console.log(`📝 API docs: http://localhost:${config.port}/api/v1/docs`);
-      console.log(process.env.CORS_ALLOWED_ORIGINS?.split(','));
+      logger.info(`📝 API docs: http://localhost:${config.port}/api/v1/docs`);
+      logger.info(
+        `🔒 CORS allowed origins: ${process.env.CORS_ALLOWED_ORIGINS?.split(',').join(', ') || 'none'}`
+      );
     });
 
     // Graceful shutdown
     process.on('SIGTERM', async () => {
-      console.log('SIGTERM received, shutting down gracefully');
+      logger.info('SIGTERM received, shutting down gracefully');
       server.close(async () => {
-        console.log('Process terminated');
+        logger.info('Process terminated');
         await closeDb();
         await redisClientInstance.disconnect();
         process.exit(0);

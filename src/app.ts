@@ -10,16 +10,16 @@ import { deviceInfoMiddleware } from './middleware/deviceInfo.middleware';
 import { errorMiddleware } from './middleware/error.middleware';
 import adminRoutes from './routes/admin.routes';
 import authRoutes from './routes/auth.routes';
+import chatRoutes from './routes/chat.routes';
 import healthRoutes from './routes/health.routes';
 import mobileAuthRoutes from './routes/mobileAuth.routes';
+import notificationRoutes from './routes/notification.routes';
 import passwordRoutes from './routes/password.routes';
 import sessionRoutes from './routes/session.routes';
 import testWebhookRoutes from './routes/testWebhook.routes';
 import twoFactorRoutes from './routes/twoFactor.routes';
 import userRoutes from './routes/user.routes';
 import webhookRoutes from './routes/webhook.routes';
-import chatRoutes from './routes/chat.routes';
-import notificationRoutes from './routes/notification.routes';
 import { ApiError } from './utils/ApiError';
 import {
   apiLimiter,

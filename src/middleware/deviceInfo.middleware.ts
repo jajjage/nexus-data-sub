@@ -1,4 +1,4 @@
-import { Request, Response, NextFunction } from 'express';
+import { NextFunction, Request, Response } from 'express';
 import { UAParser } from 'ua-parser-js';
 import { sanitizeUserAgent } from '../utils/security.utils';
 

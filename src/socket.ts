@@ -4,6 +4,7 @@ import {
   AuthenticatedSocket,
   verifySocketMiddleware,
 } from './middleware/socket.middleware';
+import { logger } from './utils/logger.utils';
 
 export const initSocket = (server: HttpServer) => {
   const io = new Server(server, {
@@ -16,7 +17,7 @@ export const initSocket = (server: HttpServer) => {
   io.use(verifySocketMiddleware);
 
   io.on('connection', (socket: AuthenticatedSocket) => {
-    console.log('a user connected:', socket.id);
+    logger.info('a user connected:', socket.id);
 
     if (socket.user) {
       // Join a room based on user ID for personal notifications
@@ -25,11 +26,11 @@ export const initSocket = (server: HttpServer) => {
 
     socket.on('joinChannel', (channelId: string) => {
       socket.join(channelId);
-      console.log(`Socket ${socket.id} joined channel ${channelId}`);
+      logger.info(`Socket ${socket.id} joined channel ${channelId}`);
     });
 
     socket.on('disconnect', () => {
-      console.log('user disconnected:', socket.id);
+      logger.info('user disconnected:', socket.id);
     });
   });
 

@@ -43,6 +43,7 @@ const verifySignature = (
       Buffer.from(computed, 'hex'),
       Buffer.from(normalizedHeader, 'hex')
     );
+    // eslint-disable-next-line @typescript-eslint/no-unused-vars
   } catch (error) {
     return false;
   }
@@ -71,7 +72,7 @@ export const webhookAuthMiddleware = async (
 
     // Get signature from appropriate header based on provider
     let signatureHeader;
-    switch(providerName) {
+    switch (providerName) {
       case 'palmpay':
         signatureHeader = req.get(config.webhooks.palmpay.signatureHeader);
         break;
@@ -85,7 +86,7 @@ export const webhookAuthMiddleware = async (
         signatureHeader = req.get(config.webhooks.palmpay.signatureHeader); // fallback
         break;
     }
-    
+
     const webhookSecret =
       provider.webhook_secret || config.webhooks.palmpay.secret;
 
@@ -107,7 +108,7 @@ export const webhookAuthMiddleware = async (
     // Since we already fetched the provider above and verified it exists and is active,
     // we can use its ID directly
     const providerId = provider.id;
-    
+
     const [webhookEvent] = await knex('webhook_events')
       .insert({
         provider_id: providerId,

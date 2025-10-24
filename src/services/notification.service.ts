@@ -3,8 +3,8 @@ import {
   CreateNotificationInput,
   RegisterPushTokenInput,
 } from '../types/notification.types';
-import { FirebaseService } from './firebase.service';
 import { logger } from '../utils/logger.utils';
+import { FirebaseService } from './firebase.service';
 
 export class NotificationService {
   /**
@@ -37,16 +37,52 @@ export class NotificationService {
       `Starting background job to send push notifications for notification ID: ${notification.id}`
     );
     try {
-      // This sends to ALL users. In a real app, you'd have targeting logic.
-      const allTokens = await NotificationModel.findAllPushTokens();
-      const tokenStrings = allTokens.map(t => t.token);
+      // Get tokens based on targeting criteria if provided
+      const targetedTokens = await NotificationModel.findAllPushTokens(
+        notification.targetCriteria
+      );
+
+      // Filter out non-active tokens
+      const activeTokens = targetedTokens.filter(t => t.status === 'active');
+      const tokenStrings = activeTokens.map(t => t.token);
 
       if (tokenStrings.length > 0) {
-        await FirebaseService.sendMulticastPushNotification(
+        logger.info(
+          `Sending notification to ${tokenStrings.length} targeted devices`
+        );
+        const result = await FirebaseService.sendMulticastPushNotification(
           tokenStrings,
           notification.title,
           notification.body || ''
         );
+
+        // Handle failed tokens
+        if (result?.responses) {
+          const failedTokens = result.responses
+            .map((resp, index) => ({
+              token: tokenStrings[index],
+              error: resp.error,
+            }))
+            .filter(item => item.error);
+
+          // Update failed tokens status
+          await Promise.all(
+            failedTokens.map(async ({ token, error }) => {
+              await NotificationModel.updateTokenStatus(token, {
+                status: 'invalid',
+                failure_reason: error?.message || 'Unknown error',
+                last_failure: new Date(),
+              });
+            })
+          );
+
+          if (failedTokens.length > 0) {
+            logger.warn(
+              `Failed to send notification to ${failedTokens.length} tokens`,
+              failedTokens
+            );
+          }
+        }
       }
     } catch (error) {
       logger.error(

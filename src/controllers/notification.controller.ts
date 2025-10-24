@@ -1,4 +1,5 @@
 import { Request, Response } from 'express';
+import { NotificationModel } from '../models/Notification';
 import { NotificationService } from '../services/notification.service';
 import { sendError, sendSuccess } from '../utils/response.utils';
 
@@ -18,11 +19,63 @@ export class NotificationController {
       if (!req.user) {
         return sendError(res, 'Authentication required', 401, []);
       }
-      const adminId = req.user.userId;
+
+      const { title, body, targetCriteria, publish_at } = req.body;
+
+      // Validate required fields
+      if (!title || !body) {
+        return sendError(res, 'Title and body are required', 400, []);
+      }
+
+      // Validate targeting criteria if provided
+      if (targetCriteria) {
+        if (targetCriteria.registrationDateRange) {
+          const { start, end } = targetCriteria.registrationDateRange;
+          if (!start || !end || new Date(start) > new Date(end)) {
+            return sendError(res, 'Invalid registration date range', 400, []);
+          }
+        }
+
+        if (
+          targetCriteria.minTransactionCount &&
+          targetCriteria.maxTransactionCount &&
+          targetCriteria.minTransactionCount >
+            targetCriteria.maxTransactionCount
+        ) {
+          return sendError(res, 'Invalid transaction count range', 400, []);
+        }
+
+        if (
+          targetCriteria.minTopupCount &&
+          targetCriteria.maxTopupCount &&
+          targetCriteria.minTopupCount > targetCriteria.maxTopupCount
+        ) {
+          return sendError(res, 'Invalid topup count range', 400, []);
+        }
+
+        if (
+          targetCriteria.lastActiveWithinDays &&
+          targetCriteria.lastActiveWithinDays <= 0
+        ) {
+          return sendError(
+            res,
+            'Last active days must be a positive number',
+            400,
+            []
+          );
+        }
+      }
+
       const notification = await NotificationService.createAndSend(
-        req.body,
-        adminId
+        {
+          title,
+          body,
+          targetCriteria,
+          publish_at,
+        },
+        req.user.userId
       );
+
       return sendSuccess(
         res,
         'Notification created successfully',
@@ -40,9 +93,32 @@ export class NotificationController {
       if (!req.user) {
         return sendError(res, 'Authentication required', 401, []);
       }
+
+      const { token, platform } = req.body;
       const userId = req.user.userId;
-      await NotificationService.registerPushToken({ ...req.body, userId });
-      return sendSuccess(res, 'Push token registered successfully', {}, 204);
+
+      // First, invalidate any existing tokens for this user on this platform
+      await NotificationModel.updateUserTokensStatus(userId, platform, {
+        status: 'unregistered',
+        failure_reason: 'Token replaced by new registration',
+      });
+
+      // Register the new token
+      await NotificationService.registerPushToken({
+        userId,
+        token,
+        platform,
+      });
+
+      return sendSuccess(
+        res,
+        'Push token registered successfully',
+        {
+          platform,
+          status: 'active',
+        },
+        201
+      );
     } catch (error) {
       console.error('Register push token error:', error);
       return sendError(res, 'Internal server error', 500, []);
