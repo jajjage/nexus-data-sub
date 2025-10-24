@@ -21,7 +21,7 @@ download-ripgrepEGJEHb
 .eslintcache.
 admin-dashboard.*
 user-endpoints.*
-nexus-1837e-firebase-adminsdk-fbsvc-9d77ea24dd.json
+serviceAccountKey.json
 auth.session.sql
 backup.sql
 # Optional REPL history

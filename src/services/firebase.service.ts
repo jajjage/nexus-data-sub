@@ -6,10 +6,7 @@ import { logger } from '../utils/logger.utils';
 import * as fs from 'fs';
 import * as path from 'path';
 
-const serviceAccountPath = path.join(
-  __dirname,
-  '../../nexus-1837e-firebase-adminsdk-fbsvc-9d77ea24dd.json'
-);
+const serviceAccountPath = path.join(__dirname, '../../serviceAccountKey.json');
 const serviceAccount = JSON.parse(fs.readFileSync(serviceAccountPath, 'utf8'));
 
 if (Object.keys(serviceAccount).length) {
