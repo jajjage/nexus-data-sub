@@ -42,9 +42,6 @@ jobs:
         uses: actions/setup-node@v3
         with:
           node-version: '18'
-      - name: Decode Firebase service account
-        run: echo "${{ secrets.FIREBASE_SERVICE_ACCOUNT }}" | base64 --decode > "${{ github.workspace }}/serviceAccountKey.json"
-
       - name: Install dependencies
         run: npm install
 
@@ -56,3 +53,4 @@ jobs:
           REDIS_PORT: 6379
           JWT_SECRET: test-secret
           JWT_REFRESH_SECRET: test-refresh-secret
+          FIREBASE_SERVICE_ACCOUNT: ${{ secrets.FIREBASE_SERVICE_ACCOUNT }}

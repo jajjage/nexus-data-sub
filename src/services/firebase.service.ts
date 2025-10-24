@@ -2,19 +2,51 @@ import * as admin from 'firebase-admin';
 import { FirebaseMulticastResponse } from '../types/firebase.types';
 import { logger } from '../utils/logger.utils';
 
-// Firebase service account credentials are stored in a JSON file
-import * as fs from 'fs';
-import * as path from 'path';
+let serviceAccount: any;
 
-const serviceAccountPath = path.join(__dirname, '../../serviceAccountKey.json');
-const serviceAccount = JSON.parse(fs.readFileSync(serviceAccountPath, 'utf8'));
+if (process.env.FIREBASE_SERVICE_ACCOUNT) {
+  try {
+    serviceAccount = JSON.parse(process.env.FIREBASE_SERVICE_ACCOUNT);
+  } catch (error) {
+    console.error('Invalid FIREBASE_SERVICE_ACCOUNT JSON:', error);
+  }
+} else {
+  throw new Error('Missing FIREBASE_SERVICE_ACCOUNT environment variable');
+}
 
-if (Object.keys(serviceAccount).length) {
+if (!admin.apps.length) {
   admin.initializeApp({
     credential: admin.credential.cert(serviceAccount),
   });
   logger.info('Firebase Admin SDK initialized.');
 }
+
+// import * as fs from 'fs';
+// import * as path from 'path';
+
+// const serviceAccountPath = path.join(__dirname, '../../serviceAccountKey.json');
+
+// let serviceAccount = {};
+
+// if (fs.existsSync(serviceAccountPath)) {
+//   const content = fs.readFileSync(serviceAccountPath, 'utf8');
+//   if (content.trim().length > 0) {
+//     try {
+//       serviceAccount = JSON.parse(content);
+//       admin.initializeApp({
+//         credential: admin.credential.cert(
+//           serviceAccount as admin.ServiceAccount
+//         ),
+//       });
+//     } catch (err) {
+//       console.error('Invalid JSON in serviceAccountKey.json:', err);
+//     }
+//   } else {
+//     console.warn('⚠️ serviceAccountKey.json is empty');
+//   }
+// } else {
+//   console.warn('⚠️ serviceAccountKey.json not found');
+// }
 
 export class FirebaseService {
   /**
