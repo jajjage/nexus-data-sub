@@ -3,6 +3,9 @@ import { ChatModel } from '../models/Chat';
 import { CreateMessageInput } from '../types/chat.types';
 import { ApiError } from '../utils/ApiError';
 import { NotificationService } from './notification.service';
+import { StaffService } from './staff.service';
+import { generateUUID } from '../utils/crypto';
+import { UserModel } from '../models/User';
 
 let io: Server;
 
@@ -18,6 +21,32 @@ export class ChatService {
    */
   static async createSupportChannel(userId: string) {
     const channel = await ChatModel.createSupportChannel(userId);
+
+    // Assign a staff member
+    const staffId = await StaffService.assignStaffToChannel();
+    if (staffId) {
+      await ChatModel.addMember(channel.id, staffId, 'admin');
+
+      // Send a welcome message
+      const welcomeMessage: CreateMessageInput = {
+        client_msg_id: generateUUID(),
+        channel_id: channel.id,
+        sender_id: 'bot', // Or a dedicated bot user ID
+        body: 'Welcome to support! A staff member will be with you shortly.',
+      };
+      await ChatModel.createMessage(welcomeMessage);
+    } else {
+      // Handle case where no staff are available
+      const admins = await UserModel.findByRole('admin');
+      for (const admin of admins) {
+        await NotificationService.sendToUser(
+          admin.userId,
+          'Support Request',
+          `A user is waiting for support in channel ${channel.id}.`
+        );
+      }
+    }
+
     return channel;
   }
 

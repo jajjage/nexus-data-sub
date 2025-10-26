@@ -11,6 +11,81 @@ const router = Router();
  * tags:
  *   name: Notifications
  *   description: Push notifications and notification management
+ * components:
+ *   schemas:
+ *     Notification:
+ *       type: object
+ *       properties:
+ *         id:
+ *           type: string
+ *           format: uuid
+ *         title:
+ *           type: string
+ *         body:
+ *           type: string
+ *         targetCriteria:
+ *           $ref: '#/components/schemas/NotificationTargetCriteria'
+ *         publish_at:
+ *           type: string
+ *           format: date-time
+ *         created_by:
+ *           type: string
+ *           format: uuid
+ *         created_at:
+ *           type: string
+ *           format: date-time
+ *         sent:
+ *           type: boolean
+ *         archived:
+ *           type: boolean
+ *     NotificationTargetCriteria:
+ *       type: object
+ *       properties:
+ *         registrationDateRange:
+ *           type: object
+ *           properties:
+ *             start:
+ *               type: string
+ *               format: date-time
+ *             end:
+ *               type: string
+ *               format: date-time
+ *         minTransactionCount:
+ *           type: integer
+ *         maxTransactionCount:
+ *           type: integer
+ *         minTopupCount:
+ *           type: integer
+ *         maxTopupCount:
+ *           type: integer
+ *         lastActiveWithinDays:
+ *           type: integer
+ *     PushTokenRegisterRequest:
+ *       type: object
+ *       required:
+ *         - token
+ *         - platform
+ *       properties:
+ *         token:
+ *           type: string
+ *         platform:
+ *           type: string
+ *           enum: [ios, android, web]
+ *     CreateNotificationRequest:
+ *       type: object
+ *       required:
+ *         - title
+ *         - body
+ *       properties:
+ *         title:
+ *           type: string
+ *         body:
+ *           type: string
+ *         targetCriteria:
+ *           $ref: '#/components/schemas/NotificationTargetCriteria'
+ *         publish_at:
+ *           type: string
+ *           format: date-time
  */
 
 // User-facing routes

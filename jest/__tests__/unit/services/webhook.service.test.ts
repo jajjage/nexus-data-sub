@@ -1,6 +1,6 @@
+import knex from '../../../../src/database/connection';
 import { WebhookService } from '../../../../src/services/webhook.service';
 import { WebhookEvent } from '../../../../src/types/webhook.types';
-import knex from '../../../../src/database/connection';
 import { ApiError } from '../../../../src/utils/ApiError';
 
 // 1. Mock the database connection module
@@ -129,7 +129,10 @@ describe('WebhookService', () => {
       await expect(
         webhookService.processPayment('palmpay', mockWebhookEvent, mockPayload)
       ).rejects.toThrow(
-        new ApiError(500, `Error processing webhook payment: ${dbError.message}`)
+        new ApiError(
+          500,
+          `Error processing webhook payment: ${dbError.message}`
+        )
       );
 
       expect(mockTrx.rollback).toHaveBeenCalled();

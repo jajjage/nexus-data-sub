@@ -13,6 +13,57 @@ const router = Router();
  * tags:
  *   name: Chat
  *   description: Chat channels and messages
+ * components:
+ *   schemas:
+ *     Channel:
+ *       type: object
+ *       properties:
+ *         id:
+ *           type: string
+ *           format: uuid
+ *         name:
+ *           type: string
+ *         is_support:
+ *           type: boolean
+ *         created_at:
+ *           type: string
+ *           format: date-time
+ *     Message:
+ *       type: object
+ *       properties:
+ *         id:
+ *           type: string
+ *           format: uuid
+ *         client_msg_id:
+ *           type: string
+ *         channel_id:
+ *           type: string
+ *           format: uuid
+ *         sender_id:
+ *           type: string
+ *         body:
+ *           type: string
+ *         attachments:
+ *           type: array
+ *           items:
+ *             type: object
+ *         metadata:
+ *           type: object
+ *         seq:
+ *           type: integer
+ *         status:
+ *           type: string
+ *         created_at:
+ *           type: string
+ *           format: date-time
+ *     ChannelListResponse:
+ *       type: array
+ *       items:
+ *         $ref: '#/components/schemas/Channel'
+ *     MessagesListResponse:
+ *       type: array
+ *       items:
+ *         $ref: '#/components/schemas/Message'
  */
 
 router.use(authenticate);

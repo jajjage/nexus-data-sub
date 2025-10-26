@@ -1,5 +1,10 @@
 import { NextFunction, Request, RequestHandler, Response } from 'express';
-import { body, ValidationChain, validationResult, check } from 'express-validator';
+import {
+  body,
+  check,
+  ValidationChain,
+  validationResult,
+} from 'express-validator';
 
 export const handleValidationErrors = (
   req: Request,
@@ -73,7 +78,9 @@ export const validateLogin: (ValidationChain | RequestHandler)[] = [
     .custom((_, { req }) => {
       const { email, phoneNumber } = req.body;
       if (email && phoneNumber) {
-        throw new Error('Please provide either email or phone number, not both');
+        throw new Error(
+          'Please provide either email or phone number, not both'
+        );
       }
       if (!email && !phoneNumber) {
         throw new Error('Please provide either email or phone number');

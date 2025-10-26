@@ -23,8 +23,6 @@ export class ChatModel {
           user_id: userId,
           role: 'user',
         },
-        // In a real app, you'd have logic to assign a specific support agent
-        // For now, we can leave this open or assign a default support user ID
       ]);
 
       return channel;

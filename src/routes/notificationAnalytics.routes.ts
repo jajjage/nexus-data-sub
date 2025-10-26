@@ -12,6 +12,25 @@ router.use(authenticate, hasPermission('view_notification_analytics'));
  * tags:
  *   name: Notification Analytics
  *   description: View notification analytics
+ * components:
+ *   schemas:
+ *     NotificationAnalytics:
+ *       type: object
+ *       properties:
+ *         id:
+ *           type: integer
+ *         notification_id:
+ *           type: string
+ *           format: uuid
+ *         user_id:
+ *           type: string
+ *           format: uuid
+ *         status:
+ *           type: string
+ *           enum: [sent, delivered, opened, failed]
+ *         created_at:
+ *           type: string
+ *           format: date-time
  */
 
 /**
@@ -27,10 +46,17 @@ router.use(authenticate, hasPermission('view_notification_analytics'));
  *         name: notificationId
  *         required: true
  *         schema:
- *           type: integer
+ *           type: string
+ *           format: uuid
  *     responses:
  *       200:
  *         description: Analytics data
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: array
+ *               items:
+ *                 $ref: '#/components/schemas/NotificationAnalytics'
  */
 router.get(
   '/notification/:notificationId',
@@ -50,10 +76,17 @@ router.get(
  *         name: userId
  *         required: true
  *         schema:
- *           type: integer
+ *           type: string
+ *           format: uuid
  *     responses:
  *       200:
  *         description: Analytics data
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: array
+ *               items:
+ *                 $ref: '#/components/schemas/NotificationAnalytics'
  */
 router.get(
   '/user/:userId',

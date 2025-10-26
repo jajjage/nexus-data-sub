@@ -12,6 +12,30 @@ router.use(authenticate, hasPermission('manage_notification_templates'));
  * tags:
  *   name: Notification Templates
  *   description: Manage notification templates
+ * components:
+ *   schemas:
+ *     NotificationTemplate:
+ *       type: object
+ *       properties:
+ *         id:
+ *           type: string
+ *           format: uuid
+ *         template_id:
+ *           type: string
+ *         title:
+ *           type: string
+ *         body:
+ *           type: string
+ *         locales:
+ *           type: array
+ *           items:
+ *             type: string
+ *         created_at:
+ *           type: string
+ *           format: date-time
+ *         updated_at:
+ *           type: string
+ *           format: date-time
  */
 
 /**
@@ -31,6 +55,10 @@ router.use(authenticate, hasPermission('manage_notification_templates'));
  *     responses:
  *       201:
  *         description: Template created
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/NotificationTemplate'
  */
 router.post('/', NotificationTemplateController.createTemplate);
 
@@ -45,6 +73,12 @@ router.post('/', NotificationTemplateController.createTemplate);
  *     responses:
  *       200:
  *         description: List of templates
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: array
+ *               items:
+ *                 $ref: '#/components/schemas/NotificationTemplate'
  */
 router.get('/', NotificationTemplateController.listTemplates);
 
@@ -65,6 +99,10 @@ router.get('/', NotificationTemplateController.listTemplates);
  *     responses:
  *       200:
  *         description: Template details
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/NotificationTemplate'
  */
 router.get('/:templateId', NotificationTemplateController.getTemplate);
 
@@ -91,6 +129,10 @@ router.get('/:templateId', NotificationTemplateController.getTemplate);
  *     responses:
  *       200:
  *         description: Template updated
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/NotificationTemplate'
  */
 router.put('/:templateId', NotificationTemplateController.updateTemplate);
 

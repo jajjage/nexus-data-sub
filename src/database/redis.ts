@@ -1,4 +1,5 @@
 import { Redis } from 'ioredis';
+import { logger } from '../utils/logger.utils';
 
 export class RedisClient {
   private client: Redis;
@@ -19,7 +20,7 @@ export class RedisClient {
     });
 
     this.client.on('connect', () => {
-      console.log('✅ Connected to Redis');
+      logger.info('✅ Connected to Redis');
       this.isConnected = true; // Update status on connect
     });
 
@@ -29,7 +30,7 @@ export class RedisClient {
       this.isConnected = false;
     });
     this.client.on('reconnecting', (delay: number) => {
-      console.log(`Redis reconnecting in ${delay}ms`);
+      logger.info(`Redis reconnecting in ${delay}ms`);
     });
   }
 
@@ -57,7 +58,7 @@ export class RedisClient {
     if (this.isConnected) {
       await this.client.quit();
       this.isConnected = false;
-      console.log('Redis connection closed successfully.');
+      logger.info('Redis connection closed successfully.');
     }
   }
 

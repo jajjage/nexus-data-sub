@@ -21,6 +21,7 @@ module.exports = {
   setupFilesAfterEnv: [
     '<rootDir>/jest/setup.ts',
     '<rootDir>/jest/__tests__/test-setup.ts',
+    '<rootDir>/jest/setup/mock-firebase.ts',
   ],
   moduleNameMapper: {
     '^@/(.*)$': '<rootDir>/src/$1',

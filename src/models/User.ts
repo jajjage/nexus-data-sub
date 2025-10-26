@@ -251,6 +251,47 @@ export class UserModel {
   }
 
   /**
+   * Finds all users with a given role.
+   * @param role - The role to search for.
+   * @returns A list of users with that role.
+   */
+  static async findByRole(
+    role: 'user' | 'staff' | 'admin'
+  ): Promise<UserAuthPayload[]> {
+    const users = await db('users as u')
+      .select(
+        'u.id',
+        'u.email',
+        'u.password',
+        'u.role',
+        'u.role_id',
+        'u.is_verified',
+        'u.is_suspended',
+        'u.two_factor_enabled',
+        'u.two_factor_secret'
+      )
+      .where('u.role', role);
+
+    return Promise.all(
+      users.map(async user => {
+        const permissions = await this.getPermissions(user.role_id);
+        return {
+          userId: user.id,
+          email: user.email,
+          password: user.password,
+          role: user.role,
+          roleId: user.role_id,
+          isVerified: user.is_verified,
+          isSuspended: user.is_suspended,
+          twoFactorEnabled: user.two_factor_enabled,
+          twoFactorSecret: user.two_factor_secret,
+          permissions,
+        };
+      })
+    );
+  }
+
+  /**
    * Retrieves a list of permission names for a given role ID.
    * @param roleId - The ID of the role.
    * @returns An array of permission strings.
