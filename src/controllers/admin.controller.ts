@@ -3,6 +3,7 @@ import { AdminModel } from '../models/Admin';
 import { RoleModel } from '../models/Role';
 import { UserModel } from '../models/User';
 import { AdminService } from '../services/admin.service';
+import OfferAdminService from '../services/offerAdmin.service';
 import { sendError, sendSuccess } from '../utils/response.utils';
 import { validatePassword } from '../utils/validation.utils';
 
@@ -318,6 +319,109 @@ export class AdminController {
       return sendSuccess(res, 'Failed jobs retrieved successfully', { jobs });
     } catch (error) {
       console.error('Get failed jobs error:', error);
+      return sendError(res, 'Internal server error');
+    }
+  }
+
+  // ---------------------- Offer admin helpers ----------------------
+  static async computeOfferSegment(req: Request, res: Response) {
+    try {
+      const { offerId } = req.params;
+      if (!offerId) return sendError(res, 'offerId is required', 400);
+      // run computation (may take time)
+      await OfferAdminService.computeSegment(offerId);
+      const { total } = await OfferAdminService.getSegmentMembers(
+        offerId,
+        1,
+        1
+      );
+      return sendSuccess(res, 'Segment computed', { total });
+    } catch (error) {
+      console.error('Compute offer segment error:', error);
+      return sendError(res, 'Internal server error');
+    }
+  }
+
+  static async getOfferSegmentMembers(req: Request, res: Response) {
+    try {
+      const { offerId } = req.params;
+      const page = parseInt((req.query.page as string) || '1');
+      const limit = parseInt((req.query.limit as string) || '50');
+      if (!offerId) return sendError(res, 'offerId is required', 400);
+      const result = await OfferAdminService.getSegmentMembers(
+        offerId,
+        page,
+        limit
+      );
+      return sendSuccess(res, 'Segment members retrieved', result);
+    } catch (error) {
+      console.error('Get offer segment members error:', error);
+      return sendError(res, 'Internal server error');
+    }
+  }
+
+  static async previewOfferEligibility(req: Request, res: Response) {
+    try {
+      const { offerId } = req.params;
+      const limit = parseInt((req.query.limit as string) || '100');
+      if (!offerId) return sendError(res, 'offerId is required', 400);
+      const rows = await OfferAdminService.previewEligibility(offerId, limit);
+      return sendSuccess(res, 'Preview eligibility retrieved', {
+        preview: rows,
+      });
+    } catch (error) {
+      console.error('Preview eligibility error:', error);
+      return sendError(res, 'Internal server error');
+    }
+  }
+
+  static async createOfferRedemptionsJob(req: Request, res: Response) {
+    try {
+      const { offerId } = req.params;
+      const { userIds, fromSegment, price, discount } = req.body as {
+        userIds?: string[];
+        fromSegment?: boolean;
+        price?: number;
+        discount?: number;
+      };
+
+      if (!offerId) return sendError(res, 'offerId is required', 400);
+      const unitPrice = price ?? 0;
+      const unitDiscount = discount ?? 0;
+
+      let targets: string[] = [];
+      if (fromSegment) {
+        const members = await OfferAdminService.getSegmentMembers(
+          offerId,
+          1,
+          10000
+        );
+        targets = members.members.map((m: any) => m.id);
+      } else if (Array.isArray(userIds) && userIds.length > 0) {
+        targets = userIds;
+      } else {
+        return sendError(
+          res,
+          'Either userIds or fromSegment=true must be provided',
+          400
+        );
+      }
+
+      // For now perform bulk redemption synchronously but chunked; a worker should be used in prod
+      const results = await OfferAdminService.bulkRedeem(
+        offerId,
+        targets,
+        unitPrice,
+        unitDiscount
+      );
+      const successCount = results.filter(r => r.success).length;
+      const failed = results.filter(r => !r.success);
+      return sendSuccess(res, 'Bulk redemption completed', {
+        successCount,
+        failed,
+      });
+    } catch (error) {
+      console.error('Create offer redemptions job error:', error);
       return sendError(res, 'Internal server error');
     }
   }

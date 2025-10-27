@@ -1183,4 +1183,140 @@ router.post(
   AdminController.mapProductToSupplier
 );
 
+// ---------------- Offer admin endpoints ----------------
+/**
+ * @swagger
+ * /admin/offers/{offerId}/compute-segment:
+ *   post:
+ *     summary: Compute and populate precomputed eligible users for an offer
+ *     tags: [Administration]
+ *     security:
+ *       - bearerAuth: []
+ *     parameters:
+ *       - in: path
+ *         name: offerId
+ *         required: true
+ *         schema:
+ *           type: string
+ *           format: uuid
+ *     responses:
+ *       200:
+ *         description: Segment computed successfully.
+ *       400:
+ *         description: Bad request.
+ */
+router.post(
+  '/offers/:offerId/compute-segment',
+  hasPermission('offer:admin'),
+  AdminController.computeOfferSegment
+);
+
+/**
+ * @swagger
+ * /admin/offers/{offerId}/eligible-users:
+ *   get:
+ *     summary: Get precomputed eligible users for an offer (paginated)
+ *     tags: [Administration]
+ *     security:
+ *       - bearerAuth: []
+ *     parameters:
+ *       - in: path
+ *         name: offerId
+ *         required: true
+ *         schema:
+ *           type: string
+ *           format: uuid
+ *       - in: query
+ *         name: page
+ *         schema:
+ *           type: integer
+ *       - in: query
+ *         name: limit
+ *         schema:
+ *           type: integer
+ *     responses:
+ *       200:
+ *         description: List of eligible users.
+ */
+router.get(
+  '/offers/:offerId/eligible-users',
+  hasPermission('offer:read'),
+  AdminController.getOfferSegmentMembers
+);
+
+/**
+ * @swagger
+ * /admin/offers/{offerId}/preview-eligibility:
+ *   get:
+ *     summary: Preview eligibility for a sample of users
+ *     tags: [Administration]
+ *     security:
+ *       - bearerAuth: []
+ *     parameters:
+ *       - in: path
+ *         name: offerId
+ *         required: true
+ *         schema:
+ *           type: string
+ *           format: uuid
+ *       - in: query
+ *         name: limit
+ *         schema:
+ *           type: integer
+ *         description: Number of sample users to evaluate (default 100)
+ *     responses:
+ *       200:
+ *         description: Eligibility preview returned.
+ */
+router.get(
+  '/offers/:offerId/preview-eligibility',
+  hasPermission('offer:read'),
+  AdminController.previewOfferEligibility
+);
+
+/**
+ * @swagger
+ * /admin/offers/{offerId}/redemptions:
+ *   post:
+ *     summary: Create a bulk redemption job for an offer (sync worker stub)
+ *     tags: [Administration]
+ *     security:
+ *       - bearerAuth: []
+ *     parameters:
+ *       - in: path
+ *         name: offerId
+ *         required: true
+ *         schema:
+ *           type: string
+ *           format: uuid
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             properties:
+ *               userIds:
+ *                 type: array
+ *                 items:
+ *                   type: string
+ *                   format: uuid
+ *               fromSegment:
+ *                 type: boolean
+ *               price:
+ *                 type: number
+ *               discount:
+ *                 type: number
+ *     responses:
+ *       200:
+ *         description: Bulk redemption job enqueued/executed.
+ *       400:
+ *         description: Invalid request.
+ */
+router.post(
+  '/offers/:offerId/redemptions',
+  hasPermission('offer:redeem'),
+  AdminController.createOfferRedemptionsJob
+);
+
 export default router;
