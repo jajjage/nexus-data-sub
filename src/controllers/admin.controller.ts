@@ -407,19 +407,16 @@ export class AdminController {
         );
       }
 
-      // For now perform bulk redemption synchronously but chunked; a worker should be used in prod
-      const results = await OfferAdminService.bulkRedeem(
+      // Create a job record and return its id; worker will process it asynchronously
+      const JobService = (await import('../services/job.service')).JobService;
+      const job = await JobService.createJob('offer_redemption', {
         offerId,
         targets,
-        unitPrice,
-        unitDiscount
-      );
-      const successCount = results.filter(r => r.success).length;
-      const failed = results.filter(r => !r.success);
-      return sendSuccess(res, 'Bulk redemption completed', {
-        successCount,
-        failed,
+        price: unitPrice,
+        discount: unitDiscount,
       });
+
+      return sendSuccess(res, 'Bulk redemption job created', { jobId: job.id });
     } catch (error) {
       console.error('Create offer redemptions job error:', error);
       return sendError(res, 'Internal server error');
