@@ -66,6 +66,10 @@ export async function seed(knex: Knex): Promise<void> {
       name: 'view_notification_analytics',
       description: 'View notification analytics',
     },
+    { name: 'offer:create', description: 'Create new offers' },
+    { name: 'offer:read', description: 'Read offers' },
+    { name: 'offer:update', description: 'Update offers' },
+    { name: 'offer:delete', description: 'Delete offers' },
   ];
   await knex('permissions').insert(permissions);
 
@@ -140,6 +144,10 @@ export async function seed(knex: Knex): Promise<void> {
       'create_notification',
       'manage_notification_templates',
       'view_notification_analytics',
+      'offer:create',
+      'offer:read',
+      'offer:update',
+      'offer:delete',
     ],
   };
 

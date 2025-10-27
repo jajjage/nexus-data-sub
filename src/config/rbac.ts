@@ -68,6 +68,10 @@ export const ROLE_PERMISSIONS = {
     'create_notification',
     'manage_notification_templates',
     'view_notification_analytics',
+    'offer:create',
+    'offer:read',
+    'offer:update',
+    'offer:delete',
   ],
 };
 
@@ -112,4 +116,8 @@ export const PERMISSION_DESCRIPTIONS = {
   create_notification: 'Create and send notifications to users',
   manage_notification_templates: 'Manage notification templates',
   view_notification_analytics: 'View notification analytics',
+  'offer:create': 'Create new offers',
+  'offer:read': 'Read offers',
+  'offer:update': 'Update offers',
+  'offer:delete': 'Delete offers',
 };
