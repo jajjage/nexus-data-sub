@@ -339,8 +339,14 @@ export class AdminModel {
     });
   }
 
-  static async getFailedJobs() {
-    return db('jobs').where({ status: 'failed' });
+  static async getFailedJobs(page: number, limit: number) {
+    const query = db('jobs').where({ status: 'failed' });
+    const total = await query.clone().count('id as count').first();
+    const jobs = await query
+      .orderBy('created_at', 'desc')
+      .limit(limit)
+      .offset((page - 1) * limit);
+    return { jobs, total: parseInt((total?.count as string) || '0', 10) };
   }
 
   static async cleanupExpiredTokens() {

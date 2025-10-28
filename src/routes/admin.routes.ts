@@ -1,8 +1,12 @@
 import { Router } from 'express';
+import { param, query } from 'express-validator';
 import { AdminController } from '../controllers/admin.controller';
 import { authenticate } from '../middleware/auth.middleware';
 import { hasPermission, requireRole } from '../middleware/rbac.middleware';
-import { validateUserCreation } from '../middleware/validation.middleware';
+import {
+  handleValidationErrors,
+  validateUserCreation,
+} from '../middleware/validation.middleware';
 
 const router = Router();
 
@@ -53,6 +57,9 @@ router.get(
 router.get(
   '/dashboard/failed-jobs',
   hasPermission('system.settings'),
+  query('page').optional().isInt({ min: 1 }).toInt(),
+  query('limit').optional().isInt({ min: 1, max: 100 }).toInt(),
+  handleValidationErrors,
   AdminController.getFailedJobs
 );
 
@@ -667,6 +674,9 @@ router.post(
 router.get(
   '/jobs/all',
   hasPermission('system.settings'),
+  query('page').optional().isInt({ min: 1 }).toInt(),
+  query('limit').optional().isInt({ min: 1, max: 100 }).toInt(),
+  handleValidationErrors,
   AdminController.getAllJobs
 );
 
@@ -693,6 +703,8 @@ router.get(
 router.get(
   '/jobs/:jobId',
   hasPermission('system.settings'),
+  param('jobId').isUUID(),
+  handleValidationErrors,
   AdminController.getJob
 );
 

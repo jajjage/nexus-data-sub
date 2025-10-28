@@ -51,6 +51,26 @@ export class OfferAdminService {
     return { members, total: Number(count) };
   }
 
+  static async getAllSegmentMemberIds(offerId: string, chunkSize = 1000): Promise<string[]> {
+    const memberIds: string[] = [];
+    let offset = 0;
+    while (true) {
+      const members = await db('offer_segment_members')
+        .where({ offer_id: offerId })
+        .select('user_id')
+        .limit(chunkSize)
+        .offset(offset);
+
+      if (!members || members.length === 0) {
+        break;
+      }
+
+      memberIds.push(...members.map(m => m.user_id));
+      offset += members.length;
+    }
+    return memberIds;
+  }
+
   static async previewEligibility(offerId: string, limit = 100) {
     const rows = await db.raw(
       `SELECT u.id, u.email, is_user_eligible_for_offer(?::uuid, u.id) as eligible

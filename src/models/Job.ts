@@ -52,12 +52,19 @@ export class JobModel {
     page: number,
     limit: number
   ): Promise<{ jobs: JobRecord[]; total: number }> {
-    const jobs = await db('jobs')
+    const query = db('jobs')
+      .select(['*', db.raw('count(*) OVER() as total_count')])
       .orderBy('created_at', 'desc')
       .limit(limit)
       .offset((page - 1) * limit);
-    const [total] = await db('jobs').count('id as count');
-    return { jobs, total: parseInt(total.count as string, 10) };
+
+    const jobs = await query;
+    const total = jobs.length > 0 ? parseInt(jobs[0].total_count, 10) : 0;
+
+    // Remove the temporary count field from the results
+    jobs.forEach(j => delete (j as any).total_count);
+
+    return { jobs, total };
   }
 }
 

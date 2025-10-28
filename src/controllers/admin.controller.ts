@@ -315,8 +315,21 @@ export class AdminController {
 
   static async getFailedJobs(req: Request, res: Response) {
     try {
-      const jobs = await AdminModel.getFailedJobs();
-      return sendSuccess(res, 'Failed jobs retrieved successfully', { jobs });
+      const page = parseInt(req.query.page as string) || 1;
+      const limit = parseInt(req.query.limit as string) || 10;
+      const { jobs, total } = await AdminModel.getFailedJobs(page, limit);
+      const totalPages = Math.ceil(total / limit);
+      return sendSuccess(res, 'Failed jobs retrieved successfully', {
+        jobs,
+        pagination: {
+          page,
+          limit,
+          total,
+          totalPages,
+          hasNextPage: page < totalPages,
+          hasPrevPage: page > 1,
+        },
+      });
     } catch (error) {
       console.error('Get failed jobs error:', error);
       return sendError(res, 'Internal server error');
@@ -391,12 +404,7 @@ export class AdminController {
 
       let targets: string[] = [];
       if (fromSegment) {
-        const members = await OfferAdminService.getSegmentMembers(
-          offerId,
-          1,
-          10000
-        );
-        targets = members.members.map((m: any) => m.id);
+        targets = await OfferAdminService.getAllSegmentMemberIds(offerId);
       } else if (Array.isArray(userIds) && userIds.length > 0) {
         targets = userIds;
       } else {

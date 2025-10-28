@@ -1,30 +1,36 @@
-import { logger } from '../utils/logger.utils';
-import { processOneJob } from './offerRedemption.worker';
-
-const DEFAULT_POLL_MS = 3000;
-
 async function run() {
   logger.info('Starting worker runner (serial loop)...');
 
   let running = true;
+  let currentJobPromise: Promise<any> | null = null;
+
+  const DEFAULT_POLL_MS = 3000;
 
   // Graceful shutdown handler
-  process.on('SIGINT', () => {
-    logger.info('Stopping worker runner...');
+  process.on('SIGINT', async () => {
+    logger.info('Stopping worker runner... waiting for current job to finish.');
     running = false;
-    // give some time for current job to finish
-    setTimeout(() => process.exit(0), 2000);
+    // Wait for the in-flight job to complete before exiting
+    if (currentJobPromise) {
+      await currentJobPromise;
+    }
+    process.exit(0);
   });
 
   while (running) {
     try {
-      await processOneJob();
+      currentJobPromise = processOneJob();
+      await currentJobPromise;
     } catch (err) {
       logger.error('Worker loop error', err);
+    } finally {
+      currentJobPromise = null;
     }
 
-    // wait before next iteration to avoid tight loop
-    await new Promise(resolve => setTimeout(resolve, DEFAULT_POLL_MS));
+    if (running) {
+      // wait before next iteration to avoid tight loop
+      await new Promise(resolve => setTimeout(resolve, DEFAULT_POLL_MS));
+    }
   }
 }
 
