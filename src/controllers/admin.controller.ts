@@ -955,4 +955,45 @@ export class AdminController {
       return sendError(res, 'Internal server error');
     }
   }
+
+  // ---------------------- Job admin helpers ----------------------
+
+  static async getJob(req: Request, res: Response) {
+    try {
+      const { jobId } = req.params;
+      const JobService = (await import('../services/job.service')).JobService;
+      const job = await JobService.getJobById(jobId);
+      if (!job) {
+        return sendError(res, 'Job not found', 404);
+      }
+      return sendSuccess(res, 'Job retrieved successfully', { job });
+    } catch (error) {
+      console.error('Get job error:', error);
+      return sendError(res, 'Internal server error');
+    }
+  }
+
+  static async getAllJobs(req: Request, res: Response) {
+    try {
+      const page = parseInt(req.query.page as string) || 1;
+      const limit = parseInt(req.query.limit as string) || 10;
+      const JobService = (await import('../services/job.service')).JobService;
+      const { jobs, total } = await JobService.getAllJobs(page, limit);
+      const totalPages = Math.ceil(total / limit);
+      return sendSuccess(res, 'Jobs retrieved successfully', {
+        jobs,
+        pagination: {
+          page,
+          limit,
+          total,
+          totalPages,
+          hasNextPage: page < totalPages,
+          hasPrevPage: page > 1,
+        },
+      });
+    } catch (error) {
+      console.error('Get all jobs error:', error);
+      return sendError(res, 'Internal server error');
+    }
+  }
 }

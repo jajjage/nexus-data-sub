@@ -639,6 +639,64 @@ router.post(
 );
 
 // =================================================================
+// Job Management
+// =================================================================
+
+/** @swagger
+ * /admin/jobs/all:
+ *   get:
+ *     summary: Get all background jobs
+ *     tags: [Administration]
+ *     security:
+ *       - bearerAuth: []
+ *     parameters:
+ *       - in: query
+ *         name: page
+ *         schema:
+ *           type: integer
+ *         description: Page number for pagination
+ *       - in: query
+ *         name: limit
+ *         schema:
+ *           type: integer
+ *         description: Number of jobs per page
+ *     responses:
+ *       200:
+ *         description: Successfully retrieved all jobs.
+ */
+router.get(
+  '/jobs/all',
+  hasPermission('system.settings'),
+  AdminController.getAllJobs
+);
+
+/** @swagger
+ * /admin/jobs/{jobId}:
+ *   get:
+ *     summary: Get a single background job by ID
+ *     tags: [Administration]
+ *     security:
+ *       - bearerAuth: []
+ *     parameters:
+ *       - in: path
+ *         name: jobId
+ *         required: true
+ *         schema:
+ *           type: string
+ *           format: uuid
+ *     responses:
+ *       200:
+ *         description: Successfully retrieved job.
+ *       404:
+ *         description: Job not found.
+ */
+router.get(
+  '/jobs/:jobId',
+  hasPermission('system.settings'),
+  AdminController.getJob
+);
+
+// =================================================================
 // Settlement Management
 // =================================================================
 

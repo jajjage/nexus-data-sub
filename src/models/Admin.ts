@@ -340,8 +340,7 @@ export class AdminModel {
   }
 
   static async getFailedJobs() {
-    // NOTE: No failed jobs table exists yet. Returning a placeholder.
-    return [];
+    return db('jobs').where({ status: 'failed' });
   }
 
   static async cleanupExpiredTokens() {

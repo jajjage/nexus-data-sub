@@ -43,6 +43,22 @@ export class JobModel {
     if (result !== undefined) update.result = result;
     await db('jobs').where({ id }).update(update);
   }
+
+  static async findById(id: string) {
+    return db('jobs').where({ id }).first();
+  }
+
+  static async getAll(
+    page: number,
+    limit: number
+  ): Promise<{ jobs: JobRecord[]; total: number }> {
+    const jobs = await db('jobs')
+      .orderBy('created_at', 'desc')
+      .limit(limit)
+      .offset((page - 1) * limit);
+    const [total] = await db('jobs').count('id as count');
+    return { jobs, total: parseInt(total.count as string, 10) };
+  }
 }
 
 export default JobModel;

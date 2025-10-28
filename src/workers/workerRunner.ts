@@ -1,23 +1,31 @@
 import { logger } from '../utils/logger.utils';
 import { processOneJob } from './offerRedemption.worker';
 
-async function run() {
-  logger.info('Starting worker runner...');
+const DEFAULT_POLL_MS = 3000;
 
-  const handle = setInterval(async () => {
+async function run() {
+  logger.info('Starting worker runner (serial loop)...');
+
+  let running = true;
+
+  // Graceful shutdown handler
+  process.on('SIGINT', () => {
+    logger.info('Stopping worker runner...');
+    running = false;
+    // give some time for current job to finish
+    setTimeout(() => process.exit(0), 2000);
+  });
+
+  while (running) {
     try {
       await processOneJob();
     } catch (err) {
       logger.error('Worker loop error', err);
     }
-  }, 3000);
 
-  // expose a cleanup in case the process needs to shutdown gracefully
-  process.on('SIGINT', () => {
-    logger.info('Stopping worker runner...');
-    clearInterval(handle);
-    process.exit(0);
-  });
+    // wait before next iteration to avoid tight loop
+    await new Promise(resolve => setTimeout(resolve, DEFAULT_POLL_MS));
+  }
 }
 
 if (require.main === module) {

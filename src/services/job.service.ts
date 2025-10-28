@@ -21,6 +21,13 @@ export class JobService {
   static async markFailed(id: string, result?: any) {
     await JobModel.updateStatus(id, 'failed', result);
   }
+
+  static async getJobById(jobId: string) {
+    return JobModel.findById(jobId);
+  }
+  static async getAllJobs(page: number, limit: number) {
+    return JobModel.getAll(page, limit);
+  }
 }
 
 export default JobService;

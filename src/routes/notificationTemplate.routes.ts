@@ -5,7 +5,7 @@ import { hasPermission } from '../middleware/rbac.middleware';
 
 const router = Router();
 
-router.use(authenticate, hasPermission('manage_notification_templates'));
+router.use(authenticate, hasPermission('manage.notification_templates'));
 
 /**
  * @swagger

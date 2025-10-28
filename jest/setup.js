@@ -129,9 +129,9 @@ global.beforeAll(async () => {
     ('profile.read', 'View own profile'),
     ('profile.update', 'Update own profile'),
     ('system.settings', 'Manage system settings'),
-    ('create_notification', 'Create and send notifications to users'),
-    ('manage_notification_templates', 'Manage notification templates'),
-    ('view_notification_analytics', 'View notification analytics'),
+    ('create.notification', 'Create and send notifications to users'),
+    ('manage.notification_templates', 'Manage notification templates'),
+    ('view.notification_analytics', 'View notification analytics'),
     ('topup-requests.read.all', 'View all topup requests'),
     ('topup-requests.update', 'Update topup requests'),
     ('settlements.read.all', 'View all settlements'),
@@ -183,9 +183,9 @@ global.beforeAll(async () => {
       'profile.update',
       'topup-requests.read.all',
       'settlements.read.all',
-      'create_notification',
-      'manage_notification_templates',
-      'view_notification_analytics'
+      'create.notification',
+      'manage.notification_templates',
+      'view.notification_analytics'
     )
     ON CONFLICT (role_id, permission_id) DO NOTHING;
   `);
@@ -235,9 +235,9 @@ global.beforeAll(async () => {
       'products.read.all',
       'products.create',
       'products.update',
-      'create_notification',
-      'manage_notification_templates',
-      'view_notification_analytics'
+      'create.notification',
+      'manage.notification_templates',
+      'view.notification_analytics'
     )
     ON CONFLICT (role_id, permission_id) DO NOTHING;
   `);

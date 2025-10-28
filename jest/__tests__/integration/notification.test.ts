@@ -16,7 +16,7 @@ describe('Notification Controller', () => {
       .returning('*');
     // assign permissions
     const permission = await db('permissions')
-      .where({ name: 'create_notification' })
+      .where({ name: 'create.notification' })
       .first();
     if (permission) {
       await db('role_permissions').insert({

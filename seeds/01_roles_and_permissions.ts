@@ -55,21 +55,23 @@ export async function seed(knex: Knex): Promise<void> {
     { name: 'products.create', description: 'Create new products' },
     { name: 'products.update', description: 'Update products' },
     {
-      name: 'create_notification',
+      name: 'create.notification',
       description: 'Create and send notifications to users',
     },
     {
-      name: 'manage_notification_templates',
+      name: 'manage.notification_templates',
       description: 'Manage notification templates',
     },
     {
-      name: 'view_notification_analytics',
+      name: 'view.notification_analytics',
       description: 'View notification analytics',
     },
     { name: 'offer:create', description: 'Create new offers' },
     { name: 'offer:read', description: 'Read offers' },
     { name: 'offer:update', description: 'Update offers' },
     { name: 'offer:delete', description: 'Delete offers' },
+    { name: 'offer:admin', description: 'Administrate offers' },
+    { name: 'offer:redeem', description: 'Redeem offers' },
   ];
   await knex('permissions').insert(permissions);
 
@@ -102,9 +104,9 @@ export async function seed(knex: Knex): Promise<void> {
       'profile.update',
       'topup-requests.read.all',
       'settlements.read.all',
-      'create_notification',
-      'manage_notification_templates',
-      'view_notification_analytics',
+      'create.notification',
+      'manage.notification_templates',
+      'view.notification_analytics',
     ],
     admin: [
       'reports.create',
@@ -141,13 +143,15 @@ export async function seed(knex: Knex): Promise<void> {
       'products.read.all',
       'products.create',
       'products.update',
-      'create_notification',
-      'manage_notification_templates',
-      'view_notification_analytics',
+      'create.notification',
+      'manage.notification_templates',
+      'view.notification_analytics',
       'offer:create',
       'offer:read',
       'offer:update',
       'offer:delete',
+      'offer:admin',
+      'offer:redeem',
     ],
   };
 

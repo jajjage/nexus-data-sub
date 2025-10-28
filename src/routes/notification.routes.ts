@@ -169,7 +169,7 @@ router.post(
 router.post(
   '/',
   authenticate,
-  hasPermission('create_notification'),
+  hasPermission('create.notification'),
   NotificationController.createNotification
 );
 
