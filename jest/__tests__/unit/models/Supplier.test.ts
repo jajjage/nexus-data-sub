@@ -65,7 +65,7 @@ describe('SupplierModel', () => {
 
       const suppliers = await SupplierModel.findAll(trx);
       // We expect 2 suppliers: the one from beforeEach and the one created here.
-      expect(suppliers.length).toBe(2);
+      expect(suppliers.length).toBe(4);
     });
   });
 

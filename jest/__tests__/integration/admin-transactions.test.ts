@@ -16,7 +16,9 @@ describe('Admin Transactions and Topup API', () => {
     const adminData: CreateUserInput = {
       email: 'admin.transactions.test@example.com',
       fullName: 'Admin Transactions Test',
-      phoneNumber: '1234567890',
+      phoneNumber: `123456${Math.floor(Math.random() * 10000)
+        .toString()
+        .padStart(4, '0')}`,
       password: 'Password123!',
       role: 'admin',
     };
@@ -90,10 +92,10 @@ describe('Admin Transactions and Topup API', () => {
   });
 
   afterEach(async () => {
-    await db('topup_requests').del();
-    await db('transactions').del();
-    await db('wallets').del();
-    await db('operators').del();
+    await db('topup_requests').where({ id: topupRequestId }).del();
+    await db('transactions').where({ id: transactionId }).del();
+    await db('wallets').where({ user_id: userUserId }).del();
+    await db('operators').where({ id: operatorId }).del();
     await db('users')
       .where('email', 'like', '%.transactions.test@example.com')
       .del();

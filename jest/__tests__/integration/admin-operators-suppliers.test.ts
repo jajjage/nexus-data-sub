@@ -14,7 +14,9 @@ describe('Admin Operators and Suppliers API', () => {
     const adminData: CreateUserInput = {
       email: 'admin.ops.test@example.com',
       fullName: 'Admin Ops Test',
-      phoneNumber: '1234567890',
+      phoneNumber: `123456${Math.floor(Math.random() * 10000)
+        .toString()
+        .padStart(4, '0')}`,
       password: 'Password123!',
       role: 'admin',
     };
@@ -53,8 +55,8 @@ describe('Admin Operators and Suppliers API', () => {
   });
 
   afterEach(async () => {
-    await db('operators').del();
-    await db('suppliers').del();
+    await db('operators').where({ id: operatorId }).del();
+    await db('suppliers').where({ id: supplierId }).del();
     await db('users').where('email', 'like', '%.ops.test@example.com').del();
   });
 
