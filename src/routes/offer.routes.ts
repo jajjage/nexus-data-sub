@@ -36,7 +36,7 @@ router.use(authenticate);
  *       400:
  *         description: Invalid input.
  */
-router.post('/', hasPermission('offer:create'), OfferController.createOffer);
+router.post('/', hasPermission('offer.create'), OfferController.createOffer);
 
 /**
  * @swagger
@@ -61,7 +61,7 @@ router.post('/', hasPermission('offer:create'), OfferController.createOffer);
  */
 router.get(
   '/:offerId',
-  hasPermission('offer:read'),
+  hasPermission('offer.read'),
   OfferController.getOfferById
 );
 
@@ -94,7 +94,7 @@ router.get(
  */
 router.put(
   '/:offerId',
-  hasPermission('offer:update'),
+  hasPermission('offer.update'),
   OfferController.updateOffer
 );
 
@@ -121,7 +121,7 @@ router.put(
  */
 router.delete(
   '/:offerId',
-  hasPermission('offer:delete'),
+  hasPermission('offer.delete'),
   OfferController.deleteOffer
 );
 
@@ -158,9 +158,9 @@ router.delete(
  */
 router.post(
   '/:offerId/redeem',
-  // This should probably have its own permission, e.g., 'offer:redeem'
-  // For now, we'll use the 'offer:update' permission as a placeholder.
-  hasPermission('offer:update'),
+  // This should probably have its own permission, e.g., 'offer.redeem'
+  // For now, we'll use the 'offer.update' permission as a placeholder.
+  hasPermission('offer.update'),
   OfferController.redeemOffer
 );
 

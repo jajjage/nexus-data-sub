@@ -51,7 +51,10 @@ export class OfferAdminService {
     return { members, total: Number(count) };
   }
 
-  static async getAllSegmentMemberIds(offerId: string, chunkSize = 1000): Promise<string[]> {
+  static async getAllSegmentMemberIds(
+    offerId: string,
+    chunkSize = 1000
+  ): Promise<string[]> {
     const memberIds: string[] = [];
     let offset = 0;
     while (true) {

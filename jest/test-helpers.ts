@@ -18,33 +18,43 @@ export function getCookie(
 }
 
 export const generateTestUsers = async () => {
-  try {
-    // Create an admin user
-    const adminData: CreateUserInput = {
-      email: 'admin.test@example.com',
-      fullName: 'Admin Test',
-      phoneNumber: '1234567891',
-      password: 'Password123!',
-      role: 'admin',
-    };
-    const admin = await UserModel.create(adminData);
-    await db('users').where({ id: admin.userId }).update({ is_verified: true });
+  // Create an admin user
+  const adminData: CreateUserInput = {
+    email: 'admin.test@example.com',
+    fullName: 'Admin Test',
+    phoneNumber: '1234567891',
+    password: 'Password123!',
+    role: 'admin',
+  };
+  const admin = await UserModel.create(adminData);
+  await db('users').where({ id: admin.userId }).update({ is_verified: true });
 
-    // Create a reporter user
-    // Create a normal user
-    const userData: CreateUserInput = {
-      email: 'user.test@example.com',
-      fullName: 'User Test',
-      phoneNumber: '1234567892',
-      password: 'Password123!',
-      role: 'user',
-    };
-    const user = await UserModel.create(userData);
-    await db('users').where({ id: user.userId }).update({ is_verified: true });
+  // Create a reporter user
+  // Create a normal user
+  const userData: CreateUserInput = {
+    email: 'user.test@example.com',
+    fullName: 'User Test',
+    phoneNumber: '1234567892',
+    password: 'Password123!',
+    role: 'user',
+  };
+  const user = await UserModel.create(userData);
+  await db('users').where({ id: user.userId }).update({ is_verified: true });
 
-    return { admin, user };
-  } catch (error) {
-    console.error('Error generating test users:', error);
-    throw new Error('Failed to generate test users');
-  }
+  // Create a wallet for the user
+  await db('wallets').insert({
+    user_id: user.userId,
+    balance: 1000, // Give the user some initial balance for testing
+    currency: 'NGN',
+  });
+
+  const userRole = await db('roles').where({ name: 'user' }).first();
+  const userPermissions = await db('role_permissions')
+    .join('permissions', 'role_permissions.permission_id', 'permissions.id')
+    .where({ role_id: userRole.id })
+    .select('permissions.name');
+
+  user.permissions = userPermissions.map(p => p.name);
+
+  return { admin, user };
 };

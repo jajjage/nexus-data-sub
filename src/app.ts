@@ -24,7 +24,6 @@ import sessionRoutes from './routes/session.routes';
 import testWebhookRoutes from './routes/testWebhook.routes';
 import twoFactorRoutes from './routes/twoFactor.routes';
 import userRoutes from './routes/user.routes';
-import webhookRoutes from './routes/webhook.routes';
 import { ApiError } from './utils/ApiError';
 import {
   apiLimiter,
@@ -85,7 +84,10 @@ app.use('/api/v1/docs', swaggerUi.serve, swaggerUi.setup(specs));
 // Routes
 const setupRoutes = async () => {
   const authRoutes = (await import('./routes/auth.routes')).default;
+  const topupWebhookRoutes = (await import('./routes/topup.webhook.routes'))
+    .default;
   app.use('/api/v1/auth', authRoutes);
+  app.use('/api/v1/webhooks', topupWebhookRoutes);
   app.use('/api/v1/admin', adminRoutes);
   app.use('/api/v1/offers', offerRoutes);
   app.use('/api/v1/user', userRoutes);
@@ -94,7 +96,7 @@ const setupRoutes = async () => {
   app.use('/api/v1/session', sessionRoutes);
   app.use('/api/v1/2fa', twoFactorRoutes);
   app.use('/api/v1/mobile/auth', mobileAuthRoutes);
-  app.use('/api/v1/webhooks', webhookRoutes);
+  app.use('/api/v1/webhooks', topupWebhookRoutes);
   app.use('/api/v1/test-webhooks', testWebhookLimiter, testWebhookRoutes);
   app.use('/api/v1/chat', chatRoutes);
   app.use('/api/v1/notifications', notificationRoutes);

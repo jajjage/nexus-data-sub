@@ -29,9 +29,10 @@ export async function up(knex: Knex): Promise<void> {
 
   // Wallets (depends only on users)
   await knex.schema.createTable('wallets', table => {
+    table.uuid('id').primary().defaultTo(knex.raw('gen_random_uuid()'));
     table
       .uuid('user_id')
-      .primary()
+      .unique()
       .references('id')
       .inTable('users')
       .onDelete('CASCADE');

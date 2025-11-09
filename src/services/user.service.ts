@@ -3,10 +3,12 @@ import { TopupRequestModel } from '../models/TopupRequest';
 import { TransactionModel } from '../models/Transaction';
 import { UserModel, UserProfileView } from '../models/User';
 import {
+  TopupRequest,
   TopupRequestFilters,
   TopupRequestQueryResult,
 } from '../types/topup.types';
 import {
+  Transaction,
   TransactionFilters,
   TransactionQueryResult,
 } from '../types/transaction.types';
@@ -104,6 +106,17 @@ export class UserService {
     return TransactionModel.findAll(userFilters);
   }
 
+  static async getTransactionById(
+    transactionId: string,
+    userId: string
+  ): Promise<Transaction> {
+    const transaction = await TransactionModel.findById(transactionId);
+    if (!transaction || transaction.userId !== userId) {
+      throw new ApiError(404, 'Transaction not found');
+    }
+    return transaction;
+  }
+
   /**
    * Retrieves a user's purchase history (topup requests).
    * @param userId - The ID of the user.
@@ -115,5 +128,107 @@ export class UserService {
   ): Promise<TopupRequestQueryResult> {
     const userFilters: TopupRequestFilters = { ...filters, userId };
     return TopupRequestModel.findAll(userFilters);
+  }
+
+  static async createTopupRequest(
+    userId: string,
+    amount: number,
+    operatorCode: string,
+    recipientPhone: string
+  ): Promise<TopupRequest> {
+    return db.transaction(async trx => {
+      // 1. Get user's wallet
+      const wallet = await trx('wallets').where({ user_id: userId }).first();
+      if (!wallet) {
+        throw new Error('Wallet not found');
+      }
+
+      // 2. Check for sufficient balance
+      if (wallet.balance < amount) {
+        throw new Error('Insufficient balance');
+      }
+
+      // 3. Get operator by code
+      const operator = await trx('operators')
+        .where({ code: operatorCode })
+        .first();
+      if (!operator) {
+        throw new Error('Operator not found');
+      }
+
+      // 4. Get operator product and supplier mapping
+      const operatorProduct = await trx('operator_products')
+        .where({ operator_id: operator.id, denom_amount: amount })
+        .first();
+      if (!operatorProduct) {
+        throw new Error('Operator product not found');
+      }
+
+      const supplier = await trx('suppliers').first();
+      if (!supplier) {
+        throw new Error('Supplier not found');
+      }
+
+      const supplierProductMapping = await trx('supplier_product_mapping')
+        .where({
+          operator_product_id: operatorProduct.id,
+          supplier_id: supplier.id,
+        })
+        .first();
+      if (!supplierProductMapping) {
+        throw new Error('Supplier product mapping not found');
+      }
+
+      // 5. Create a new top-up request
+      const topupRequestData: Omit<
+        TopupRequest,
+        'id' | 'createdAt' | 'updatedAt' | 'externalId'
+      > = {
+        userId,
+        amount,
+        operatorId: operator.id,
+        recipientPhone,
+        status: 'pending',
+        operatorProductId: operatorProduct.id,
+        supplierId: supplier.id,
+        supplierMappingId: supplierProductMapping.id,
+        cost: 0,
+        attemptCount: 0,
+        idempotencyKey: '',
+        requestPayload: {},
+      };
+      const newTopupRequest = await TopupRequestModel.create(
+        topupRequestData,
+        trx
+      );
+      console.log('topupRequestData:', topupRequestData);
+      console.log('newTopupRequest:', newTopupRequest);
+
+      // 6. Debit the user's wallet
+      const newBalance = wallet.balance - amount;
+      await trx('wallets')
+        .where({ user_id: userId })
+        .update({ balance: newBalance });
+
+      // 7. Create a debit transaction
+      if (!wallet) {
+        throw new Error('Wallet not found');
+      }
+      await TransactionModel.create(
+        {
+          walletId: wallet.id,
+          userId,
+          direction: 'debit',
+          amount,
+          balanceAfter: newBalance,
+          method: 'wallet',
+          relatedType: 'topup_request',
+          relatedId: newTopupRequest.id,
+        },
+        trx
+      );
+
+      return newTopupRequest;
+    });
   }
 }

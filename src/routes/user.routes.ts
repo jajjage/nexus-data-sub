@@ -133,6 +133,30 @@ router.get(
   UserController.getMyTransactions
 );
 
+/**
+ * @swagger
+ * /user/wallet/transactions/{id}:
+ *   get:
+ *     summary: Get a specific transaction by ID
+ *     tags: [User]
+ *     security:
+ *       - bearerAuth: []
+ *     parameters:
+ *       - in: path
+ *         name: id
+ *         required: true
+ *         schema:
+ *           type: string
+ *     responses:
+ *       200:
+ *         description: Successfully retrieved transaction.
+ */
+router.get(
+  '/wallet/transactions/:id',
+  hasPermission('transactions.read.own'),
+  UserController.getTransactionById
+);
+
 // =================================================================
 // Purchase History
 // =================================================================
@@ -168,5 +192,32 @@ router.get(
   hasPermission('transactions.read.own'),
   UserController.getMyPurchases
 );
+
+/**
+ * @swagger
+ * /user/topup:
+ *   post:
+ *     summary: Start a purchase (creates debit & pending request)
+ *     tags: [User]
+ *     security:
+ *       - bearerAuth: []
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             properties:
+ *               amount:
+ *                 type: number
+ *               operatorCode:
+ *                 type: string
+ *               recipientPhone:
+ *                 type: string
+ *     responses:
+ *       201:
+ *         description: Topup request created successfully.
+ */
+router.post('/topup', hasPermission('topup.create'), UserController.topup);
 
 export default router;

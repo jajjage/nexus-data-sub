@@ -76,6 +76,10 @@ export async function up(knex: Knex): Promise<void> {
 }
 
 export async function down(knex: Knex): Promise<void> {
-  await knex.raw('DROP TRIGGER IF EXISTS enforce_offer_eligibility_before_insert ON offer_redemptions;');
-  await knex.raw('DROP FUNCTION IF EXISTS check_offer_eligibility_before_redemption();');
+  await knex.raw(
+    'DROP TRIGGER IF EXISTS enforce_offer_eligibility_before_insert ON offer_redemptions;'
+  );
+  await knex.raw(
+    'DROP FUNCTION IF EXISTS check_offer_eligibility_before_redemption();'
+  );
 }

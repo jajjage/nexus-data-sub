@@ -17,6 +17,7 @@ export interface RegisteredUser {
   phoneNumber: string | null;
   role: 'user' | 'staff' | 'admin';
   isVerified: boolean;
+  permissions?: string[];
 }
 
 /**

@@ -115,7 +115,7 @@ export class VirtualAccountService {
    */
   public async createAndPersistVirtualAccount(
     user: User,
-    trx?: Knex.Transaction
+    trx: Knex.Transaction
   ): Promise<{
     virtualAccountId: number;
     vaDetails: VirtualAccountResponse;
@@ -133,12 +133,12 @@ export class VirtualAccountService {
 
     // Check if user already has a virtual account with this provider
     // First get the provider ID
-    const providerRecord = await knex('providers')
+    const providerRecord = await trx('providers')
       .where({ name: provider })
       .first();
 
     if (providerRecord) {
-      const existing = await knex('virtual_accounts')
+      const existing = await trx('virtual_accounts')
         .where({ user_id: user.id, provider_id: providerRecord.id })
         .first();
 
@@ -160,6 +160,19 @@ export class VirtualAccountService {
       vaResponse,
       trx
     );
+
+    // Create a wallet for the user if one does not already exist
+    const walletExists = await trx('wallets')
+      .where({ user_id: user.id })
+      .first();
+
+    if (!walletExists) {
+      await trx('wallets').insert({
+        user_id: user.id,
+        balance: 0,
+        currency: 'NGN',
+      });
+    }
 
     return {
       virtualAccountId: saved.id,

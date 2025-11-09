@@ -149,7 +149,8 @@ global.beforeAll(async () => {
     ('transactions.read.all', 'View all transactions'),
     ('transactions.create', 'Create new transactions'),
     ('transactions.update', 'Update transactions'),
-    ('transactions.delete', 'Delete transactions')
+    ('transactions.delete', 'Delete transactions'),
+    ('topup.create', 'Create new topup requests')
     ON CONFLICT (name) DO NOTHING;
   `);
   await connection_1.default.query(`
@@ -165,7 +166,8 @@ global.beforeAll(async () => {
       'profile.read',
       'profile.update',
       'transactions.read.own',
-      'transactions.create'
+      'transactions.create',
+      'topup.create'
     )
     ON CONFLICT (role_id, permission_id) DO NOTHING;
   `);
@@ -237,7 +239,8 @@ global.beforeAll(async () => {
       'products.update',
       'create.notification',
       'manage.notification_templates',
-      'view.notification_analytics'
+      'view.notification_analytics',
+      'topup.create'
     )
     ON CONFLICT (role_id, permission_id) DO NOTHING;
   `);

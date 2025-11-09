@@ -109,7 +109,7 @@ export class TestWebhookService {
       // Record transaction
       await trx('transactions').insert({
         user_id: va.user_id,
-        wallet_id: currentWallet.user_id, // Assuming wallet_id is the same as user_id
+        wallet_id: currentWallet.id, // Assuming wallet_id is the same as user_id
         direction: 'credit',
         amount: Number(amount),
         balance_after: Number(newBalance),

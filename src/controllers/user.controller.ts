@@ -171,4 +171,69 @@ export class UserController {
       );
     }
   }
+
+  /**
+   * Get a transaction by its ID.
+   */
+  static async getTransactionById(
+    req: AuthenticatedRequest,
+    res: Response
+  ): Promise<Response> {
+    try {
+      const userId = req.user?.userId;
+      if (!userId) {
+        return sendError(res, 'Authentication required', 401);
+      }
+
+      const { id } = req.params;
+      const transaction = await UserService.getTransactionById(id, userId);
+      return sendSuccess(
+        res,
+        'Transaction retrieved successfully',
+        transaction,
+        200
+      );
+    } catch (error: any) {
+      return sendError(
+        res,
+        error.message || 'Internal server error',
+        error.statusCode || 500
+      );
+    }
+  }
+
+  /**
+   * Start a purchase (creates debit & pending request)
+   */
+  static async topup(
+    req: AuthenticatedRequest,
+    res: Response
+  ): Promise<Response> {
+    try {
+      const userId = req.user?.userId;
+      if (!userId) {
+        return sendError(res, 'Authentication required', 401);
+      }
+
+      const { amount, operatorCode, recipientPhone } = req.body;
+      const result = await UserService.createTopupRequest(
+        userId,
+        amount,
+        operatorCode,
+        recipientPhone
+      );
+      return sendSuccess(
+        res,
+        'Topup request created successfully',
+        result,
+        201
+      );
+    } catch (error: any) {
+      return sendError(
+        res,
+        error.message || 'Internal server error',
+        error.statusCode || 500
+      );
+    }
+  }
 }

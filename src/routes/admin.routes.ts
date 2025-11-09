@@ -1277,7 +1277,7 @@ router.post(
  */
 router.post(
   '/offers/:offerId/compute-segment',
-  hasPermission('offer:admin'),
+  hasPermission('offer.admin'),
   AdminController.computeOfferSegment
 );
 
@@ -1310,7 +1310,7 @@ router.post(
  */
 router.get(
   '/offers/:offerId/eligible-users',
-  hasPermission('offer:read'),
+  hasPermission('offer.read'),
   AdminController.getOfferSegmentMembers
 );
 
@@ -1340,7 +1340,7 @@ router.get(
  */
 router.get(
   '/offers/:offerId/preview-eligibility',
-  hasPermission('offer:read'),
+  hasPermission('offer.read'),
   AdminController.previewOfferEligibility
 );
 
@@ -1385,7 +1385,7 @@ router.get(
  */
 router.post(
   '/offers/:offerId/redemptions',
-  hasPermission('offer:redeem'),
+  hasPermission('offer.redeem'),
   AdminController.createOfferRedemptionsJob
 );
 

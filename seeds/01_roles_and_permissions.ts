@@ -66,12 +66,13 @@ export async function seed(knex: Knex): Promise<void> {
       name: 'view.notification_analytics',
       description: 'View notification analytics',
     },
-    { name: 'offer:create', description: 'Create new offers' },
-    { name: 'offer:read', description: 'Read offers' },
-    { name: 'offer:update', description: 'Update offers' },
-    { name: 'offer:delete', description: 'Delete offers' },
-    { name: 'offer:admin', description: 'Administrate offers' },
-    { name: 'offer:redeem', description: 'Redeem offers' },
+    { name: 'offer.create', description: 'Create new offers' },
+    { name: 'offer.read', description: 'Read offers' },
+    { name: 'offer.update', description: 'Update offers' },
+    { name: 'offer.delete', description: 'Delete offers' },
+    { name: 'offer.admin', description: 'Administrate offers' },
+    { name: 'offer.redeem', description: 'Redeem offers' },
+    { name: 'topup.create', description: 'Create Topup' },
   ];
   await knex('permissions').insert(permissions);
 
@@ -87,6 +88,7 @@ export async function seed(knex: Knex): Promise<void> {
       'incidents.read',
       'profile.read',
       'profile.update',
+      'topup.create',
     ],
     staff: [
       'reports.read.all',
@@ -146,12 +148,13 @@ export async function seed(knex: Knex): Promise<void> {
       'create.notification',
       'manage.notification_templates',
       'view.notification_analytics',
-      'offer:create',
-      'offer:read',
-      'offer:update',
-      'offer:delete',
-      'offer:admin',
-      'offer:redeem',
+      'offer.create',
+      'offer.read',
+      'offer.update',
+      'offer.delete',
+      'offer.admin',
+      'offer.redeem',
+      'topup.create',
     ],
   };
 
