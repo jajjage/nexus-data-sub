@@ -201,8 +201,6 @@ export class UserService {
         topupRequestData,
         trx
       );
-      console.log('topupRequestData:', topupRequestData);
-      console.log('newTopupRequest:', newTopupRequest);
 
       // 6. Debit the user's wallet
       const newBalance = wallet.balance - amount;
@@ -216,7 +214,7 @@ export class UserService {
       }
       await TransactionModel.create(
         {
-          walletId: wallet.id,
+          walletId: wallet.user_id,
           userId,
           direction: 'debit',
           amount,

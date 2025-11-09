@@ -76,7 +76,7 @@ export class TopupWebhookService {
 
         await TransactionModel.create(
           {
-            walletId: wallet.id,
+            walletId: wallet.user_id,
             userId: topupRequest.userId,
             direction: 'credit',
             amount: topupRequest.amount,

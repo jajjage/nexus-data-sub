@@ -82,7 +82,7 @@ export async function up(knex: Knex): Promise<void> {
     table
       .uuid('wallet_id')
       .notNullable()
-      .references('id')
+      .references('user_id')
       .inTable('wallets')
       .onDelete('CASCADE');
     table
