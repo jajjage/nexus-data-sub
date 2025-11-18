@@ -1,4 +1,6 @@
+import { config } from '../config/env';
 import db from '../database/connection';
+import { FirebaseService } from '../services/firebase.service';
 import { TokenStatusUpdate } from '../types/firebase.types';
 import {
   CreateNotificationInput,
@@ -9,6 +11,7 @@ import {
 } from '../types/notification.types';
 import { generateUUID } from '../utils/crypto';
 import { jsonb } from '../utils/db.utils';
+import { logger } from '../utils/logger.utils';
 
 export class NotificationModel {
   /**
@@ -104,6 +107,46 @@ export class NotificationModel {
       last_failure: update.last_failure,
       failure_reason: update.failure_reason,
     });
+    // If token marked invalid, attempt to unsubscribe it from configured topics
+    if (update.status === 'invalid') {
+      try {
+        const tokenRow = await db('push_tokens').where({ token }).first();
+        const topics: string[] = Array.isArray(
+          config.notifications.autoSubscribeTopics
+        )
+          ? [...config.notifications.autoSubscribeTopics]
+          : ['all'];
+
+        if (
+          tokenRow &&
+          tokenRow.user_id &&
+          config.notifications.subscribeRoleTopic
+        ) {
+          try {
+            const user = await db('users')
+              .where({ id: tokenRow.user_id })
+              .first();
+            if (user && user.role) {
+              topics.push(`role_${String(user.role).toLowerCase()}`);
+            }
+          } catch (err) {
+            logger.warn('Failed to load user for token unsubscription', err);
+          }
+        }
+
+        for (const topic of topics) {
+          // fire-and-forget
+          FirebaseService.unsubscribeTokenFromTopic(token, topic).catch(e =>
+            logger.error('Failed to unsubscribe token from topic', e)
+          );
+        }
+      } catch (err) {
+        logger.error(
+          'Failed processing token unsubscription for invalid token',
+          err
+        );
+      }
+    }
   }
 
   /**

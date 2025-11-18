@@ -71,4 +71,16 @@ export const config = {
     apiKey: process.env.PALMPAY_API_KEY || '',
     timeout: parseInt(process.env.PALMPAY_API_TIMEOUT || '10000', 10),
   },
+  notifications: {
+    // Comma-separated list of global topics to auto-subscribe tokens to (e.g. "all,news")
+    autoSubscribeTopics: (
+      process.env.NOTIFICATIONS_AUTO_SUBSCRIBE_TOPICS || 'all'
+    )
+      .split(',')
+      .map(s => s.trim())
+      .filter(Boolean),
+    // Whether to auto-subscribe tokens to a role-specific topic (role_<role>)
+    subscribeRoleTopic:
+      process.env.NOTIFICATIONS_SUBSCRIBE_ROLE_TOPIC !== 'false',
+  },
 };

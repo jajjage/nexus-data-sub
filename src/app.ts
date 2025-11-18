@@ -51,11 +51,18 @@ app.use(
     },
   })
 );
-app.use(cors());
-// {
-//   origin: process.env.CORS_ALLOWED_ORIGINS?.split(',') || 'http:// 10.150.164.18:8081',
-//   credentials: true,
-// }
+app.use(
+  cors({
+    origin: [
+      'http://localhost:3001',
+      'http://localhost:5173',
+      'http://127.0.0.1:3000',
+    ],
+    credentials: true, // if you need to send cookies
+    optionsSuccessStatus: 200,
+  })
+);
+
 app.use(cookieParser());
 app.use(deviceInfoMiddleware);
 app.use(

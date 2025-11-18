@@ -44,6 +44,9 @@ export class UserController {
 
   /**
    * Update the profile of the currently authenticated user.
+   * Supports updating fullName and/or profile picture URL.
+   * If a file is provided (via multipart form), it should be pre-uploaded to a storage service
+   * and the URL passed as profilePictureUrl in the body.
    */
   static async updateMyProfile(
     req: AuthenticatedRequest,
@@ -55,9 +58,11 @@ export class UserController {
         return sendError(res, 'Authentication required', 401);
       }
 
-      const { fullName } = req.body;
+      const { fullName, profilePictureUrl } = req.body;
+
       const updatedUser = await UserService.updateUserProfile(userId, {
         fullName,
+        profilePictureUrl,
       });
       return sendSuccess(res, 'Profile updated successfully', updatedUser, 200);
     } catch (error: any) {

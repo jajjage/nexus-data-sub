@@ -142,4 +142,46 @@ export class FirebaseService {
       throw error;
     }
   }
+
+  /**
+   * Subscribes a single token to a topic.
+   * @param token - FCM token
+   * @param topic - topic name (no /topics/ prefix)
+   */
+  static async subscribeTokenToTopic(token: string, topic: string) {
+    if (!admin.apps.length) {
+      console.warn(
+        'Firebase Admin SDK not initialized. Skipping topic subscription.'
+      );
+      return;
+    }
+
+    try {
+      await admin.messaging().subscribeToTopic([token], topic);
+      logger.info(`Subscribed token to topic: ${topic}`);
+    } catch (error) {
+      console.error(`Failed to subscribe token to topic ${topic}:`, error);
+    }
+  }
+
+  /**
+   * Unsubscribes a single token from a topic.
+   * @param token - FCM token
+   * @param topic - topic name
+   */
+  static async unsubscribeTokenFromTopic(token: string, topic: string) {
+    if (!admin.apps.length) {
+      console.warn(
+        'Firebase Admin SDK not initialized. Skipping topic unsubscription.'
+      );
+      return;
+    }
+
+    try {
+      await admin.messaging().unsubscribeFromTopic([token], topic);
+      logger.info(`Unsubscribed token from topic: ${topic}`);
+    } catch (error) {
+      console.error(`Failed to unsubscribe token from topic ${topic}:`, error);
+    }
+  }
 }

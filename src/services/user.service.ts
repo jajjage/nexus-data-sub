@@ -22,11 +22,28 @@ export class UserService {
    * @returns The user's profile object.
    */
   static async getUserProfile(userId: string): Promise<UserProfileView> {
-    const user = await UserModel.findProfileById(userId);
-    if (!user) {
+    const userData = await UserModel.findProfileById(userId);
+    if (!userData) {
       throw new ApiError(404, 'User not found');
     }
-    return user;
+
+    return {
+      userId: userData.userId,
+      fullName: userData.fullName,
+      email: userData.email,
+      phoneNumber: userData.phoneNumber,
+      role: userData.role,
+      isSuspended: userData.isSuspended,
+      isVerified: userData.isVerified,
+      twoFactorEnabled: userData.twoFactorEnabled,
+      accountNumber: userData.accountNumber,
+      providerName: userData.providerName,
+      balance: userData.balance,
+      profilePictureUrl: userData.profilePictureUrl,
+      permissions: userData.permissions || [],
+      createdAt: userData.createdAt,
+      updatedAt: userData.updatedAt,
+    };
   }
 
   /**
@@ -37,16 +54,24 @@ export class UserService {
    */
   static async updateUserProfile(
     userId: string,
-    profileData: { fullName?: string }
+    profileData: { fullName?: string; profilePictureUrl?: string }
   ): Promise<UserProfileView> {
-    if (!profileData.fullName) {
-      throw new ApiError(400, 'Full name is required for update.');
+    if (!profileData.fullName && !profileData.profilePictureUrl) {
+      throw new ApiError(
+        400,
+        'At least one of fullName or profilePictureUrl is required for update.'
+      );
     }
 
-    await db('users').where({ id: userId }).update({
-      full_name: profileData.fullName,
-      updated_at: db.fn.now(),
-    });
+    const updateData: any = { updated_at: db.fn.now() };
+    if (profileData.fullName) {
+      updateData.full_name = profileData.fullName;
+    }
+    if (profileData.profilePictureUrl !== undefined) {
+      updateData.profile_picture_url = profileData.profilePictureUrl;
+    }
+
+    await db('users').where({ id: userId }).update(updateData);
 
     const updatedProfile = await this.getUserProfile(userId);
     return updatedProfile;

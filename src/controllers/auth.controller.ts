@@ -242,8 +242,8 @@ export class AuthController {
 
       setAuthCookies(res, accessToken, refreshToken);
 
-      // Fetch the public profile for the response
-      const userProfile = await UserModel.findProfileById(user.userId);
+      // Return minimal user data (no password, no sensitive info)
+      const minimalUser = UserModel.toMinimalResponse(user);
 
       const twofaResult = (req as any).__twofaResult as
         | {
@@ -268,7 +268,7 @@ export class AuthController {
         }
       }
 
-      const payload: any = { user: userProfile };
+      const payload: any = { user: minimalUser };
       if (twofaResult) Object.assign(payload, twofaResult);
 
       return sendSuccess(res, 'Login successful', payload);

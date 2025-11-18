@@ -35,9 +35,11 @@ export interface UserProfileView {
   accountNumber: string | null;
   providerName: string | null;
   balance: string;
-  pin: string | null;
+  pin?: string | null;
+  profilePictureUrl?: string | null;
   createdAt: Date;
   updatedAt: Date;
+  permissions?: string[]; // Added permissions property
 }
 
 /**
@@ -45,7 +47,9 @@ export interface UserProfileView {
  */
 export interface UserAuthPayload {
   userId: string;
+  fullName: string | null;
   email: string;
+  phoneNumber: string | null;
   password?: string;
   role: 'user' | 'staff' | 'admin';
   roleId: string;
@@ -65,6 +69,21 @@ export interface CreateUserInput {
   phoneNumber?: string;
   password: string;
   role: 'user' | 'staff' | 'admin';
+}
+
+/**
+ * Minimal user response for login/public endpoints (no sensitive data).
+ */
+export interface UserLoginResponse {
+  userId: string;
+  email: string;
+  fullName: string | null;
+  phoneNumber: string | null;
+  role: 'user' | 'staff' | 'admin';
+  isVerified: boolean;
+  isSuspended: boolean;
+  twoFactorEnabled: boolean;
+  permissions: string[];
 }
 
 // =================================================================
@@ -142,7 +161,7 @@ export class UserModel {
       return null;
     }
     // Manual mapping to ensure correct property names
-    return {
+    const userProfile = {
       userId: user.id,
       fullName: user.full_name,
       email: user.email,
@@ -155,8 +174,15 @@ export class UserModel {
       providerName: user.providerName,
       balance: user.balance,
       pin: user.pin,
+      profilePictureUrl: user.profile_picture_url,
       createdAt: user.created_at,
       updatedAt: user.updated_at,
+    };
+
+    const permissions = await this.getPermissions(user.role_id);
+    return {
+      ...userProfile,
+      permissions,
     };
   }
 
@@ -190,6 +216,8 @@ export class UserModel {
     return {
       userId: userRow.id,
       email: userRow.email,
+      fullName: userRow.full_name,
+      phoneNumber: userRow.phone_number,
       password: userRow.password,
       role: userRow.role,
       roleId: userRow.role_id,
@@ -240,6 +268,8 @@ export class UserModel {
     return {
       userId: userRow.id,
       email: userRow.email,
+      fullName: userRow.full_name,
+      phoneNumber: userRow.phone_number,
       password: userRow.password,
       role: userRow.role,
       roleId: userRow.role_id,
@@ -279,6 +309,8 @@ export class UserModel {
         return {
           userId: user.id,
           email: user.email,
+          fullName: user.full_name,
+          phoneNumber: user.phone_number,
           password: user.password,
           role: user.role,
           roleId: user.role_id,
@@ -293,16 +325,49 @@ export class UserModel {
   }
 
   /**
+   * Converts a UserAuthPayload to a minimal login response (excludes password and sensitive fields).
+   * @param authPayload - The user auth payload.
+   * @returns A minimal user response suitable for login endpoints.
+   */
+  static toMinimalResponse(authPayload: UserAuthPayload): UserLoginResponse {
+    return {
+      userId: authPayload.userId,
+      email: authPayload.email,
+      fullName: authPayload.fullName, // We don't have fullName in UserAuthPayload, use null
+      phoneNumber: authPayload.phoneNumber, // We don't have phoneNumber in UserAuthPayload, use null
+      role: authPayload.role,
+      isVerified: authPayload.isVerified,
+      isSuspended: authPayload.isSuspended,
+      twoFactorEnabled: authPayload.twoFactorEnabled,
+      permissions: authPayload.permissions,
+    };
+  }
+
+  /**
    * Retrieves a list of permission names for a given role ID.
    * @param roleId - The ID of the role.
    * @returns An array of permission strings.
    */
   static async getPermissions(roleId: string): Promise<string[]> {
+    // Defensive: if roleId is falsy (undefined/null/empty), return empty list
+    // This prevents undefined binding errors when compiling the SQL query.
+    if (!roleId) {
+      console.warn(
+        `[debug] getPermissions called with falsy roleId: ${roleId}`
+      );
+      return [];
+    }
+
+    console.warn(`[debug] getPermissions querying for roleId=${roleId}`);
     const permissions = await db('role_permissions as rp')
       .join('permissions as p', 'rp.permission_id', 'p.id')
       .where('rp.role_id', roleId)
       .select('p.name');
-    return permissions.map(p => p.name);
+    const names = permissions.map(p => p.name);
+    console.warn(
+      `[debug] getPermissions for roleId=${roleId} returned ${names.length} permissions`
+    );
+    return names;
   }
 
   /**
@@ -448,10 +513,12 @@ export class UserModel {
         'u.email',
         'u.phone_number',
         'u.role',
+        'u.role_id',
         'u.is_suspended',
         'u.is_verified',
         'u.two_factor_enabled',
         'u.pin',
+        'u.profile_picture_url',
         'u.created_at',
         'u.updated_at',
         'w.balance',

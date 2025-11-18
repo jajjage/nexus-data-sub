@@ -1,3 +1,5 @@
+import { config } from '../config/env';
+import db from '../database/connection';
 import { NotificationModel } from '../models/Notification';
 import {
   CreateNotificationInput,
@@ -97,7 +99,32 @@ export class NotificationService {
    * @param tokenData - The data for the push token.
    */
   static async registerPushToken(tokenData: RegisterPushTokenInput) {
+    // Persist the token
     await NotificationModel.registerPushToken(tokenData);
+
+    // Subscribe the token to configured topics and role-specific topic if enabled
+    const topics: string[] = Array.isArray(
+      config.notifications.autoSubscribeTopics
+    )
+      ? [...config.notifications.autoSubscribeTopics]
+      : ['all'];
+    try {
+      const user = await db('users').where({ id: tokenData.userId }).first();
+      if (user && user.role && config.notifications.subscribeRoleTopic) {
+        // sanitize role -> topic name
+        const roleTopic = `role_${String(user.role).toLowerCase()}`;
+        topics.push(roleTopic);
+      }
+    } catch (err) {
+      logger.warn('Unable to query user role for topic subscription', err);
+    }
+
+    // Fire-and-forget subscription attempts
+    for (const topic of topics) {
+      FirebaseService.subscribeTokenToTopic(tokenData.token, topic).catch(e =>
+        logger.error('Topic subscription failed', e)
+      );
+    }
   }
 
   /**
