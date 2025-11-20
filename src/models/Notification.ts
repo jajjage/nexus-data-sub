@@ -7,6 +7,7 @@ import {
   Notification,
   NotificationTargetCriteria,
   PushToken,
+  RegisterPushTokenInput,
 } from '../types/notification.types';
 import { generateUUID } from '../utils/crypto';
 import { jsonb } from '../utils/db.utils';
@@ -55,6 +56,45 @@ export class NotificationModel {
   static async findAll(userId?: string): Promise<Notification[]> {
     // ...existing code...
     return db('notifications').select('*');
+  }
+
+  /**
+   * Registers or updates a push token for a user.
+   * @param tokenData - The push token data to register
+   * @returns The registered push token
+   */
+  static async registerPushToken(
+    tokenData: RegisterPushTokenInput
+  ): Promise<PushToken> {
+    const tokenRecord = {
+      id: generateUUID(),
+      user_id: tokenData.userId,
+      token: tokenData.token,
+      platform: tokenData.platform,
+      status: 'active' as const,
+      last_seen: new Date(),
+      created_at: new Date(),
+      updated_at: new Date(),
+    };
+
+    // Use upsert pattern: try to update if exists, insert if not
+    const existingToken = await db('push_tokens')
+      .where({ token: tokenData.token })
+      .first();
+
+    if (existingToken) {
+      // Update existing token
+      await db('push_tokens').where({ id: existingToken.id }).update({
+        user_id: tokenData.userId,
+        platform: tokenData.platform,
+        status: 'active',
+        updated_at: new Date(),
+      });
+      return db('push_tokens').where({ id: existingToken.id }).first();
+    }
+    // Insert new token
+    await db('push_tokens').insert(tokenRecord);
+    return tokenRecord;
   }
 
   /**
