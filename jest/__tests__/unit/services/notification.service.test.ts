@@ -1,4 +1,7 @@
+import bcrypt from 'bcrypt';
+import { v4 as uuidv4 } from 'uuid';
 import { config as envConfig } from '../../../../src/config/env';
+import db from '../../../../src/database/connection';
 import { NotificationModel } from '../../../../src/models/Notification';
 import { FirebaseService } from '../../../../src/services/firebase.service';
 import { NotificationService } from '../../../../src/services/notification.service';
@@ -10,30 +13,44 @@ const mockRegister = jest.fn();
 
 jest.mock('../../../../src/services/firebase.service', () => ({
   FirebaseService: {
-    subscribeTokenToTopic: jest.fn(),
+    subscribeTokenToTopic: jest.fn(() => Promise.resolve()),
   },
 }));
 
-// Mock db to return a user with role
-jest.mock('../../../../src/database/connection', () => {
-  // eslint-disable-next-line @typescript-eslint/no-unused-vars
-  return jest.fn().mockImplementation((table: string) => {
-    return {
-      where: () => ({
-        first: async () => ({ id: 'user-1', role: 'user' }),
-      }),
-    };
-  });
-});
-
 describe('NotificationService.registerPushToken', () => {
+  let userId: string;
+  let roleId: string;
+
+  beforeAll(async () => {
+    const userRole = await db('roles').where({ name: 'user' }).first();
+    if (!userRole) {
+      throw new Error('Role "user" not found. Please run seeds.');
+    }
+    roleId = userRole.id;
+    userId = uuidv4();
+    const hashedPassword = await bcrypt.hash('password123', 10);
+
+    await db('users').insert({
+      id: userId,
+      email: 'test.user@notification.service.test',
+      password: hashedPassword,
+      role: 'user',
+      role_id: roleId,
+      is_verified: true,
+    });
+  });
+
+  afterAll(async () => {
+    await db('users').where({ id: userId }).del();
+  });
+
   beforeEach(() => {
     jest.clearAllMocks();
   });
 
   it('should register token and subscribe to configured topics and role topic', async () => {
     // Arrange
-    const tokenData = { userId: 'user-1', token: 'tok-1', platform: 'web' };
+    const tokenData = { userId: userId, token: 'tok-1', platform: 'web' };
 
     // Ensure config has expected topics for this test
     (envConfig.notifications.autoSubscribeTopics as any) = ['all', 'news'];

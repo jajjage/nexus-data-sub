@@ -41,7 +41,7 @@ jest.mock('../src/config/env', () => ({
     database: {
       url:
         process.env.DATABASE_URL ||
-        'postgresql://postgres:postgres@db:5432/election_auth_test',
+        'postgresql://postgres:postgres@b:5432/election_auth_test',
     },
     webhooks: {
       palmpay: {
@@ -55,6 +55,10 @@ jest.mock('../src/config/env', () => ({
     },
     app: {
       baseUrl: 'http://localhost:3000',
+    },
+    notifications: {
+      autoSubscribeTopics: ['all'],
+      subscribeRoleTopic: true,
     },
   },
 }));
@@ -72,20 +76,9 @@ beforeAll(async () => {
     console.log('✅ Connected to Test Database');
 
     // Drop all tables to ensure a clean slate
-    await db.raw('DROP TABLE IF EXISTS user_polling_units CASCADE');
-    await db.raw('DROP TABLE IF EXISTS polling_units CASCADE');
-    await db.raw('DROP TABLE IF EXISTS wards CASCADE');
-    await db.raw('DROP TABLE IF EXISTS lgas CASCADE');
-    await db.raw('DROP TABLE IF EXISTS states CASCADE');
-    await db.raw('DROP TABLE IF EXISTS countries CASCADE');
-    await db.raw('DROP TABLE IF EXISTS role_permissions CASCADE');
-    await db.raw('DROP TABLE IF EXISTS permissions CASCADE');
-    await db.raw('DROP TABLE IF EXISTS backup_code CASCADE');
-    await db.raw('DROP TABLE IF EXISTS users CASCADE');
-    await db.raw('DROP TABLE IF EXISTS roles CASCADE');
-
-    await knex.migrate.rollback({ directory: './migrations' }, true);
-    console.log('✅ Database rolled back');
+    await db.raw('DROP SCHEMA public CASCADE');
+    await db.raw('CREATE SCHEMA public');
+    console.log('✅ Dropped and recreated public schema');
 
     // Run all migrations
     await knex.migrate.latest({ directory: './migrations' });

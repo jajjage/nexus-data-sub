@@ -1,56 +1,82 @@
+import bcrypt from 'bcrypt';
+import { v4 as uuidv4 } from 'uuid';
 import { config as envConfig } from '../../../../src/config/env';
+import db from '../../../../src/database/connection';
 import { NotificationModel } from '../../../../src/models/Notification';
 import { FirebaseService } from '../../../../src/services/firebase.service';
 
 jest.mock('../../../../src/services/firebase.service', () => ({
   FirebaseService: {
-    unsubscribeTokenFromTopic: jest.fn(),
+    unsubscribeTokenFromTopic: jest.fn(() => Promise.resolve()),
   },
 }));
 
-// Mock db implementation to handle push_tokens and users queries
-jest.mock('../../../../src/database/connection', () => {
-  return jest.fn().mockImplementation((table: string) => {
-    if (table === 'push_tokens') {
-      return {
-        where: () => ({
-          update: async () => {},
-          first: async () => ({
-            id: 'pt-1',
-            token: 'tok-1',
-            user_id: 'user-1',
-          }),
-        }),
-      };
-    }
-    if (table === 'users') {
-      return {
-        where: () => ({
-          first: async () => ({ id: 'user-1', role: 'admin' }),
-        }),
-      };
-    }
-    return { where: () => ({ first: async () => null }) };
-  });
-});
-
 describe('NotificationModel.updateTokenStatus', () => {
-  beforeEach(() => jest.clearAllMocks());
+  let adminId: string;
+  let token: string;
+
+  beforeAll(async () => {
+    const adminRole = await db('roles').where({ name: 'admin' }).first();
+    if (!adminRole) {
+      throw new Error('Role "admin" not found. Please run seeds.');
+    }
+
+    adminId = uuidv4();
+    const hashedPassword = await bcrypt.hash('password123', 10);
+
+    await db('users').insert({
+      id: adminId,
+      email: `test.admin.${adminId}@model.test`,
+      password: hashedPassword,
+      role: 'admin',
+      role_id: adminRole.id,
+      is_verified: true,
+    });
+
+    token = `tok-${adminId}`;
+    await db('push_tokens').insert({
+      id: uuidv4(),
+      user_id: adminId,
+      token: token,
+      platform: 'web',
+    });
+  });
+
+  afterAll(async () => {
+    await db('users').where({ id: adminId }).del();
+  });
+
+  beforeEach(() => {
+    jest.clearAllMocks();
+    envConfig.notifications.autoSubscribeTopics = ['all', 'news'];
+    envConfig.notifications.subscribeRoleTopic = true;
+  });
 
   it('should unsubscribe invalid tokens from configured topics and role topic', async () => {
-    (envConfig.notifications.autoSubscribeTopics as any) = ['all', 'news'];
-    (envConfig.notifications.subscribeRoleTopic as any) = true;
+    console.log(
+      'Test config topics:',
+      envConfig.notifications.autoSubscribeTopics
+    );
+    console.log(
+      'Test role topic enabled:',
+      envConfig.notifications.subscribeRoleTopic
+    );
+    // Arrange
+    envConfig.notifications.autoSubscribeTopics = ['all', 'news'];
+    envConfig.notifications.subscribeRoleTopic = true;
 
-    await NotificationModel.updateTokenStatus('tok-1', {
+    // Act
+    await NotificationModel.updateTokenStatus(token, {
       status: 'invalid',
       failure_reason: 'test',
       last_failure: new Date(),
     });
 
+    // Assert
     const unsubscribeMock = (FirebaseService as any)
       .unsubscribeTokenFromTopic as jest.Mock;
-    expect(unsubscribeMock).toHaveBeenCalledWith('tok-1', 'all');
-    expect(unsubscribeMock).toHaveBeenCalledWith('tok-1', 'news');
-    expect(unsubscribeMock).toHaveBeenCalledWith('tok-1', 'role_admin');
+    expect(unsubscribeMock).toHaveBeenCalledWith(token, 'all');
+    expect(unsubscribeMock).toHaveBeenCalledWith(token, 'news');
+    expect(unsubscribeMock).toHaveBeenCalledWith(token, 'role_admin');
   });
 });

@@ -7,7 +7,6 @@ import {
   Notification,
   NotificationTargetCriteria,
   PushToken,
-  RegisterPushTokenInput,
 } from '../types/notification.types';
 import { generateUUID } from '../utils/crypto';
 import { jsonb } from '../utils/db.utils';
@@ -52,36 +51,10 @@ export class NotificationModel {
    * @param userId - Optional ID of the user.
    * @returns A list of notifications.
    */
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
   static async findAll(userId?: string): Promise<Notification[]> {
-    let query = db('notifications');
-    if (userId) {
-      // This logic will depend on how you target notifications.
-      // For now, it returns all non-archived notifications.
-      // You might have a user_notifications table in a real scenario.
-      query = query.where({ archived: false });
-    }
-    return query.orderBy('publish_at', 'desc');
-  }
-
-  /**
-   * Registers or updates a push token for a user.
-   * @param tokenData - The data for the push token.
-   */
-  static async registerPushToken(
-    tokenData: RegisterPushTokenInput
-  ): Promise<void> {
-    await db('push_tokens')
-      .insert({
-        id: generateUUID(),
-        user_id: tokenData.userId,
-        platform: tokenData.platform,
-        token: tokenData.token,
-        last_seen: db.fn.now(),
-      })
-      .onConflict(['user_id', 'platform', 'token'])
-      .merge({
-        last_seen: db.fn.now(),
-      });
+    // ...existing code...
+    return db('notifications').select('*');
   }
 
   /**
@@ -134,8 +107,8 @@ export class NotificationModel {
           }
         }
 
+        console.warn('Debug: Topics array before unsubscribe loop:', topics);
         for (const topic of topics) {
-          // fire-and-forget
           FirebaseService.unsubscribeTokenFromTopic(token, topic).catch(e =>
             logger.error('Failed to unsubscribe token from topic', e)
           );
