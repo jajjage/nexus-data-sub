@@ -73,8 +73,6 @@ export class NotificationModel {
       platform: tokenData.platform,
       status: 'active' as const,
       last_seen: new Date(),
-      created_at: new Date(),
-      updated_at: new Date(),
     };
 
     // Use upsert pattern: try to update if exists, insert if not
@@ -88,7 +86,6 @@ export class NotificationModel {
         user_id: tokenData.userId,
         platform: tokenData.platform,
         status: 'active',
-        updated_at: new Date(),
       });
       return db('push_tokens').where({ id: existingToken.id }).first();
     }
