@@ -144,4 +144,41 @@ export class NotificationController {
       return sendError(res, 'Internal server error', 500, []);
     }
   }
+
+  /**
+   * Unlinks/removes a push token for the authenticated user
+   * @param req - Express request with user context
+   * @param res - Express response
+   */
+  static async unlinkToken(req: AuthenticatedRequest, res: Response) {
+    try {
+      if (!req.user) {
+        return sendError(res, 'Authentication required', 401, []);
+      }
+
+      const { token } = req.body;
+      // const userId = req.user.userId;
+
+      // Validate required fields
+      if (!token) {
+        return sendError(res, 'Token is required', 400, []);
+      }
+
+      // Mark the token as unregistered
+      await NotificationModel.updateTokenStatus(token, {
+        status: 'unregistered',
+        failure_reason: 'User unlinked token',
+      });
+
+      return sendSuccess(
+        res,
+        'Push token unlinked successfully',
+        { token },
+        200
+      );
+    } catch (error) {
+      console.error('Unlink push token error:', error);
+      return sendError(res, 'Internal server error', 500, []);
+    }
+  }
 }

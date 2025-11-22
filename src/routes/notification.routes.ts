@@ -173,4 +173,48 @@ router.post(
   NotificationController.createNotification
 );
 
+/**
+ * @swagger
+ * /notifications/tokens/unlink:
+ *   post:
+ *     summary: Unlink a push token for the authenticated user
+ *     tags: [Notifications]
+ *     security:
+ *       - bearerAuth: []
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             required:
+ *               - token
+ *             properties:
+ *               token:
+ *                 type: string
+ *                 description: The FCM push token to unlink
+ *     responses:
+ *       200:
+ *         description: Push token unlinked successfully
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 success:
+ *                   type: boolean
+ *                 message:
+ *                   type: string
+ *                 data:
+ *                   type: object
+ *                   properties:
+ *                     token:
+ *                       type: string
+ *       400:
+ *         description: Validation error
+ *       401:
+ *         description: Authentication required
+ */
+router.post('/tokens/unlink', authenticate, NotificationController.unlinkToken);
+
 export default router;
