@@ -810,6 +810,7 @@ export class AdminController {
         validityDays,
         isActive,
         metadata,
+        slug,
       } = req.body;
 
       if (!operatorId || !productCode || !name || !productType) {
@@ -830,6 +831,7 @@ export class AdminController {
         validityDays,
         isActive: isActive !== undefined ? isActive : true,
         metadata,
+        slug,
       };
 
       // Check if supplier mapping data is provided for atomic creation
@@ -895,6 +897,7 @@ export class AdminController {
         validityDays,
         isActive,
         metadata,
+        slug,
       } = req.body;
 
       const updateData = {
@@ -907,6 +910,7 @@ export class AdminController {
         validityDays,
         isActive,
         metadata,
+        slug,
       };
 
       const product = await AdminModel.updateProduct(productId, updateData);

@@ -6,6 +6,7 @@ export async function seed(knex: Knex): Promise<void> {
   await knex('operator_products').del();
   await knex('suppliers').del();
   await knex('operators').del();
+  await knex('users').del();
 
   // Insert operators
   await knex('operators').insert([
@@ -37,6 +38,7 @@ export async function seed(knex: Knex): Promise<void> {
       denom_amount: 100,
       data_mb: 100,
       validity_days: 1,
+      slug: 'supplier-a',
     },
     {
       operator_id: mtn.id,
@@ -61,4 +63,22 @@ export async function seed(knex: Knex): Promise<void> {
       supplier_price: 90,
     },
   ]);
+
+  await knex('users').insert([
+    {
+      email: 'admin.test@example.com',
+      full_name: 'Admin Test',
+      phone_number: '07083454412',
+      password: '$2a$10$DfqP4ciBvw/1PjvvUyYm6e4b694dUbRWaup/GBTtvuMljyVwLBZ86',
+      role: 'admin',
+    },
+  ]);
+
+  const admin = await knex('users')
+    .where({ email: 'admin.test@example.com' })
+    .first();
+  const roleId = await knex('roles').where({ name: 'admin' }).first();
+  await knex('users')
+    .where({ id: admin.id })
+    .update({ is_verified: true, role_id: roleId.id });
 }

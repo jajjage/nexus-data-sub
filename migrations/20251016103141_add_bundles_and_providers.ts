@@ -42,6 +42,7 @@ export async function up(knex: Knex): Promise<void> {
     table.decimal('denom_amount', 12, 2).nullable(); // price/face value
     table.integer('data_mb').nullable();
     table.integer('validity_days').nullable();
+    table.string('slug', 64).nullable();
     table.boolean('is_active').defaultTo(true);
     table.jsonb('metadata').defaultTo('{}');
     table.timestamp('created_at', { useTz: true }).defaultTo(knex.fn.now());
@@ -141,6 +142,7 @@ export async function up(knex: Knex): Promise<void> {
     table.decimal('amount', 12, 2).notNullable(); // charged to customer
     table.decimal('cost', 12, 2).nullable(); // supplier cost when known
     table.string('status', 32).notNullable().defaultTo('pending'); // pending|success|failed|reversed|retry
+    table.string('type', 32).notNullable().defaultTo('data'); // data|airtime
     table.integer('attempt_count').defaultTo(0);
     table.string('idempotency_key', 128);
     table.jsonb('request_payload').defaultTo('{}');

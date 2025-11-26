@@ -14,18 +14,18 @@ describe('Admin Product And Bundle Management API', () => {
   beforeAll(async () => {
     try {
       // Create a test operator
-      const [operator] = await db('operators')
+      const operatorRows = await db('operators')
         .insert({
           code: 'TEST',
           name: 'Test Operator',
           iso_country: 'NG',
         })
         .returning('id');
-
-      testOperatorId = operator.id;
+      // Normalize returning shape: could be [{id: '...'}] or ['...'] depending on PG/Knex
+      testOperatorId = operatorRows[0]?.id || operatorRows[0];
 
       // Create a test supplier
-      const [supplier] = await db('suppliers')
+      const supplierRows = await db('suppliers')
         .insert({
           name: 'Test Supplier',
           slug: 'test-supplier',
@@ -33,8 +33,7 @@ describe('Admin Product And Bundle Management API', () => {
           api_key: 'test-key',
         })
         .returning('id');
-
-      testSupplierId = supplier.id;
+      testSupplierId = supplierRows[0]?.id || supplierRows[0];
 
       // Create an admin user and log in to get a token
       const adminData: CreateUserInput = {
@@ -106,6 +105,7 @@ describe('Admin Product And Bundle Management API', () => {
         validityDays: 30,
         isActive: true,
         metadata: { test: 'value' },
+        slug: 'test-supplier',
       };
 
       const response = await request(app)
@@ -145,6 +145,7 @@ describe('Admin Product And Bundle Management API', () => {
         denomAmount: 1500,
         dataMb: 2048,
         validityDays: 30,
+        slug: 'test-supplier',
         supplierId: testSupplierId,
         supplierProductCode: 'SUP-TEST-2GB',
         supplierPrice: 1400,

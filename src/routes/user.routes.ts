@@ -210,9 +210,13 @@ router.get(
  *             properties:
  *               amount:
  *                 type: number
- *               operatorCode:
+ *               productCode:
  *                 type: string
  *               recipientPhone:
+ *                 type: string
+ *               supplierSlug:
+ *                 type: string
+ *               supplierMappingId:
  *                 type: string
  *     responses:
  *       201:

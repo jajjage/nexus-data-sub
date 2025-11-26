@@ -25,12 +25,168 @@ export class OperatorProductModel {
         'validity_days as validityDays',
         'is_active as isActive',
         'metadata',
+        'slug',
         'created_at as createdAt'
       )
       .where({ id })
       .first();
 
     return result || null;
+  }
+
+  /**
+   * Retrieves public operator products with filters and pagination.
+   * Includes active supplier offers for each product.
+   */
+  static async findPublic(filters?: {
+    operatorId?: string;
+    productType?: string;
+    isActive?: boolean;
+    q?: string;
+    page?: number;
+    perPage?: number;
+  }) {
+    const page = filters?.page && filters.page > 0 ? filters.page : 1;
+    const perPage =
+      filters?.perPage && filters.perPage > 0 ? filters.perPage : 50;
+
+    const baseQuery = db('operator_products').where(function () {
+      if (filters?.operatorId) {
+        this.where({ operator_id: filters.operatorId });
+      }
+      if (filters?.productType) {
+        this.where({ product_type: filters.productType });
+      }
+      if (typeof filters?.isActive === 'boolean') {
+        this.where({ is_active: filters.isActive });
+      }
+      if (filters?.q) {
+        const q = `%${filters.q}%`;
+        this.where(function (this: any) {
+          this.where('name', 'ilike', q).orWhere('product_code', 'ilike', q);
+        });
+      }
+    });
+
+    // count
+    const countResult = await baseQuery
+      .clone()
+      .clearSelect()
+      .count('* as total');
+    const total = Number((countResult && (countResult as any)[0]?.total) || 0);
+
+    const offset = (page - 1) * perPage;
+
+    const rows = await baseQuery
+      .clone()
+      .select(
+        'id',
+        'operator_id as operatorId',
+        'product_code as productCode',
+        'name',
+        'product_type as productType',
+        'denom_amount as denomAmount',
+        'data_mb as dataMb',
+        'validity_days as validityDays',
+        'is_active as isActive',
+        'metadata',
+        'slug'
+      )
+      .orderBy('name')
+      .limit(perPage)
+      .offset(offset);
+
+    const products = rows.map((result: any) => ({
+      id: result.id,
+      operatorId: result.operatorId,
+      productCode: result.productCode,
+      name: result.name,
+      productType: result.productType,
+      denomAmount: result.denomAmount,
+      dataMb: result.dataMb,
+      validityDays: result.validityDays,
+      isActive: result.isActive,
+      metadata: result.metadata,
+      slug: result.slug,
+      createdAt: result.created_at,
+    }));
+
+    // Fetch supplier offers for these products (only active suppliers and active mappings)
+    const productIds = products.map(p => p.id).filter(Boolean);
+    let offersByProduct: Record<string, any[]> = {};
+    if (productIds.length > 0) {
+      const offers = await db('supplier_product_mapping as spm')
+        .join('suppliers as s', 'spm.supplier_id', 's.id')
+        .select(
+          'spm.id as mappingId',
+          'spm.operator_product_id as operatorProductId',
+          'spm.supplier_product_code as supplierProductCode',
+          'spm.supplier_price as supplierPrice',
+          'spm.lead_time_seconds as leadTimeSeconds',
+          's.id as supplierId',
+          's.name as supplierName',
+          's.slug as supplierSlug'
+        )
+        .whereIn('spm.operator_product_id', productIds)
+        .andWhere('spm.is_active', true)
+        .andWhere('s.is_active', true);
+
+      offersByProduct = offers.reduce(
+        (acc: any, row: any) => {
+          const key = row.operatorProductId;
+          if (!acc[key]) acc[key] = [];
+          acc[key].push({
+            mappingId: row.mappingId,
+            supplierId: row.supplierId,
+            supplierName: row.supplierName,
+            supplierSlug: row.supplierSlug,
+            supplierProductCode: row.supplierProductCode,
+            supplierPrice: row.supplierPrice,
+            leadTimeSeconds: row.leadTimeSeconds,
+          });
+          return acc;
+        },
+        {} as Record<string, any[]>
+      );
+    }
+
+    // Sanitize metadata using an allowlist
+    const allowedMeta = new Set([
+      'shortDescription',
+      'short_description',
+      'iconUrl',
+      'icon_url',
+      'displayName',
+      'display_name',
+      'image',
+      'icon',
+    ]);
+
+    const sanitize = (meta: any) => {
+      if (!meta || typeof meta !== 'object') return {};
+      const out: Record<string, any> = {};
+      for (const k of Object.keys(meta)) {
+        if (allowedMeta.has(k)) out[k] = meta[k];
+      }
+      return out;
+    };
+
+    // Attach offers and sanitized metadata
+    const finalProducts = products.map(p => ({
+      ...p,
+      metadata: sanitize(p.metadata),
+      supplierOffers: offersByProduct[p.id] || [],
+    }));
+
+    return {
+      products: finalProducts,
+      pagination: {
+        page,
+        perPage,
+        total,
+        totalPages: Math.ceil(total / perPage),
+      },
+    };
   }
 
   /**
@@ -50,6 +206,7 @@ export class OperatorProductModel {
         'validity_days as validityDays',
         'is_active as isActive',
         'metadata',
+        'slug',
         'created_at as createdAt'
       )
       .orderBy('name');
@@ -97,6 +254,7 @@ export class OperatorProductModel {
         is_active:
           productData.isActive !== undefined ? productData.isActive : true,
         metadata: productData.metadata || '{}',
+        slug: productData.slug || null,
       })
       .returning('*');
 
@@ -138,6 +296,7 @@ export class OperatorProductModel {
         validity_days: productData.validityDays,
         is_active: productData.isActive,
         metadata: productData.metadata,
+        slug: productData.slug,
         updated_at: db.fn.now(),
       })
       .returning('*');
@@ -153,6 +312,7 @@ export class OperatorProductModel {
       validityDays: result.validity_days,
       isActive: result.is_active,
       metadata: result.metadata,
+      slug: result.slug,
       createdAt: result.created_at,
     };
   }

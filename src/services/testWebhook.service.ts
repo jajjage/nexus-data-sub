@@ -59,18 +59,20 @@ export class TestWebhookService {
           statusCode: 400,
         };
       }
-      await knex('incoming_payments').insert({
-        provider_id: va.provider_id,
-        provider_reference: `${txRef}_${Date.now()}`, // Make unique per payment
-        provider_va_id: va.provider_va_id,
-        virtual_account_id: va.id,
-        user_id: va.user_id,
-        amount: amount,
-        currency: va.currency,
-        status: 'received',
-        raw_payload: req.body,
-        received_at: new Date(),
-      });
+      const [incoming_payment] = await knex('incoming_payments')
+        .insert({
+          provider_id: va.provider_id,
+          provider_reference: `${txRef}_${Date.now()}`, // Make unique per payment
+          provider_va_id: va.provider_va_id,
+          virtual_account_id: va.id,
+          user_id: va.user_id,
+          amount: amount,
+          currency: va.currency,
+          status: 'received',
+          raw_payload: req.body,
+          received_at: new Date(),
+        })
+        .returning('*');
       // Ensure wallet exists
       await trx('wallets')
         .insert({
@@ -115,6 +117,8 @@ export class TestWebhookService {
         balance_after: Number(newBalance),
         method: `${provider}_test`,
         reference: `test_${Date.now()}`,
+        related_type: 'incoming_payment',
+        related_id: incoming_payment.id,
         metadata: {
           provider_va_id: providerVaId,
           test_webhook: true,

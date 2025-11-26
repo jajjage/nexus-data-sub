@@ -17,6 +17,7 @@ export interface TopupRequest {
   supplierId?: string;
   supplierMappingId?: string;
   cost?: number;
+  type?: string;
   attemptCount: number;
   idempotencyKey?: string;
   createdAt: Date;

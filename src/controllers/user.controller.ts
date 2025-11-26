@@ -220,12 +220,21 @@ export class UserController {
         return sendError(res, 'Authentication required', 401);
       }
 
-      const { amount, operatorCode, recipientPhone } = req.body;
+      const {
+        amount,
+        productCode,
+        recipientPhone,
+        supplierSlug,
+        supplierMappingId,
+      } = req.body;
+
       const result = await UserService.createTopupRequest(
         userId,
         amount,
-        operatorCode,
-        recipientPhone
+        productCode,
+        recipientPhone,
+        supplierSlug,
+        supplierMappingId
       );
       return sendSuccess(
         res,

@@ -13,6 +13,7 @@ import {
   TransactionQueryResult,
 } from '../types/transaction.types';
 import { ApiError } from '../utils/ApiError';
+import { generateSecureString } from '../utils/crypto';
 import { comparePassword, hashPassword } from '../utils/security.utils';
 
 export class UserService {
@@ -135,7 +136,8 @@ export class UserService {
     transactionId: string,
     userId: string
   ): Promise<Transaction> {
-    const transaction = await TransactionModel.findById(transactionId);
+    const transaction =
+      await TransactionModel.findByIdWithRelated(transactionId);
     if (!transaction || transaction.userId !== userId) {
       throw new ApiError(404, 'Transaction not found');
     }
@@ -158,50 +160,118 @@ export class UserService {
   static async createTopupRequest(
     userId: string,
     amount: number,
-    operatorCode: string,
-    recipientPhone: string
+    productCode: string,
+    recipientPhone: string,
+    supplierSlug?: string,
+    supplierMappingId?: string
   ): Promise<TopupRequest> {
+    let topup_type = productCode.includes('DATA') ? 'data' : 'airtime';
+    let idempotencyKey = generateSecureString(15, userId);
     return db.transaction(async trx => {
       // 1. Get user's wallet
       const wallet = await trx('wallets').where({ user_id: userId }).first();
       if (!wallet) {
-        throw new Error('Wallet not found');
+        throw new ApiError(404, 'Wallet not found');
       }
 
       // 2. Check for sufficient balance
       if (wallet.balance < amount) {
-        throw new Error('Insufficient balance');
+        throw new ApiError(402, 'Insufficient balance');
       }
 
-      // 3. Get operator by code
-      const operator = await trx('operators')
-        .where({ code: operatorCode })
-        .first();
-      if (!operator) {
-        throw new Error('Operator not found');
-      }
-
-      // 4. Get operator product and supplier mapping
+      // Try to find the operator product by canonical product_code and amount
       const operatorProduct = await trx('operator_products')
-        .where({ operator_id: operator.id, denom_amount: amount })
+        .where({ product_code: productCode, denom_amount: amount })
         .first();
       if (!operatorProduct) {
-        throw new Error('Operator product not found');
+        throw new ApiError(404, 'Operator product not found');
       }
 
-      const supplier = await trx('suppliers').first();
-      if (!supplier) {
-        throw new Error('Supplier not found');
+      // Resolve supplier/mapping in order of preference:
+      // 1) supplierMappingId (explicit mapping)
+      // 2) supplierSlug (frontend provided)
+      // 3) operatorProduct.slug (product default)
+      // 4) fallback to any active supplier
+
+      let supplier: any | undefined;
+      let supplierProductMapping: any | undefined;
+
+      if (supplierMappingId) {
+        supplierProductMapping = await trx('supplier_product_mapping')
+          .where({
+            id: supplierMappingId,
+            operator_product_id: operatorProduct.id,
+          })
+          .first();
+        if (!supplierProductMapping) {
+          throw new ApiError(
+            404,
+            'Supplier product mapping not found for provided mapping id'
+          );
+        }
+        supplier = await trx('suppliers')
+          .where({ id: supplierProductMapping.supplier_id, is_active: true })
+          .first();
+        if (!supplier) {
+          throw new ApiError(
+            404,
+            'Supplier for provided mapping is not available'
+          );
+        }
+      } else if (supplierSlug) {
+        supplier = await trx('suppliers')
+          .where({ slug: supplierSlug, is_active: true })
+          .first();
+        if (!supplier) {
+          throw new ApiError(404, 'Supplier not found for provided slug');
+        }
+        supplierProductMapping = await trx('supplier_product_mapping')
+          .where({
+            operator_product_id: operatorProduct.id,
+            supplier_id: supplier.id,
+            is_active: true,
+          })
+          .first();
+        if (!supplierProductMapping) {
+          throw new ApiError(
+            404,
+            'Supplier product mapping not found for provided supplier slug'
+          );
+        }
+      } else if (operatorProduct.slug) {
+        supplier = await trx('suppliers')
+          .where({ slug: operatorProduct.slug, is_active: true })
+          .first();
+        if (supplier) {
+          supplierProductMapping = await trx('supplier_product_mapping')
+            .where({
+              operator_product_id: operatorProduct.id,
+              supplier_id: supplier.id,
+              is_active: true,
+            })
+            .first();
+        }
       }
 
-      const supplierProductMapping = await trx('supplier_product_mapping')
-        .where({
-          operator_product_id: operatorProduct.id,
-          supplier_id: supplier.id,
-        })
-        .first();
-      if (!supplierProductMapping) {
-        throw new Error('Supplier product mapping not found');
+      if (!supplier || !supplierProductMapping) {
+        // Fallback: pick any active supplier and mapping
+        supplier = await trx('suppliers').where({ is_active: true }).first();
+        if (supplier) {
+          supplierProductMapping = await trx('supplier_product_mapping')
+            .where({
+              operator_product_id: operatorProduct.id,
+              supplier_id: supplier.id,
+              is_active: true,
+            })
+            .first();
+        }
+      }
+
+      if (!supplier || !supplierProductMapping) {
+        throw new ApiError(
+          404,
+          'Supplier or supplier product mapping not found'
+        );
       }
 
       // 5. Create a new top-up request
@@ -211,15 +281,16 @@ export class UserService {
       > = {
         userId,
         amount,
-        operatorId: operator.id,
+        operatorId: operatorProduct.operator_id,
         recipientPhone,
         status: 'pending',
         operatorProductId: operatorProduct.id,
         supplierId: supplier.id,
         supplierMappingId: supplierProductMapping.id,
         cost: 0,
+        type: topup_type,
         attemptCount: 0,
-        idempotencyKey: '',
+        idempotencyKey: idempotencyKey,
         requestPayload: {},
       };
       const newTopupRequest = await TopupRequestModel.create(

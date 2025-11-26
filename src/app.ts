@@ -93,8 +93,10 @@ const setupRoutes = async () => {
   const authRoutes = (await import('./routes/auth.routes')).default;
   const topupWebhookRoutes = (await import('./routes/topup.webhook.routes'))
     .default;
+  const publicRoutes = (await import('./routes/public.routes')).default;
   app.use('/api/v1/auth', authRoutes);
   app.use('/api/v1/webhooks', topupWebhookRoutes);
+  app.use('/api/v1', publicRoutes);
   app.use('/api/v1/admin', adminRoutes);
   app.use('/api/v1/offers', offerRoutes);
   app.use('/api/v1/user', userRoutes);

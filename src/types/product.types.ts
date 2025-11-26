@@ -9,6 +9,7 @@ export interface OperatorProduct {
   validityDays?: number;
   isActive: boolean;
   metadata?: any;
+  slug?: string;
   createdAt: Date;
 }
 
@@ -22,6 +23,7 @@ export interface CreateOperatorProductData {
   validityDays?: number;
   isActive?: boolean;
   metadata?: any;
+  slug?: string;
 }
 
 export interface UpdateOperatorProductData {
@@ -33,6 +35,7 @@ export interface UpdateOperatorProductData {
   validityDays?: number;
   isActive?: boolean;
   metadata?: any;
+  slug?: string;
 }
 
 export interface SupplierProductMapping {

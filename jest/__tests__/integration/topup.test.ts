@@ -8,6 +8,9 @@ describe('Topup Controller Integration Tests', () => {
   let authCookie: any;
   let topupRequest: any;
   let debitTransaction: any;
+  let testOperatorId: string;
+  let testSupplierId: string;
+  let testProductCode: string;
 
   beforeAll(async () => {
     app = (await import('../../../src/app')).default;
@@ -23,6 +26,42 @@ describe('Topup Controller Integration Tests', () => {
       password: 'Password123!',
     });
     authCookie = getCookie(response, 'accessToken');
+
+    // Seed operator, supplier, product and mapping for topup tests
+    const db = (await import('../../../src/database/connection')).default;
+
+    const operatorRows = await db('operators')
+      .insert({ code: 'TSTTOPUP', name: 'Topup Test Operator' })
+      .returning('id');
+    testOperatorId = operatorRows[0]?.id || operatorRows[0];
+
+    const supplierRows = await db('suppliers')
+      .insert({ name: 'Topup Supplier', slug: 'topup-supplier' })
+      .returning('id');
+    testSupplierId = supplierRows[0]?.id || supplierRows[0];
+
+    const productRows = await db('operator_products')
+      .insert({
+        operator_id: testOperatorId,
+        product_code: 'TSTTOPUP-001',
+        name: 'Topup Test Product',
+        product_type: 'airtime',
+        denom_amount: 100,
+        data_mb: null,
+        validity_days: null,
+        slug: 'topup-supplier',
+      })
+      .returning('id');
+    const productId = productRows[0]?.id || productRows[0];
+    testProductCode = 'TSTTOPUP-001';
+
+    await db('supplier_product_mapping').insert({
+      supplier_id: testSupplierId,
+      operator_product_id: productId,
+      supplier_product_code: 'SUP-TOPUP-001',
+      supplier_price: 80,
+      is_active: true,
+    });
   });
 
   beforeEach(async () => {
@@ -31,7 +70,7 @@ describe('Topup Controller Integration Tests', () => {
       .set('Cookie', [`accessToken=${authCookie}`])
       .send({
         amount: 100,
-        operatorCode: 'MTN',
+        productCode: testProductCode,
         recipientPhone: '08012345678',
       });
     topupRequest = topupResponse.body.data;
