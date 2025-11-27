@@ -254,9 +254,20 @@ export class TransactionModel {
           return { relatedType, data: [] };
         }
 
-        const relatedRecords = await connection(tableName)
-          .select('*')
-          .whereIn('id', relatedIds);
+        let relatedRecords: any[];
+
+        // Special handling for topup_request to join with operator_products
+        if (relatedType === 'topup_request') {
+          relatedRecords = await connection(tableName)
+            .select(`${tableName}.*`, 'operators.code as operatorCode')
+            .leftJoin('operators', `${tableName}.operator_id`, 'operators.id')
+            .whereIn(`${tableName}.id`, relatedIds);
+        } else {
+          // Default behavior for other types
+          relatedRecords = await connection(tableName)
+            .select('*')
+            .whereIn('id', relatedIds);
+        }
 
         return { relatedType, data: relatedRecords };
       }
