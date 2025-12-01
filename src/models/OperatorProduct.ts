@@ -50,29 +50,35 @@ export class OperatorProductModel {
     const perPage =
       filters?.perPage && filters.perPage > 0 ? filters.perPage : 50;
 
-    const baseQuery = db('operator_products').where(function () {
-      if (filters?.operatorId) {
-        this.where({ operator_id: filters.operatorId });
-      }
-      if (filters?.productType) {
-        this.where({ product_type: filters.productType });
-      }
-      if (typeof filters?.isActive === 'boolean') {
-        this.where({ is_active: filters.isActive });
-      }
-      if (filters?.q) {
-        const q = `%${filters.q}%`;
-        this.where(function (this: any) {
-          this.where('name', 'ilike', q).orWhere('product_code', 'ilike', q);
-        });
-      }
-    });
+    const baseQuery = db('operator_products')
+      .leftJoin('operators', 'operator_products.operator_id', 'operators.id')
+      .where(function () {
+        if (filters?.operatorId) {
+          this.where({ 'operator_products.operator_id': filters.operatorId });
+        }
+        if (filters?.productType) {
+          this.where({ 'operator_products.product_type': filters.productType });
+        }
+        if (typeof filters?.isActive === 'boolean') {
+          this.where({ 'operator_products.is_active': filters.isActive });
+        }
+        if (filters?.q) {
+          const q = `%${filters.q}%`;
+          this.where(function (this: any) {
+            this.where('operator_products.name', 'ilike', q).orWhere(
+              'operator_products.product_code',
+              'ilike',
+              q
+            );
+          });
+        }
+      });
 
     // count
     const countResult = await baseQuery
       .clone()
       .clearSelect()
-      .count('* as total');
+      .count('operator_products.id as total');
     const total = Number((countResult && (countResult as any)[0]?.total) || 0);
 
     const offset = (page - 1) * perPage;
@@ -80,19 +86,24 @@ export class OperatorProductModel {
     const rows = await baseQuery
       .clone()
       .select(
-        'id',
-        'operator_id as operatorId',
-        'product_code as productCode',
-        'name',
-        'product_type as productType',
-        'denom_amount as denomAmount',
-        'data_mb as dataMb',
-        'validity_days as validityDays',
-        'is_active as isActive',
-        'metadata',
-        'slug'
+        'operator_products.id',
+        'operator_products.operator_id as operatorId',
+        'operator_products.product_code as productCode',
+        'operator_products.name',
+        'operator_products.product_type as productType',
+        'operator_products.denom_amount as denomAmount',
+        'operator_products.data_mb as dataMb',
+        'operator_products.validity_days as validityDays',
+        'operator_products.is_active as isActive',
+        'operator_products.metadata',
+        'operator_products.created_at',
+        // Operator details
+        'operators.name as operatorName',
+        'operators.code as operatorCode',
+        'operators.iso_country as operatorCountryISO',
+        'operators.logo_url as operatorLogoUrl'
       )
-      .orderBy('name')
+      .orderBy('operator_products.name')
       .limit(perPage)
       .offset(offset);
 
@@ -109,6 +120,15 @@ export class OperatorProductModel {
       metadata: result.metadata,
       slug: result.slug,
       createdAt: result.created_at,
+      // Operator data
+      operator: result.operatorName
+        ? {
+            name: result.operatorName,
+            code: result.operatorScode,
+            countryCode: result.operatorCountryISO,
+            logoUrl: result.operatorLogoUrl,
+          }
+        : null,
     }));
 
     // Fetch supplier offers for these products (only active suppliers and active mappings)

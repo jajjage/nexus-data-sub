@@ -50,16 +50,16 @@ if (!admin.apps.length) {
 
 export class FirebaseService {
   /**
-   * Sends a push notification to a single device.
-   * @param token - The device's FCM token.
+   * Sends a push notification to a single device or multiple devices.
+   * @param token - A single FCM token or array of FCM tokens.
    * @param title - The title of the notification.
    * @param body - The body of the notification.
    */
   static async sendPushNotification(
-    token: string,
+    token: string | string[],
     title: string,
     body: string
-  ) {
+  ): Promise<any> {
     if (!admin.apps.length) {
       console.warn(
         'Firebase Admin SDK not initialized. Skipping notification.'
@@ -67,6 +67,22 @@ export class FirebaseService {
       return;
     }
 
+    // Handle array of tokens
+    if (Array.isArray(token)) {
+      if (token.length === 0) {
+        console.warn('Empty token array provided');
+        return {
+          responses: [],
+          successCount: 0,
+          failureCount: 0,
+        };
+      }
+
+      // Use multicast for arrays
+      return await this.sendMulticastPushNotification(token, title, body);
+    }
+
+    // Handle single token
     const message = {
       notification: {
         title,
@@ -144,11 +160,11 @@ export class FirebaseService {
   }
 
   /**
-   * Subscribes a single token to a topic.
-   * @param token - FCM token
+   * Subscribes one or more tokens to a topic.
+   * @param token - A single FCM token or array of FCM tokens
    * @param topic - topic name (no /topics/ prefix)
    */
-  static async subscribeTokenToTopic(token: string, topic: string) {
+  static async subscribeTokenToTopic(token: string | string[], topic: string) {
     if (!admin.apps.length) {
       console.warn(
         'Firebase Admin SDK not initialized. Skipping topic subscription.'
@@ -156,20 +172,31 @@ export class FirebaseService {
       return;
     }
 
+    // Normalize to array
+    const tokens = Array.isArray(token) ? token : [token];
+
+    if (tokens.length === 0) {
+      console.warn('Empty token array provided for topic subscription');
+      return;
+    }
+
     try {
-      await admin.messaging().subscribeToTopic([token], topic);
-      logger.info(`Subscribed token to topic: ${topic}`);
+      await admin.messaging().subscribeToTopic(tokens, topic);
+      logger.info(`Subscribed ${tokens.length} token(s) to topic: ${topic}`);
     } catch (error) {
-      console.error(`Failed to subscribe token to topic ${topic}:`, error);
+      console.error(`Failed to subscribe token(s) to topic ${topic}:`, error);
     }
   }
 
   /**
-   * Unsubscribes a single token from a topic.
-   * @param token - FCM token
+   * Unsubscribes one or more tokens from a topic.
+   * @param token - A single FCM token or array of FCM tokens
    * @param topic - topic name
    */
-  static async unsubscribeTokenFromTopic(token: string, topic: string) {
+  static async unsubscribeTokenFromTopic(
+    token: string | string[],
+    topic: string
+  ) {
     if (!admin.apps.length) {
       console.warn(
         'Firebase Admin SDK not initialized. Skipping topic unsubscription.'
@@ -177,11 +204,24 @@ export class FirebaseService {
       return;
     }
 
+    // Normalize to array
+    const tokens = Array.isArray(token) ? token : [token];
+
+    if (tokens.length === 0) {
+      console.warn('Empty token array provided for topic unsubscription');
+      return;
+    }
+
     try {
-      await admin.messaging().unsubscribeFromTopic([token], topic);
-      logger.info(`Unsubscribed token from topic: ${topic}`);
+      await admin.messaging().unsubscribeFromTopic(tokens, topic);
+      logger.info(
+        `Unsubscribed ${tokens.length} token(s) from topic: ${topic}`
+      );
     } catch (error) {
-      console.error(`Failed to unsubscribe token from topic ${topic}:`, error);
+      console.error(
+        `Failed to unsubscribe token(s) from topic ${topic}:`,
+        error
+      );
     }
   }
 }

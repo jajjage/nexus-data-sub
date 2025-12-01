@@ -10,6 +10,7 @@ export async function up(knex: Knex): Promise<void> {
     table.string('code', 32).notNullable().unique(); // e.g. 'MTN', 'AIRTEL'
     table.text('name').notNullable();
     table.string('iso_country', 2).defaultTo('NG');
+    table.string('logo_url', 250);
     table.timestamp('created_at', { useTz: true }).defaultTo(knex.fn.now());
     table.timestamp('updated_at', { useTz: true }).defaultTo(knex.fn.now());
   });

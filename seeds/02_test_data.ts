@@ -10,10 +10,30 @@ export async function seed(knex: Knex): Promise<void> {
 
   // Insert operators
   await knex('operators').insert([
-    { code: 'MTN', name: 'MTN Nigeria' },
-    { code: 'AIRTEL', name: 'Airtel Nigeria' },
-    { code: 'GLO', name: 'Glo Nigeria' },
-    { code: '9MOBILE', name: '9mobile Nigeria' },
+    {
+      code: 'MTN',
+      name: 'MTN Nigeria',
+      logo_url:
+        'https://upload.wikimedia.org/wikipedia/commons/thumb/9/93/New-mtn-logo.jpg/960px-New-mtn-logo.jpg?20220217143058',
+    },
+    {
+      code: 'AIRTEL',
+      name: 'Airtel Nigeria',
+      logo_url:
+        'https://upload.wikimedia.org/wikipedia/commons/1/18/Airtel_logo.svg',
+    },
+    {
+      code: 'GLO',
+      name: 'Glo Nigeria',
+      logo_url:
+        'https://upload.wikimedia.org/wikipedia/commons/8/86/Glo_button.png',
+    },
+    {
+      code: '9MOBILE',
+      name: '9mobile Nigeria',
+      logo_url:
+        'https://logosandtypes.com/wp-content/uploads/2020/10/9mobile-1.svg',
+    },
   ]);
 
   // Insert suppliers

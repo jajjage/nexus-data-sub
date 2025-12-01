@@ -273,4 +273,8 @@ export class NotificationModel {
 
     return query;
   }
+
+  static async deleteTokens(tokens: string[]) {
+    return db('push_tokens').whereIn('token', tokens).del();
+  }
 }

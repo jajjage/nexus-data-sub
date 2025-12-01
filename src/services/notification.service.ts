@@ -144,23 +144,50 @@ export class NotificationService {
    * @param body - The body of the notification.
    */
   static async sendToUser(userId: string, title: string, body: string) {
-    logger.info(`Sending push notification to user ID: ${userId}`);
     try {
+      // 1. Get all tokens for this user
       const userTokens = await NotificationModel.findUserPushTokens(userId);
+
+      if (!userTokens.length) return;
+
       const tokenStrings = userTokens.map(t => t.token);
 
-      if (tokenStrings.length > 0) {
-        await FirebaseService.sendMulticastPushNotification(
-          tokenStrings,
-          title,
-          body
-        );
+      // 2. Send Multicast (This returns detailed success/fail info)
+      const result = await FirebaseService.sendMulticastPushNotification(
+        tokenStrings,
+        title,
+        body
+      );
+
+      // 3. OPPORTUNISTIC CLEANUP
+      // If any specific token failed, we remove it from Postgres immediately.
+      if (result.failureCount > 0 && result.responses) {
+        const invalidTokens: string[] = [];
+
+        result.responses.forEach((resp, idx) => {
+          if (!resp.success && resp.error) {
+            const errorCode = resp.error.code;
+            // These codes mean the app was uninstalled or token expired
+            if (
+              errorCode === 'messaging/registration-token-not-registered' ||
+              errorCode === 'messaging/invalid-registration-token'
+            ) {
+              invalidTokens.push(tokenStrings[idx]);
+            }
+          }
+        });
+
+        if (invalidTokens.length > 0) {
+          logger.info(
+            `Removing ${invalidTokens.length} dead tokens for user ${userId}`
+          );
+
+          // Use your model to delete these rows completely
+          await NotificationModel.deleteTokens(invalidTokens);
+        }
       }
     } catch (error) {
-      logger.error(
-        `Error sending push notification to user ID: ${userId}`,
-        error
-      );
+      logger.error(`Error sending to user ${userId}`, error);
     }
   }
 }
