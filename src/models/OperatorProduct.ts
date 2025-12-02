@@ -96,6 +96,7 @@ export class OperatorProductModel {
         'operator_products.validity_days as validityDays',
         'operator_products.is_active as isActive',
         'operator_products.metadata',
+        'operator_products.slug',
         'operator_products.created_at',
         // Operator details
         'operators.name as operatorName',

@@ -10,6 +10,9 @@ describe('Admin Product And Bundle Management API', () => {
   let testOperatorId: string;
   let testSupplierId: string;
   let testProductId: string;
+  const timestamp = Date.now();
+  const adminEmail = `admin.product.test+${timestamp}@example.com`;
+  const userEmail = `user.product.test+${timestamp}@example.com`;
 
   beforeAll(async () => {
     try {
@@ -37,7 +40,7 @@ describe('Admin Product And Bundle Management API', () => {
 
       // Create an admin user and log in to get a token
       const adminData: CreateUserInput = {
-        email: 'admin.product.test@example.com',
+        email: adminEmail,
         fullName: 'Product Admin Test',
         phoneNumber: '1234567890',
         password: 'Password123!',
@@ -61,7 +64,7 @@ describe('Admin Product And Bundle Management API', () => {
 
       // Create a user user and log in to get a token
       const userData: CreateUserInput = {
-        email: 'user.product.test@example.com',
+        email: userEmail,
         fullName: 'Product User Test',
         phoneNumber: '0987654321',
         password: 'Password123!',

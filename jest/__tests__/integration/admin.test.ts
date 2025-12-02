@@ -11,11 +11,19 @@ describe('Admin API', () => {
   let staffRoleId: string;
 
   beforeEach(async () => {
+    // Clean up any existing test users before creating new ones
+    await db('users').where('email', 'like', '%.test@example.com').del();
+
+    // Create unique phone numbers using timestamp
+    const timestamp = Date.now();
+    const adminPhone = `123456${String(timestamp).slice(-4)}`;
+    const userPhone = `098765${String(timestamp).slice(-4)}`;
+
     // Create an admin user and log in to get a token
     const adminData: CreateUserInput = {
-      email: 'admin.test@example.com',
+      email: `admin.test+${timestamp}@example.com`,
       fullName: 'Admin Test',
-      phoneNumber: '1234567890',
+      phoneNumber: adminPhone,
       password: 'Password123!',
       role: 'admin',
     };
@@ -47,9 +55,9 @@ describe('Admin API', () => {
 
     // Create a user user and log in to get a token
     const userData: CreateUserInput = {
-      email: 'user.test@example.com',
+      email: `user.test+${timestamp + 1}@example.com`,
       fullName: 'User Test',
-      phoneNumber: '0987654321',
+      phoneNumber: userPhone,
       password: 'Password123!',
       role: 'user',
     };

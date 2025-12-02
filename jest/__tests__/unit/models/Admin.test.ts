@@ -208,7 +208,7 @@ describe('AdminModel', () => {
         balanceAfter: 200,
         method: 'test_method',
         reference: 'test_ref',
-        relatedType: 'test',
+        relatedType: 'incoming_payment',
         relatedId: testUser.userId,
         metadata: { test: 'data' },
         note: 'test note',

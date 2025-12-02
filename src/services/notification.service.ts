@@ -1,6 +1,7 @@
 import { config } from '../config/env';
 import db from '../database/connection';
 import { NotificationModel } from '../models/Notification';
+import { UserNotificationPreferenceModel } from '../models/UserNotificationPreference';
 import {
   CreateNotificationInput,
   RegisterPushTokenInput,
@@ -99,34 +100,77 @@ export class NotificationService {
    * @param tokenData - The data for the push token.
    */
   static async registerPushToken(tokenData: RegisterPushTokenInput) {
-    // Persist the token
+    // 1. Persist the token in Postgres
     await NotificationModel.registerPushToken(tokenData);
 
-    // Subscribe the token to configured topics and role-specific topic if enabled
-    const topics: string[] = Array.isArray(
-      config.notifications.autoSubscribeTopics
-    )
-      ? [...config.notifications.autoSubscribeTopics]
+    // Use a Set to store topics to ensure uniqueness
+    const topicsToSubscribe = new Set<string>();
+
+    // ---------------------------------------------------------
+    // A. CONFIG DEFAULTS (e.g., 'all', 'security_alerts')
+    // ---------------------------------------------------------
+    const configTopics = Array.isArray(config.notifications.autoSubscribeTopics)
+      ? config.notifications.autoSubscribeTopics
       : ['all'];
+
+    configTopics.forEach((t: string) => topicsToSubscribe.add(t));
+
+    // ---------------------------------------------------------
+    // B. ROLE-BASED TOPICS (e.g., 'role_admin', 'role_staff')
+    // ---------------------------------------------------------
     try {
       const user = await db('users').where({ id: tokenData.userId }).first();
+
       if (user && user.role && config.notifications.subscribeRoleTopic) {
-        // sanitize role -> topic name
-        const roleTopic = `role_${String(user.role).toLowerCase()}`;
-        topics.push(roleTopic);
+        // Sanitize role -> topic name (e.g. "Super Admin" -> "role_super_admin")
+        const roleTopic = `role_${String(user.role).toLowerCase().replace(/\s+/g, '_')}`;
+        topicsToSubscribe.add(roleTopic);
       }
     } catch (err) {
       logger.warn('Unable to query user role for topic subscription', err);
     }
 
-    // Fire-and-forget subscription attempts
-    for (const topic of topics) {
-      FirebaseService.subscribeTokenToTopic(tokenData.token, topic).catch(e =>
-        logger.error('Topic subscription failed', e)
+    // ---------------------------------------------------------
+    // C. USER PREFERENCES (e.g., 'marketing', 'updates')
+    // ---------------------------------------------------------
+    try {
+      const userPreferences =
+        await UserNotificationPreferenceModel.findByUserId(tokenData.userId);
+
+      userPreferences.forEach(pref => {
+        if (pref.subscribed) {
+          topicsToSubscribe.add(pref.category);
+        }
+      });
+    } catch (err) {
+      logger.warn(
+        'Unable to query user preferences for topic subscription',
+        err
       );
     }
-  }
 
+    // ---------------------------------------------------------
+    // D. EXECUTE SUBSCRIPTIONS
+    // ---------------------------------------------------------
+    // Note: Firebase API requires us to subscribe (Token[]) to (Topic).
+    // Since we have 1 Token and Many Topics, we must loop through the topics.
+
+    const uniqueTopics = Array.from(topicsToSubscribe);
+    const tokenArray = [tokenData.token]; // Your updated service expects an array
+
+    logger.info(
+      `Subscribing user ${tokenData.userId} to topics: ${uniqueTopics.join(', ')}`
+    );
+
+    // We use Promise.all to do them in parallel for speed
+    await Promise.all(
+      uniqueTopics.map(topic =>
+        FirebaseService.subscribeTokenToTopic(tokenArray, topic).catch(e =>
+          logger.error(`Failed to subscribe to topic: ${topic}`, e)
+        )
+      )
+    );
+  }
   /**
    * Retrieves all notifications for a user.
    * @param userId - The ID of the user.

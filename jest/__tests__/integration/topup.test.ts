@@ -14,6 +14,8 @@ describe('Topup Controller Integration Tests', () => {
 
   beforeAll(async () => {
     app = (await import('../../../src/app')).default;
+    const db = (await import('../../../src/database/connection')).default;
+
     const testUsers = await generateTestUsers();
     if (!testUsers) {
       throw new Error('Test users could not be generated');
@@ -28,8 +30,6 @@ describe('Topup Controller Integration Tests', () => {
     authCookie = getCookie(response, 'accessToken');
 
     // Seed operator, supplier, product and mapping for topup tests
-    const db = (await import('../../../src/database/connection')).default;
-
     const operatorRows = await db('operators')
       .insert({ code: 'TSTTOPUP', name: 'Topup Test Operator' })
       .returning('id');
@@ -62,6 +62,24 @@ describe('Topup Controller Integration Tests', () => {
       supplier_price: 80,
       is_active: true,
     });
+  });
+
+  afterAll(async () => {
+    // Clean up test data in reverse dependency order (respecting foreign keys)
+    const db = (await import('../../../src/database/connection')).default;
+    // Delete topup requests first (they reference supplier_product_mapping)
+    await db('topup_requests').where({ supplier_id: testSupplierId }).del();
+    // Then delete supplier_product_mapping (references operator_products and suppliers)
+    await db('supplier_product_mapping')
+      .where({ supplier_id: testSupplierId })
+      .del();
+    // Then delete operator_products
+    await db('operator_products').where({ operator_id: testOperatorId }).del();
+    // Then delete suppliers and operators
+    await db('suppliers').where({ id: testSupplierId }).del();
+    await db('operators').where({ id: testOperatorId }).del();
+    // Finally delete users
+    await db('users').where({ id: testUser.userId }).del();
   });
 
   beforeEach(async () => {

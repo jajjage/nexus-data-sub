@@ -18,9 +18,12 @@ export function getCookie(
 }
 
 export const generateTestUsers = async () => {
+  // Generate unique test user emails using timestamp to avoid duplicates across test runs
+  const timestamp = Date.now();
+
   // Create an admin user
   const adminData: CreateUserInput = {
-    email: 'admin.test@example.com',
+    email: `admin.test+${timestamp}@example.com`,
     fullName: 'Admin Test',
     phoneNumber: '1234567891',
     password: 'Password123!',
@@ -32,7 +35,7 @@ export const generateTestUsers = async () => {
   // Create a reporter user
   // Create a normal user
   const userData: CreateUserInput = {
-    email: 'user.test@example.com',
+    email: `user.test+${timestamp}@example.com`,
     fullName: 'User Test',
     phoneNumber: '1234567892',
     password: 'Password123!',
