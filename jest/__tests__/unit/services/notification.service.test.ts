@@ -63,9 +63,9 @@ describe('NotificationService.registerPushToken', () => {
     expect(mockRegister).toHaveBeenCalledWith(tokenData);
     const subscribeMock = (FirebaseService as any)
       .subscribeTokenToTopic as jest.Mock;
-    // Should be called for 'all', 'news', and 'role_user'
-    expect(subscribeMock).toHaveBeenCalledWith('tok-1', 'all');
-    expect(subscribeMock).toHaveBeenCalledWith('tok-1', 'news');
-    expect(subscribeMock).toHaveBeenCalledWith('tok-1', 'role_user');
+    // Should be called for 'all', 'news', and 'role_user' with token as array
+    expect(subscribeMock).toHaveBeenCalledWith(['tok-1'], 'all');
+    expect(subscribeMock).toHaveBeenCalledWith(['tok-1'], 'news');
+    expect(subscribeMock).toHaveBeenCalledWith(['tok-1'], 'role_user');
   });
 });
