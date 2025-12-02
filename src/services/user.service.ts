@@ -1,4 +1,5 @@
 import db from '../database/connection';
+import { RecentlyUsedNumberModel } from '../models/RecentlyUsedNumber';
 import { TopupRequestModel } from '../models/TopupRequest';
 import { TransactionModel } from '../models/Transaction';
 import { UserModel, UserProfileView } from '../models/User';
@@ -28,6 +29,12 @@ export class UserService {
       throw new ApiError(404, 'User not found');
     }
 
+    // Get recently used numbers
+    const recentlyUsedNumbers = await RecentlyUsedNumberModel.getByUserId(
+      userId,
+      10
+    );
+
     return {
       userId: userData.userId,
       fullName: userData.fullName,
@@ -42,6 +49,13 @@ export class UserService {
       balance: userData.balance,
       profilePictureUrl: userData.profilePictureUrl,
       permissions: userData.permissions || [],
+      recentlyUsedNumbers: recentlyUsedNumbers.map(num => ({
+        id: num.id,
+        phoneNumber: num.phoneNumber,
+        operatorCode: num.operatorCode,
+        usageCount: num.usageCount,
+        lastUsedAt: num.lastUsedAt,
+      })),
       createdAt: userData.createdAt,
       updatedAt: userData.updatedAt,
     };
@@ -319,6 +333,14 @@ export class UserService {
           relatedType: 'topup_request',
           relatedId: newTopupRequest.id,
         },
+        trx
+      );
+
+      // 8. Record the recently used number
+      await RecentlyUsedNumberModel.recordUsage(
+        userId,
+        recipientPhone,
+        undefined,
         trx
       );
 

@@ -40,6 +40,13 @@ export interface UserProfileView {
   createdAt: Date;
   updatedAt: Date;
   permissions?: string[]; // Added permissions property
+  recentlyUsedNumbers?: Array<{
+    id: string;
+    phoneNumber: string;
+    operatorCode?: string;
+    usageCount: number;
+    lastUsedAt: string;
+  }>;
 }
 
 /**
