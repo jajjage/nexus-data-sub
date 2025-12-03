@@ -54,7 +54,7 @@ export async function seed(knex: Knex): Promise<void> {
     .where({ slug: 'supplier-b' })
     .first();
 
-  // Data products for each operator (5 per operator)
+  // Data products for each operator (5 per operator) - with 5% cashback enabled
   const dataProducts = [
     // MTN Data Products
     {
@@ -66,6 +66,8 @@ export async function seed(knex: Knex): Promise<void> {
       data_mb: 50,
       validity_days: 1,
       slug: 'supplier-a',
+      has_cashback: true,
+      cashback_percentage: 5.0,
     },
     {
       operator_id: mtn.id,
@@ -76,6 +78,8 @@ export async function seed(knex: Knex): Promise<void> {
       data_mb: 100,
       validity_days: 1,
       slug: 'supplier-a',
+      has_cashback: true,
+      cashback_percentage: 5.0,
     },
     {
       operator_id: mtn.id,
@@ -86,6 +90,8 @@ export async function seed(knex: Knex): Promise<void> {
       data_mb: 500,
       validity_days: 7,
       slug: 'supplier-a',
+      has_cashback: true,
+      cashback_percentage: 5.0,
     },
     {
       operator_id: mtn.id,
@@ -96,6 +102,8 @@ export async function seed(knex: Knex): Promise<void> {
       data_mb: 1024,
       validity_days: 30,
       slug: 'supplier-a',
+      has_cashback: true,
+      cashback_percentage: 5.0,
     },
     {
       operator_id: mtn.id,
@@ -106,6 +114,8 @@ export async function seed(knex: Knex): Promise<void> {
       data_mb: 5120,
       validity_days: 30,
       slug: 'supplier-a',
+      has_cashback: true,
+      cashback_percentage: 5.0,
     },
     // Airtel Data Products
     {
@@ -117,6 +127,8 @@ export async function seed(knex: Knex): Promise<void> {
       data_mb: 50,
       validity_days: 1,
       slug: 'supplier-b',
+      has_cashback: true,
+      cashback_percentage: 5.0,
     },
     {
       operator_id: airtel.id,
@@ -127,6 +139,8 @@ export async function seed(knex: Knex): Promise<void> {
       data_mb: 100,
       validity_days: 1,
       slug: 'supplier-b',
+      has_cashback: true,
+      cashback_percentage: 5.0,
     },
     {
       operator_id: airtel.id,
@@ -137,6 +151,8 @@ export async function seed(knex: Knex): Promise<void> {
       data_mb: 500,
       validity_days: 7,
       slug: 'supplier-b',
+      has_cashback: true,
+      cashback_percentage: 5.0,
     },
     {
       operator_id: airtel.id,
@@ -147,6 +163,8 @@ export async function seed(knex: Knex): Promise<void> {
       data_mb: 1024,
       validity_days: 30,
       slug: 'supplier-b',
+      has_cashback: true,
+      cashback_percentage: 5.0,
     },
     {
       operator_id: airtel.id,
@@ -157,6 +175,8 @@ export async function seed(knex: Knex): Promise<void> {
       data_mb: 5120,
       validity_days: 30,
       slug: 'supplier-b',
+      has_cashback: true,
+      cashback_percentage: 5.0,
     },
     // Glo Data Products
     {
@@ -168,6 +188,8 @@ export async function seed(knex: Knex): Promise<void> {
       data_mb: 50,
       validity_days: 1,
       slug: 'supplier-a',
+      has_cashback: true,
+      cashback_percentage: 5.0,
     },
     {
       operator_id: glo.id,
@@ -178,6 +200,8 @@ export async function seed(knex: Knex): Promise<void> {
       data_mb: 100,
       validity_days: 1,
       slug: 'supplier-a',
+      has_cashback: true,
+      cashback_percentage: 5.0,
     },
     {
       operator_id: glo.id,
@@ -188,6 +212,8 @@ export async function seed(knex: Knex): Promise<void> {
       data_mb: 500,
       validity_days: 7,
       slug: 'supplier-a',
+      has_cashback: true,
+      cashback_percentage: 5.0,
     },
     {
       operator_id: glo.id,
@@ -198,6 +224,8 @@ export async function seed(knex: Knex): Promise<void> {
       data_mb: 1024,
       validity_days: 30,
       slug: 'supplier-a',
+      has_cashback: true,
+      cashback_percentage: 5.0,
     },
     {
       operator_id: glo.id,
@@ -208,6 +236,8 @@ export async function seed(knex: Knex): Promise<void> {
       data_mb: 5120,
       validity_days: 30,
       slug: 'supplier-a',
+      has_cashback: true,
+      cashback_percentage: 5.0,
     },
     // 9mobile Data Products
     {
@@ -219,6 +249,8 @@ export async function seed(knex: Knex): Promise<void> {
       data_mb: 50,
       validity_days: 1,
       slug: 'supplier-b',
+      has_cashback: true,
+      cashback_percentage: 5.0,
     },
     {
       operator_id: mobile9.id,
@@ -229,6 +261,8 @@ export async function seed(knex: Knex): Promise<void> {
       data_mb: 100,
       validity_days: 1,
       slug: 'supplier-b',
+      has_cashback: true,
+      cashback_percentage: 5.0,
     },
     {
       operator_id: mobile9.id,
@@ -239,6 +273,8 @@ export async function seed(knex: Knex): Promise<void> {
       data_mb: 500,
       validity_days: 7,
       slug: 'supplier-b',
+      has_cashback: true,
+      cashback_percentage: 5.0,
     },
     {
       operator_id: mobile9.id,
@@ -249,6 +285,8 @@ export async function seed(knex: Knex): Promise<void> {
       data_mb: 1024,
       validity_days: 30,
       slug: 'supplier-b',
+      has_cashback: true,
+      cashback_percentage: 5.0,
     },
     {
       operator_id: mobile9.id,
@@ -259,10 +297,12 @@ export async function seed(knex: Knex): Promise<void> {
       data_mb: 5120,
       validity_days: 30,
       slug: 'supplier-b',
+      has_cashback: true,
+      cashback_percentage: 5.0,
     },
   ];
 
-  // Airtime products for each operator (5 per operator)
+  // Airtime products for each operator (5 per operator) - with 2% cashback enabled
   const airtimeProducts = [
     // MTN Airtime Products
     {
@@ -272,6 +312,8 @@ export async function seed(knex: Knex): Promise<void> {
       product_type: 'airtime',
       denom_amount: 100,
       slug: 'supplier-a',
+      has_cashback: true,
+      cashback_percentage: 2.0,
     },
     {
       operator_id: mtn.id,
@@ -280,6 +322,8 @@ export async function seed(knex: Knex): Promise<void> {
       product_type: 'airtime',
       denom_amount: 200,
       slug: 'supplier-a',
+      has_cashback: true,
+      cashback_percentage: 2.0,
     },
     {
       operator_id: mtn.id,
@@ -288,6 +332,8 @@ export async function seed(knex: Knex): Promise<void> {
       product_type: 'airtime',
       denom_amount: 500,
       slug: 'supplier-a',
+      has_cashback: true,
+      cashback_percentage: 2.0,
     },
     {
       operator_id: mtn.id,
@@ -296,6 +342,8 @@ export async function seed(knex: Knex): Promise<void> {
       product_type: 'airtime',
       denom_amount: 1000,
       slug: 'supplier-a',
+      has_cashback: true,
+      cashback_percentage: 2.0,
     },
     {
       operator_id: mtn.id,
@@ -304,6 +352,8 @@ export async function seed(knex: Knex): Promise<void> {
       product_type: 'airtime',
       denom_amount: 5000,
       slug: 'supplier-a',
+      has_cashback: true,
+      cashback_percentage: 2.0,
     },
     // Airtel Airtime Products
     {
@@ -313,6 +363,8 @@ export async function seed(knex: Knex): Promise<void> {
       product_type: 'airtime',
       denom_amount: 100,
       slug: 'supplier-b',
+      has_cashback: true,
+      cashback_percentage: 2.0,
     },
     {
       operator_id: airtel.id,
@@ -321,6 +373,8 @@ export async function seed(knex: Knex): Promise<void> {
       product_type: 'airtime',
       denom_amount: 200,
       slug: 'supplier-b',
+      has_cashback: true,
+      cashback_percentage: 2.0,
     },
     {
       operator_id: airtel.id,
@@ -329,6 +383,8 @@ export async function seed(knex: Knex): Promise<void> {
       product_type: 'airtime',
       denom_amount: 500,
       slug: 'supplier-b',
+      has_cashback: true,
+      cashback_percentage: 2.0,
     },
     {
       operator_id: airtel.id,
@@ -337,6 +393,8 @@ export async function seed(knex: Knex): Promise<void> {
       product_type: 'airtime',
       denom_amount: 1000,
       slug: 'supplier-b',
+      has_cashback: true,
+      cashback_percentage: 2.0,
     },
     {
       operator_id: airtel.id,
@@ -345,6 +403,8 @@ export async function seed(knex: Knex): Promise<void> {
       product_type: 'airtime',
       denom_amount: 5000,
       slug: 'supplier-b',
+      has_cashback: true,
+      cashback_percentage: 2.0,
     },
     // Glo Airtime Products
     {
@@ -354,6 +414,8 @@ export async function seed(knex: Knex): Promise<void> {
       product_type: 'airtime',
       denom_amount: 100,
       slug: 'supplier-a',
+      has_cashback: true,
+      cashback_percentage: 2.0,
     },
     {
       operator_id: glo.id,
@@ -362,6 +424,8 @@ export async function seed(knex: Knex): Promise<void> {
       product_type: 'airtime',
       denom_amount: 200,
       slug: 'supplier-a',
+      has_cashback: true,
+      cashback_percentage: 2.0,
     },
     {
       operator_id: glo.id,
@@ -370,6 +434,8 @@ export async function seed(knex: Knex): Promise<void> {
       product_type: 'airtime',
       denom_amount: 500,
       slug: 'supplier-a',
+      has_cashback: true,
+      cashback_percentage: 2.0,
     },
     {
       operator_id: glo.id,
@@ -378,6 +444,8 @@ export async function seed(knex: Knex): Promise<void> {
       product_type: 'airtime',
       denom_amount: 1000,
       slug: 'supplier-a',
+      has_cashback: true,
+      cashback_percentage: 2.0,
     },
     {
       operator_id: glo.id,
@@ -386,6 +454,8 @@ export async function seed(knex: Knex): Promise<void> {
       product_type: 'airtime',
       denom_amount: 5000,
       slug: 'supplier-a',
+      has_cashback: true,
+      cashback_percentage: 2.0,
     },
     // 9mobile Airtime Products
     {
@@ -395,6 +465,8 @@ export async function seed(knex: Knex): Promise<void> {
       product_type: 'airtime',
       denom_amount: 100,
       slug: 'supplier-b',
+      has_cashback: true,
+      cashback_percentage: 2.0,
     },
     {
       operator_id: mobile9.id,
@@ -403,6 +475,8 @@ export async function seed(knex: Knex): Promise<void> {
       product_type: 'airtime',
       denom_amount: 200,
       slug: 'supplier-b',
+      has_cashback: true,
+      cashback_percentage: 2.0,
     },
     {
       operator_id: mobile9.id,
@@ -411,6 +485,8 @@ export async function seed(knex: Knex): Promise<void> {
       product_type: 'airtime',
       denom_amount: 500,
       slug: 'supplier-b',
+      has_cashback: true,
+      cashback_percentage: 2.0,
     },
     {
       operator_id: mobile9.id,
@@ -419,6 +495,8 @@ export async function seed(knex: Knex): Promise<void> {
       product_type: 'airtime',
       denom_amount: 1000,
       slug: 'supplier-b',
+      has_cashback: true,
+      cashback_percentage: 2.0,
     },
     {
       operator_id: mobile9.id,
@@ -427,6 +505,8 @@ export async function seed(knex: Knex): Promise<void> {
       product_type: 'airtime',
       denom_amount: 5000,
       slug: 'supplier-b',
+      has_cashback: true,
+      cashback_percentage: 2.0,
     },
   ];
 

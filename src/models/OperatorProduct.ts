@@ -26,6 +26,8 @@ export class OperatorProductModel {
         'is_active as isActive',
         'metadata',
         'slug',
+        'has_cashback',
+        'cashback_percentage',
         'created_at as createdAt'
       )
       .where({ id })
@@ -97,6 +99,8 @@ export class OperatorProductModel {
         'operator_products.is_active as isActive',
         'operator_products.metadata',
         'operator_products.slug',
+        'operator_products.has_cashback',
+        'operator_products.cashback_percentage',
         'operator_products.created_at',
         // Operator details
         'operators.name as operatorName',
@@ -120,6 +124,8 @@ export class OperatorProductModel {
       isActive: result.isActive,
       metadata: result.metadata,
       slug: result.slug,
+      has_cashback: result.has_cashback,
+      cashback_percentage: result.cashback_percentage,
       createdAt: result.created_at,
       // Operator data
       operator: result.operatorName
@@ -228,6 +234,8 @@ export class OperatorProductModel {
         'is_active as isActive',
         'metadata',
         'slug',
+        'has_cashback',
+        'cashback_percentage',
         'created_at as createdAt'
       )
       .orderBy('name');
@@ -247,6 +255,8 @@ export class OperatorProductModel {
       denomAmount: result.denomAmount,
       dataMb: result.dataMb,
       validityDays: result.validityDays,
+      has_cashback: result.has_cashback,
+      cashback_percentage: result.cashback_percentage,
       isActive: result.isActive,
       metadata: result.metadata,
       createdAt: result.createdAt,

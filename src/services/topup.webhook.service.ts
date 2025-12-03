@@ -55,6 +55,10 @@ export class TopupWebhookService {
           .where({ id: customer_reference })
           .update({ status: 'success' });
 
+        // Note: Cashback is already awarded in createTopupRequest immediately.
+        // This webhook handler is kept as a fallback for cases where the topup
+        // succeeds but was created before cashback implementation.
+
         return { success: true, message: 'Top-up successful' };
       } else if (status === 'failed') {
         await trx('topup_requests')

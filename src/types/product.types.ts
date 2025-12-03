@@ -10,6 +10,8 @@ export interface OperatorProduct {
   isActive: boolean;
   metadata?: any;
   slug?: string;
+  has_cashback?: boolean;
+  cashback_percentage?: number;
   createdAt: Date;
 }
 

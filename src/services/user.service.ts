@@ -1,4 +1,5 @@
 import db from '../database/connection';
+import { CashbackModel } from '../models/Cashback';
 import { RecentlyUsedNumberModel } from '../models/RecentlyUsedNumber';
 import { TopupRequestModel } from '../models/TopupRequest';
 import { TransactionModel } from '../models/Transaction';
@@ -56,6 +57,7 @@ export class UserService {
         usageCount: num.usageCount,
         lastUsedAt: num.lastUsedAt,
       })),
+      cashback: userData.cashback,
       createdAt: userData.createdAt,
       updatedAt: userData.updatedAt,
     };
@@ -177,7 +179,8 @@ export class UserService {
     productCode: string,
     recipientPhone: string,
     supplierSlug?: string,
-    supplierMappingId?: string
+    supplierMappingId?: string,
+    useCashback: boolean = false
   ): Promise<TopupRequest> {
     let topup_type = productCode.includes('DATA') ? 'data' : 'airtime';
     let idempotencyKey = generateSecureString(15, userId);
@@ -188,12 +191,7 @@ export class UserService {
         throw new ApiError(404, 'Wallet not found');
       }
 
-      // 2. Check for sufficient balance
-      if (wallet.balance < amount) {
-        throw new ApiError(402, 'Insufficient balance');
-      }
-
-      // Try to find the operator product by canonical product_code and amount
+      // 2. Try to find the operator product by canonical product_code and amount
       const operatorProduct = await trx('operator_products')
         .where({ product_code: productCode, denom_amount: amount })
         .first();
@@ -201,7 +199,7 @@ export class UserService {
         throw new ApiError(404, 'Operator product not found');
       }
 
-      // Resolve supplier/mapping in order of preference:
+      // 3. Resolve supplier/mapping in order of preference:
       // 1) supplierMappingId (explicit mapping)
       // 2) supplierSlug (frontend provided)
       // 3) operatorProduct.slug (product default)
@@ -288,7 +286,26 @@ export class UserService {
         );
       }
 
-      // 5. Create a new top-up request
+      // 4. Calculate actual cost to deduct: supplier_price + 5 naira commission
+      const actualCost =
+        parseFloat(String(supplierProductMapping.supplier_price)) + 5;
+
+      // 5. Check for sufficient total balance (wallet + cashback if enabled)
+      let cashbackBalance = 0;
+      if (useCashback) {
+        const cashbackRecord = await CashbackModel.findByUserId(userId, trx);
+        cashbackBalance = cashbackRecord?.availableBalance || 0;
+      }
+
+      const totalAvailable = wallet.balance + cashbackBalance;
+      if (totalAvailable < actualCost) {
+        throw new ApiError(
+          402,
+          `Insufficient balance. Cost: ${actualCost}, Wallet: ${wallet.balance}, Cashback: ${cashbackBalance}`
+        );
+      }
+
+      // 6. Create a new top-up request
       const topupRequestData: Omit<
         TopupRequest,
         'id' | 'createdAt' | 'updatedAt' | 'externalId'
@@ -301,7 +318,7 @@ export class UserService {
         operatorProductId: operatorProduct.id,
         supplierId: supplier.id,
         supplierMappingId: supplierProductMapping.id,
-        cost: 0,
+        cost: supplierProductMapping.supplier_price + 5,
         type: topup_type,
         attemptCount: 0,
         idempotencyKey: idempotencyKey,
@@ -312,13 +329,34 @@ export class UserService {
         trx
       );
 
-      // 6. Debit the user's wallet
-      const newBalance = wallet.balance - amount;
+      // 7. Calculate wallet and cashback debit amounts
+      let walletDebit = 0;
+      let cashbackDebit = 0;
+
+      if (useCashback) {
+        // Prioritize cashback first
+        if (cashbackBalance >= actualCost) {
+          // Cashback covers all costs
+          cashbackDebit = actualCost;
+          walletDebit = 0;
+        } else {
+          // Use all cashback + remaining from wallet
+          cashbackDebit = cashbackBalance;
+          walletDebit = actualCost - cashbackBalance;
+        }
+      } else {
+        // Only use wallet
+        walletDebit = actualCost;
+        cashbackDebit = 0;
+      }
+
+      // 8. Debit the user's wallet
+      const newWalletBalance = wallet.balance - walletDebit;
       await trx('wallets')
         .where({ user_id: userId })
-        .update({ balance: newBalance });
+        .update({ balance: newWalletBalance });
 
-      // 7. Create a debit transaction
+      // 9. Create a debit transaction for wallet
       if (!wallet) {
         throw new Error('Wallet not found');
       }
@@ -327,8 +365,8 @@ export class UserService {
           walletId: wallet.user_id,
           userId,
           direction: 'debit',
-          amount,
-          balanceAfter: newBalance,
+          amount: walletDebit,
+          balanceAfter: newWalletBalance,
           method: 'wallet',
           relatedType: 'topup_request',
           relatedId: newTopupRequest.id,
@@ -336,7 +374,34 @@ export class UserService {
         trx
       );
 
-      // 8. Record the recently used number
+      // 10. Handle cashback debit if needed
+      if (cashbackDebit > 0) {
+        await CashbackModel.redeemCashback(
+          userId,
+          cashbackDebit,
+          `Cashback used for ${operatorProduct.product_code} - Cost: ${actualCost}`,
+          newTopupRequest.id,
+          trx
+        );
+      }
+
+      // 11. Award cashback immediately if product has cashback enabled
+      if (operatorProduct.has_cashback && operatorProduct.cashback_percentage) {
+        const cashbackEarned =
+          (amount * operatorProduct.cashback_percentage) / 100;
+
+        if (cashbackEarned > 0) {
+          await CashbackModel.addCashback(
+            userId,
+            cashbackEarned,
+            `${operatorProduct.cashback_percentage}% cashback on ${operatorProduct.product_code} - ${amount}`,
+            newTopupRequest.id,
+            trx
+          );
+        }
+      }
+
+      // 12. Record the recently used number
       await RecentlyUsedNumberModel.recordUsage(
         userId,
         recipientPhone,

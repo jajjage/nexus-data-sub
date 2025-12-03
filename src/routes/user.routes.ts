@@ -218,6 +218,8 @@ router.get(
  *                 type: string
  *               supplierMappingId:
  *                 type: string
+ *               useCashback:
+ *                 type: boolean
  *     responses:
  *       201:
  *         description: Topup request created successfully.

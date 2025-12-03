@@ -47,6 +47,11 @@ export interface UserProfileView {
     usageCount: number;
     lastUsedAt: string;
   }>;
+  cashback?: {
+    availableBalance: number;
+    totalEarned: number;
+    totalRedeemed: number;
+  };
 }
 
 /**
@@ -187,9 +192,20 @@ export class UserModel {
     };
 
     const permissions = await this.getPermissions(user.role_id);
+
+    // Extract cashback data from join if available
+    const cashback = user.cashback_id
+      ? {
+          availableBalance: parseFloat(String(user.cashback_available_balance)),
+          totalEarned: parseFloat(String(user.cashback_total_earned)),
+          totalRedeemed: parseFloat(String(user.cashback_total_redeemed)),
+        }
+      : undefined;
+
     return {
       ...userProfile,
       permissions,
+      cashback,
     };
   }
 
@@ -514,6 +530,7 @@ export class UserModel {
       .leftJoin('wallets as w', 'u.id', 'w.user_id')
       .leftJoin('virtual_accounts as va', 'u.id', 'va.user_id')
       .leftJoin('providers as p', 'va.provider_id', 'p.id')
+      .leftJoin('cashback as cb', 'u.id', 'cb.user_id')
       .select(
         'u.id',
         'u.full_name',
@@ -530,7 +547,11 @@ export class UserModel {
         'u.updated_at',
         'w.balance',
         'va.account_number',
-        'p.name as providerName'
+        'p.name as providerName',
+        'cb.id as cashback_id',
+        'cb.available_balance as cashback_available_balance',
+        'cb.total_earned as cashback_total_earned',
+        'cb.total_redeemed as cashback_total_redeemed'
       );
   }
 }

@@ -226,6 +226,7 @@ export class UserController {
         recipientPhone,
         supplierSlug,
         supplierMappingId,
+        useCashback = false,
       } = req.body;
 
       const result = await UserService.createTopupRequest(
@@ -234,7 +235,8 @@ export class UserController {
         productCode,
         recipientPhone,
         supplierSlug,
-        supplierMappingId
+        supplierMappingId,
+        useCashback
       );
       return sendSuccess(
         res,
