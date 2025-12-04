@@ -19,11 +19,21 @@ import { validatePassword } from '../utils/validation.utils';
 export class AuthController {
   /**
    * Register a new user.
+   * Optional: Include referral code in query params (?referralCode=XXX) or body
    */
   public static async register(req: Request, res: Response): Promise<Response> {
     try {
-      const { email, password, phoneNumber, fullName, fcmToken, platform } =
-        req.body;
+      const {
+        email,
+        password,
+        phoneNumber,
+        fullName,
+        fcmToken,
+        platform,
+        referralCode: bodyRefCode,
+      } = req.body;
+      // Also check query params for referral code
+      const queryRefCode = (req.query.referralCode as string) || bodyRefCode;
 
       if (!email || !password || !phoneNumber || !fullName) {
         return sendError(
@@ -100,6 +110,28 @@ export class AuthController {
 
         return user;
       });
+
+      // Fire-and-forget: Create referral if referral code was provided
+      if (queryRefCode) {
+        setImmediate(async () => {
+          try {
+            const { ReferralsService } = await import(
+              '../services/referrals.service'
+            );
+            const result = await ReferralsService.createReferralFromSignup(
+              createdUser.userId,
+              queryRefCode
+            );
+            if (result.success && result.referralId) {
+              console.log(
+                `Referral created for new user ${createdUser.userId}: ${result.referralId}`
+              );
+            }
+          } catch (error) {
+            console.error('Failed to create referral during signup:', error);
+          }
+        });
+      }
 
       // Register FCM token if provided
       if (fcmToken && platform) {

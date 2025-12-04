@@ -1,15 +1,12 @@
 {
-  "name": "Election Auth Service",
+  "name": "Nexus Data Sub",
   "dockerComposeFile": "docker-compose.yml",
   "service": "app",
   "workspaceFolder": "/workspace",
-  // "postCreateCommand": "npm ci",
   "features": {
-    "ghcr.io/devcontainers-extra/features/npm-package:1": {
-      "packages": "typescript,@types/node,ts-node,nodemon"
-    },
     "ghcr.io/devcontainers/features/git:1": {}
   },
+
   "forwardPorts": [3000, 5432],
   "portsAttributes": {
     "3000": {
@@ -77,9 +74,8 @@
       }
     }
   },
-  "remoteUser": "node",
+ "remoteUser": "node",
   "updateRemoteUserUID": true,
-
   "mounts": [
     "source=${localEnv:HOME}/.ssh,target=/home/node/.ssh,type=bind,consistency=cached",
     "source=${localEnv:HOME}/.gitconfig,target=/home/node/.gitconfig,type=bind,consistency=cached"
