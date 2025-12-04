@@ -3,7 +3,7 @@ import { ReferralLinkController } from '../controllers/referralLink.controller';
 import { ReferralsController } from '../controllers/referrals.controller';
 import { RewardsController } from '../controllers/rewards.controller';
 import { authenticate } from '../middleware/auth.middleware';
-import { hasPermission } from '../middleware/rbac.middleware';
+import { hasPermission, requireRole } from '../middleware/rbac.middleware';
 
 const router = Router();
 
@@ -249,7 +249,7 @@ router.get(
 router.post(
   '/referrals/_admin/create',
   authenticate,
-  hasPermission('manage_referrals'),
+  requireRole('admin'),
   ReferralsController.createReferral
 );
 
@@ -361,7 +361,11 @@ router.post(
  *       500:
  *         description: Internal server error
  */
-router.get('/referrals/leaderboard', ReferralsController.getTopReferrers);
+router.get(
+  '/referrals/leaderboard',
+  authenticate,
+  ReferralsController.getTopReferrers
+);
 
 /**
  * @swagger
@@ -393,7 +397,7 @@ router.get('/referrals/leaderboard', ReferralsController.getTopReferrers);
 router.post(
   '/referrals/:referralId/complete',
   authenticate,
-  hasPermission('manage_referrals'),
+  requireRole('admin'),
   ReferralsController.completeReferral
 );
 
@@ -427,7 +431,7 @@ router.post(
 router.post(
   '/referrals/:referralId/process-reward',
   authenticate,
-  hasPermission('manage_referrals'),
+  requireRole('admin'),
   ReferralsController.processReferralReward
 );
 
@@ -463,7 +467,7 @@ router.post(
 router.post(
   '/referrals/batch-process',
   authenticate,
-  hasPermission('manage_referrals'),
+  requireRole('admin'),
   ReferralsController.batchProcessPendingReferrals
 );
 
