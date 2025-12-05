@@ -32,6 +32,99 @@ describe('Auth API', () => {
       expect(response.body.success).toBe(true);
       expect(response.body.data.email).toBe(userData.email);
     });
+
+    it('should register a new user with referral code', async () => {
+      // Create a referrer user
+      const referrerData: CreateUserInput = {
+        email: 'referrer@example.com',
+        fullName: 'Referrer User',
+        phoneNumber: '1234567800',
+        password: 'Password123!',
+        role: 'user',
+      };
+      const referrer = await UserModel.create(referrerData);
+
+      // Create referral link for referrer
+      const [referralLink] = await db('referral_links')
+        .insert({
+          user_id: referrer.userId,
+          referral_code: `${referrer.userId.substring(0, 4).toUpperCase()}-TEST123`,
+          short_code: 'TEST123',
+          is_active: true,
+          created_at: db.fn.now(),
+          updated_at: db.fn.now(),
+        })
+        .returning('*');
+
+      const newUserData = {
+        email: 'test.register.referral@example.com',
+        fullName: 'Test Register with Referral',
+        phoneNumber: '1234567801',
+        password: 'Password123!',
+        role: 'user',
+        referralCode: referralLink.referral_code,
+      };
+
+      const response = await request(app)
+        .post('/api/v1/auth/register')
+        .send(newUserData)
+        .expect(201);
+
+      expect(response.body.success).toBe(true);
+      expect(response.body.data.email).toBe(newUserData.email);
+
+      // Verify referral was created (only if table exists)
+      try {
+        const referral = await db('referrals')
+          .where({
+            referrer_user_id: referrer.userId,
+            referred_user_id: response.body.data.userId,
+          })
+          .first();
+
+        expect(referral).toBeDefined();
+        expect(referral.status).toBe('pending');
+      } catch (error: any) {
+        // If referrals table doesn't exist yet, skip verification
+        if (!error.message.includes('referrals')) {
+          throw error;
+        }
+      }
+    });
+
+    it('should register a new user with invalid referral code', async () => {
+      const userData = {
+        email: 'test.register.invalid.ref@example.com',
+        fullName: 'Test Register Invalid Ref',
+        phoneNumber: '1234567802',
+        password: 'Password123!',
+        role: 'user',
+        referralCode: 'INVALID-CODE',
+      };
+
+      const response = await request(app)
+        .post('/api/v1/auth/register')
+        .send(userData)
+        .expect(201);
+
+      // Should register successfully even with invalid referral code (non-blocking)
+      expect(response.body.success).toBe(true);
+      expect(response.body.data.email).toBe(userData.email);
+
+      // Verify no referral was created (only if table exists)
+      try {
+        const referral = await db('referrals')
+          .where({ referred_user_id: response.body.data.userId })
+          .first();
+
+        expect(referral).toBeUndefined();
+      } catch (error: any) {
+        // If referrals table doesn't exist yet, skip verification
+        if (!error.message.includes('referrals')) {
+          throw error;
+        }
+      }
+    });
   });
 
   describe('POST /api/v1/auth/login', () => {

@@ -71,12 +71,20 @@ export class UserService {
    */
   static async updateUserProfile(
     userId: string,
-    profileData: { fullName?: string; profilePictureUrl?: string }
+    profileData: {
+      fullName?: string;
+      profilePictureUrl?: string;
+      phoneNumber?: number;
+    }
   ): Promise<UserProfileView> {
-    if (!profileData.fullName && !profileData.profilePictureUrl) {
+    if (
+      !profileData.fullName &&
+      !profileData.profilePictureUrl &&
+      !profileData.phoneNumber
+    ) {
       throw new ApiError(
         400,
-        'At least one of fullName or profilePictureUrl is required for update.'
+        'At least one of fullName, profilePictureUrl, or phoneNumber is required for update.'
       );
     }
 
@@ -86,6 +94,9 @@ export class UserService {
     }
     if (profileData.profilePictureUrl !== undefined) {
       updateData.profile_picture_url = profileData.profilePictureUrl;
+    }
+    if (profileData.phoneNumber !== undefined) {
+      updateData.phone_number = profileData.phoneNumber;
     }
 
     await db('users').where({ id: userId }).update(updateData);

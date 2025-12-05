@@ -58,11 +58,12 @@ export class UserController {
         return sendError(res, 'Authentication required', 401);
       }
 
-      const { fullName, profilePictureUrl } = req.body;
+      const { fullName, profilePictureUrl, phoneNumber } = req.body;
 
       const updatedUser = await UserService.updateUserProfile(userId, {
         fullName,
         profilePictureUrl,
+        phoneNumber,
       });
       return sendSuccess(res, 'Profile updated successfully', updatedUser, 200);
     } catch (error: any) {

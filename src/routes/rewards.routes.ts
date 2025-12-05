@@ -3,7 +3,7 @@ import { ReferralLinkController } from '../controllers/referralLink.controller';
 import { ReferralsController } from '../controllers/referrals.controller';
 import { RewardsController } from '../controllers/rewards.controller';
 import { authenticate } from '../middleware/auth.middleware';
-import { hasPermission, requireRole } from '../middleware/rbac.middleware';
+import { requireRole } from '../middleware/rbac.middleware';
 
 const router = Router();
 
@@ -139,7 +139,7 @@ router.get('/badges/:badgeId/holders', RewardsController.getBadgeHolders);
 router.post(
   '/rewards/check-badges',
   authenticate,
-  hasPermission('manage_rewards'),
+  requireRole('admin'),
   RewardsController.checkAndAwardBadges
 );
 
@@ -176,7 +176,7 @@ router.post(
 router.post(
   '/rewards/credit-points',
   authenticate,
-  hasPermission('manage_rewards'),
+  requireRole('admin'),
   RewardsController.creditPendingPoints
 );
 
