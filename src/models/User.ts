@@ -36,6 +36,7 @@ export interface UserProfileView {
   providerName: string | null;
   balance: string;
   pin?: string | null;
+  hasPin?: boolean;
   profilePictureUrl?: string | null;
   createdAt: Date;
   updatedAt: Date;
@@ -185,7 +186,7 @@ export class UserModel {
       accountNumber: user.account_number,
       providerName: user.providerName,
       balance: user.balance,
-      pin: user.pin,
+      hasPin: !!user.pin,
       profilePictureUrl: user.profile_picture_url,
       createdAt: user.created_at,
       updatedAt: user.updated_at,

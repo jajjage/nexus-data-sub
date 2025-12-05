@@ -47,6 +47,7 @@ export class UserService {
       twoFactorEnabled: userData.twoFactorEnabled,
       accountNumber: userData.accountNumber,
       providerName: userData.providerName,
+      hasPin: userData.hasPin,
       balance: userData.balance,
       profilePictureUrl: userData.profilePictureUrl,
       permissions: userData.permissions || [],
@@ -75,12 +76,14 @@ export class UserService {
       fullName?: string;
       profilePictureUrl?: string;
       phoneNumber?: number;
+      pin?: number;
     }
   ): Promise<UserProfileView> {
     if (
       !profileData.fullName &&
       !profileData.profilePictureUrl &&
-      !profileData.phoneNumber
+      !profileData.phoneNumber &&
+      !profileData.pin
     ) {
       throw new ApiError(
         400,
@@ -97,6 +100,13 @@ export class UserService {
     }
     if (profileData.phoneNumber !== undefined) {
       updateData.phone_number = profileData.phoneNumber;
+    }
+    if (profileData.pin !== undefined) {
+      if (!/^\d{4}$/.test(String(profileData.pin))) {
+        throw new ApiError(400, 'PIN must be a 4-digit number.');
+      }
+      const hashedPin = await hashPassword(String(profileData.pin));
+      updateData.pin = hashedPin;
     }
 
     await db('users').where({ id: userId }).update(updateData);
