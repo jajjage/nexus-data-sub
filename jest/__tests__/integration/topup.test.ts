@@ -20,8 +20,18 @@ describe('Topup Controller Integration Tests', () => {
     if (!testUsers) {
       throw new Error('Test users could not be generated');
     }
+
     const { user } = testUsers;
     testUser = user;
+
+    await db('users')
+      .where({ id: testUser.userId })
+      .update({
+        pin: await (
+          await import('../../../src/utils/security.utils')
+        ).hashPassword('1234'),
+      });
+    // Login the test user to get auth cookie
 
     const response = await request(app).post('/api/v1/auth/login').send({
       email: testUser.email,
@@ -68,7 +78,7 @@ describe('Topup Controller Integration Tests', () => {
     // Clean up test data in reverse dependency order (respecting foreign keys)
     const db = (await import('../../../src/database/connection')).default;
     // Delete topup requests first (they reference supplier_product_mapping)
-    await db('topup_requests').where({ supplier_id: testSupplierId }).del();
+    await db('topup_requests').where({ user_id: testUser.userId }).del();
     // Then delete supplier_product_mapping (references operator_products and suppliers)
     await db('supplier_product_mapping')
       .where({ supplier_id: testSupplierId })
@@ -90,16 +100,45 @@ describe('Topup Controller Integration Tests', () => {
         amount: 100,
         productCode: testProductCode,
         recipientPhone: '08012345678',
+        pin: 1234,
       });
+
+    if (topupResponse.status !== 201 && topupResponse.status !== 200) {
+      console.error('Topup request failed:', topupResponse.body);
+      throw new Error(
+        `Topup request failed with status ${topupResponse.status}: ${topupResponse.body.message}`
+      );
+    }
+
     topupRequest = topupResponse.body.data;
+    if (!topupRequest) {
+      throw new Error('Topup request data is undefined');
+    }
 
     const transactionsResponse = await request(app)
       .get(`/api/v1/user/wallet/transactions`)
       .set('Cookie', [`accessToken=${authCookie}`]);
 
-    debitTransaction = transactionsResponse.body.data.transactions.find(
+    if (transactionsResponse.status !== 200) {
+      console.error('Transactions request failed:', transactionsResponse.body);
+      throw new Error(
+        `Transactions request failed with status ${transactionsResponse.status}`
+      );
+    }
+
+    debitTransaction = transactionsResponse.body.data.transactions?.find(
       (tx: any) => tx.relatedId === topupRequest.id
     );
+
+    if (!debitTransaction) {
+      console.error(
+        'No debit transaction found for topupRequest',
+        topupRequest,
+        'Available transactions:',
+        transactionsResponse.body.data.transactions
+      );
+      throw new Error('No debit transaction found for topup request');
+    }
   });
 
   describe('GET /api/v1/user/wallet/transactions/:id', () => {

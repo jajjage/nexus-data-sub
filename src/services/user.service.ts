@@ -199,6 +199,7 @@ export class UserService {
     amount: number,
     productCode: string,
     recipientPhone: string,
+    pin: number,
     supplierSlug?: string,
     supplierMappingId?: string,
     useCashback: boolean = false
@@ -206,6 +207,18 @@ export class UserService {
     let topup_type = productCode.includes('DATA') ? 'data' : 'airtime';
     let idempotencyKey = generateSecureString(15, userId);
     return db.transaction(async trx => {
+      // 0. Compare user pin with the supplied pin
+      const userRow = await trx('users')
+        .where({ id: userId })
+        .select('pin')
+        .first();
+      if (!userRow || !userRow.pin) {
+        throw new ApiError(400, 'Transaction PIN not set');
+      }
+      const isPinValid = await comparePassword(String(pin), userRow.pin);
+      if (!isPinValid) {
+        throw new ApiError(401, 'Invalid transaction PIN');
+      }
       // 1. Get user's wallet
       const wallet = await trx('wallets').where({ user_id: userId }).first();
       if (!wallet) {

@@ -226,6 +226,7 @@ export class UserController {
         amount,
         productCode,
         recipientPhone,
+        pin,
         supplierSlug,
         supplierMappingId,
         useCashback = false,
@@ -236,6 +237,7 @@ export class UserController {
         amount,
         productCode,
         recipientPhone,
+        pin,
         supplierSlug,
         supplierMappingId,
         useCashback
