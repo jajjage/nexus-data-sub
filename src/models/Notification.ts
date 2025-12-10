@@ -28,6 +28,8 @@ export class NotificationModel {
       id: generateUUID(),
       title: notificationData.title,
       body: notificationData.body,
+      type: notificationData.type || 'info',
+      category: notificationData.category,
       created_by: createdBy,
     };
 

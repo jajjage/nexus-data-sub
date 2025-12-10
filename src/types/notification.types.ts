@@ -2,12 +2,24 @@ export interface Notification {
   id: string;
   title: string;
   body?: string;
+  type: 'info' | 'success' | 'warning' | 'error' | 'alert';
+  category?: string;
   targetCriteria?: NotificationTargetCriteria;
   publish_at: Date;
   created_by?: string;
   created_at: Date;
   sent: boolean;
   archived: boolean;
+}
+
+export interface UserNotification {
+  id: string;
+  notification_id: string;
+  user_id: string;
+  read: boolean;
+  read_at?: Date;
+  created_at: Date;
+  updated_at: Date;
 }
 
 export interface PushToken {
@@ -36,6 +48,8 @@ export interface NotificationTargetCriteria {
 export interface CreateNotificationInput {
   title: string;
   body: string;
+  type?: 'info' | 'success' | 'warning' | 'error' | 'alert';
+  category?: string;
   targetCriteria?: NotificationTargetCriteria;
   publish_at?: Date;
 }

@@ -217,4 +217,115 @@ router.post(
  */
 router.post('/tokens/unlink', authenticate, NotificationController.unlinkToken);
 
+/**
+ * @swagger
+ * /notifications/{notificationId}/read:
+ *   put:
+ *     summary: Mark a notification as read
+ *     tags: [Notifications]
+ *     security:
+ *       - bearerAuth: []
+ *     parameters:
+ *       - in: path
+ *         name: notificationId
+ *         required: true
+ *         schema:
+ *           type: string
+ *           format: uuid
+ *     responses:
+ *       200:
+ *         description: Notification marked as read
+ */
+router.put(
+  '/:notificationId/read',
+  authenticate,
+  NotificationController.markAsRead
+);
+
+/**
+ * @swagger
+ * /notifications/{notificationId}/unread:
+ *   put:
+ *     summary: Mark a notification as unread
+ *     tags: [Notifications]
+ *     security:
+ *       - bearerAuth: []
+ *     parameters:
+ *       - in: path
+ *         name: notificationId
+ *         required: true
+ *         schema:
+ *           type: string
+ *           format: uuid
+ *     responses:
+ *       200:
+ *         description: Notification marked as unread
+ */
+router.put(
+  '/:notificationId/unread',
+  authenticate,
+  NotificationController.markAsUnread
+);
+
+/**
+ * @swagger
+ * /notifications/read-all:
+ *   put:
+ *     summary: Mark all notifications as read
+ *     tags: [Notifications]
+ *     security:
+ *       - bearerAuth: []
+ *     responses:
+ *       200:
+ *         description: All notifications marked as read
+ */
+router.put(
+  '/read-all/mark',
+  authenticate,
+  NotificationController.markAllAsRead
+);
+
+/**
+ * @swagger
+ * /notifications/unread-count:
+ *   get:
+ *     summary: Get count of unread notifications
+ *     tags: [Notifications]
+ *     security:
+ *       - bearerAuth: []
+ *     responses:
+ *       200:
+ *         description: Unread count retrieved
+ */
+router.get(
+  '/unread-count/count',
+  authenticate,
+  NotificationController.getUnreadCount
+);
+
+/**
+ * @swagger
+ * /notifications/{notificationId}:
+ *   delete:
+ *     summary: Delete a notification for the authenticated user
+ *     tags: [Notifications]
+ *     security:
+ *       - bearerAuth: []
+ *     parameters:
+ *       - in: path
+ *         name: notificationId
+ *         required: true
+ *         schema:
+ *           type: string
+ *           format: uuid
+ *     responses:
+ *       200:
+ *         description: Notification deleted
+ */
+router.delete(
+  '/:notificationId',
+  authenticate,
+  NotificationController.deleteNotification
+);
+
 export default router;

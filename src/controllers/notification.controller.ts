@@ -20,11 +20,23 @@ export class NotificationController {
         return sendError(res, 'Authentication required', 401, []);
       }
 
-      const { title, body, targetCriteria, publish_at } = req.body;
+      const { title, body, targetCriteria, publish_at, type, category } =
+        req.body;
 
       // Validate required fields
       if (!title || !body) {
         return sendError(res, 'Title and body are required', 400, []);
+      }
+
+      // Validate type if provided
+      const validTypes = ['info', 'success', 'warning', 'error', 'alert'];
+      if (type && !validTypes.includes(type)) {
+        return sendError(
+          res,
+          `Invalid notification type. Must be one of: ${validTypes.join(', ')}`,
+          400,
+          []
+        );
       }
 
       // Validate targeting criteria if provided
@@ -70,6 +82,8 @@ export class NotificationController {
         {
           title,
           body,
+          type: type || 'info',
+          category,
           targetCriteria,
           publish_at,
         },
@@ -131,16 +145,151 @@ export class NotificationController {
         return sendError(res, 'Authentication required', 401, []);
       }
       const userId = req.user.userId;
-      const notifications =
-        await NotificationService.getUserNotifications(userId);
+      const limit = parseInt(req.query.limit as string) || 50;
+      const offset = parseInt(req.query.offset as string) || 0;
+
+      const notifications = await NotificationService.getUserNotifications(
+        userId,
+        limit,
+        offset
+      );
+      const unreadCount = await NotificationService.getUnreadCount(userId);
+
       return sendSuccess(
         res,
         'User notifications retrieved successfully',
-        notifications,
+        {
+          notifications,
+          unreadCount,
+          limit,
+          offset,
+        },
         200
       );
     } catch (error) {
       console.error('Get user notifications error:', error);
+      return sendError(res, 'Internal server error', 500, []);
+    }
+  }
+
+  /**
+   * Marks a notification as read for the authenticated user
+   */
+  static async markAsRead(req: AuthenticatedRequest, res: Response) {
+    try {
+      if (!req.user) {
+        return sendError(res, 'Authentication required', 401, []);
+      }
+
+      const { notificationId } = req.params;
+      if (!notificationId) {
+        return sendError(res, 'Notification ID is required', 400, []);
+      }
+
+      await NotificationService.markNotificationAsRead(
+        notificationId,
+        req.user.userId
+      );
+
+      return sendSuccess(res, 'Notification marked as read', {}, 200);
+    } catch (error) {
+      console.error('Mark as read error:', error);
+      return sendError(res, 'Internal server error', 500, []);
+    }
+  }
+
+  /**
+   * Marks a notification as unread for the authenticated user
+   */
+  static async markAsUnread(req: AuthenticatedRequest, res: Response) {
+    try {
+      if (!req.user) {
+        return sendError(res, 'Authentication required', 401, []);
+      }
+
+      const { notificationId } = req.params;
+      if (!notificationId) {
+        return sendError(res, 'Notification ID is required', 400, []);
+      }
+
+      await NotificationService.markNotificationAsUnread(
+        notificationId,
+        req.user.userId
+      );
+
+      return sendSuccess(res, 'Notification marked as unread', {}, 200);
+    } catch (error) {
+      console.error('Mark as unread error:', error);
+      return sendError(res, 'Internal server error', 500, []);
+    }
+  }
+
+  /**
+   * Marks all notifications as read for the authenticated user
+   */
+  static async markAllAsRead(req: AuthenticatedRequest, res: Response) {
+    try {
+      if (!req.user) {
+        return sendError(res, 'Authentication required', 401, []);
+      }
+
+      const count = await NotificationService.markAllAsRead(req.user.userId);
+
+      return sendSuccess(
+        res,
+        'All notifications marked as read',
+        { count },
+        200
+      );
+    } catch (error) {
+      console.error('Mark all as read error:', error);
+      return sendError(res, 'Internal server error', 500, []);
+    }
+  }
+
+  /**
+   * Gets unread count for the authenticated user
+   */
+  static async getUnreadCount(req: AuthenticatedRequest, res: Response) {
+    try {
+      if (!req.user) {
+        return sendError(res, 'Authentication required', 401, []);
+      }
+
+      const unreadCount = await NotificationService.getUnreadCount(
+        req.user.userId
+      );
+
+      return sendSuccess(res, 'Unread count retrieved', { unreadCount }, 200);
+    } catch (error) {
+      console.error('Get unread count error:', error);
+      return sendError(res, 'Internal server error', 500, []);
+    }
+  }
+
+  /**
+   * Deletes a notification for the authenticated user
+   * Removes the user's notification entry (soft delete)
+   */
+  static async deleteNotification(req: AuthenticatedRequest, res: Response) {
+    try {
+      if (!req.user) {
+        return sendError(res, 'Authentication required', 401, []);
+      }
+
+      const { notificationId } = req.params;
+      if (!notificationId) {
+        return sendError(res, 'Notification ID is required', 400, []);
+      }
+
+      await NotificationService.deleteUserNotification(
+        notificationId,
+        req.user.userId
+      );
+
+      return sendSuccess(res, 'Notification deleted', {}, 200);
+    } catch (error) {
+      console.error('Delete notification error:', error);
       return sendError(res, 'Internal server error', 500, []);
     }
   }
