@@ -32,6 +32,11 @@ export const ROLE_PERMISSIONS = {
     'view.notification_analytics',
     'topup.create',
     'transactions.read.own',
+    'create.notification',
+    'view.notification',
+    'update.notification',
+    'delete.notification',
+    'view.notification_analytics',
   ],
   admin: [
     'reports.create',
@@ -78,6 +83,9 @@ export const ROLE_PERMISSIONS = {
     'offer.admin',
     'offer.redeem',
     'topup.create',
+    'view.notification',
+    'update.notification',
+    'delete.notification',
   ],
 };
 
@@ -132,4 +140,7 @@ export const PERMISSION_DESCRIPTIONS = {
   'topup.read': 'Read topup requests',
   'topup.update': 'Update topup requests',
   'topup.delete': 'Delete topup requests',
+  'view.notification': 'View notifications',
+  'update.notification': 'Update notifications',
+  'delete.notification': 'Delete notifications',
 };

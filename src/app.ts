@@ -9,6 +9,7 @@ import { tokenCleanupJob } from './jobs/token_cleanup.job';
 import { deviceInfoMiddleware } from './middleware/deviceInfo.middleware';
 import { errorMiddleware } from './middleware/error.middleware';
 import adminRoutes from './routes/admin.routes';
+import adminNotificationsRoutes from './routes/adminNotifications.routes';
 import offerRoutes from './routes/offer.routes';
 // import authRoutes from './routes/auth.routes';
 import chatRoutes from './routes/chat.routes';
@@ -99,6 +100,7 @@ const setupRoutes = async () => {
   app.use('/api/v1/webhooks', topupWebhookRoutes);
   app.use('/api/v1', publicRoutes);
   app.use('/api/v1/admin', adminRoutes);
+  app.use('/api/v1/admin/notifications', adminNotificationsRoutes);
   app.use('/api/v1/offers', offerRoutes);
   app.use('/api/v1/user', userRoutes);
   app.use('/api/v1', healthRoutes);

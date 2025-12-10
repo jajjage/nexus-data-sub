@@ -330,4 +330,145 @@ export class NotificationController {
       return sendError(res, 'Internal server error', 500, []);
     }
   }
+
+  /**
+   * Edit/update a notification (admin only)
+   * PATCH /notifications/:id
+   */
+  static async editNotification(req: AuthenticatedRequest, res: Response) {
+    try {
+      if (!req.user) {
+        return sendError(res, 'Authentication required', 401, []);
+      }
+
+      const { notificationId } = req.params;
+      const { title, body, type, category, targetCriteria, publish_at } =
+        req.body;
+
+      if (!notificationId) {
+        return sendError(res, 'Notification ID is required', 400, []);
+      }
+
+      // At least one field should be provided to update
+      if (
+        !title &&
+        !body &&
+        !type &&
+        !category &&
+        !targetCriteria &&
+        !publish_at
+      ) {
+        return sendError(
+          res,
+          'At least one field must be provided for update',
+          400,
+          []
+        );
+      }
+
+      // Validate type if provided
+      const validTypes = ['info', 'success', 'warning', 'error', 'alert'];
+      if (type && !validTypes.includes(type)) {
+        return sendError(
+          res,
+          `Invalid notification type. Must be one of: ${validTypes.join(', ')}`,
+          400,
+          []
+        );
+      }
+
+      const notification = await NotificationService.editNotification(
+        notificationId,
+        {
+          title,
+          body,
+          type,
+          category,
+          targetCriteria,
+          publish_at,
+        }
+      );
+
+      if (!notification) {
+        return sendError(res, 'Notification not found', 404, []);
+      }
+
+      return sendSuccess(
+        res,
+        'Notification updated successfully',
+        notification,
+        200
+      );
+    } catch (error: any) {
+      console.error('Edit notification error:', error);
+      return sendError(res, error.message || 'Internal server error', 500, []);
+    }
+  }
+
+  /**
+   * Archive/delete a notification (admin only)
+   * DELETE /notifications/:id
+   */
+  static async archiveNotification(req: AuthenticatedRequest, res: Response) {
+    try {
+      if (!req.user) {
+        return sendError(res, 'Authentication required', 401, []);
+      }
+
+      const { notificationId } = req.params;
+
+      if (!notificationId) {
+        return sendError(res, 'Notification ID is required', 400, []);
+      }
+
+      const archived =
+        await NotificationService.archiveNotification(notificationId);
+
+      if (!archived) {
+        return sendError(res, 'Notification not found', 404, []);
+      }
+
+      return sendSuccess(
+        res,
+        'Notification archived successfully',
+        { id: notificationId },
+        200
+      );
+    } catch (error: any) {
+      console.error('Archive notification error:', error);
+      return sendError(res, error.message || 'Internal server error', 500, []);
+    }
+  }
+
+  /**
+   * Get all notifications with optional filters (admin)
+   * GET /notifications (admin version)
+   */
+  static async listAllNotifications(req: AuthenticatedRequest, res: Response) {
+    try {
+      if (!req.user) {
+        return sendError(res, 'Authentication required', 401, []);
+      }
+
+      const limit = parseInt(req.query.limit as string) || 50;
+      const offset = parseInt(req.query.offset as string) || 0;
+      const archived = req.query.archived === 'true';
+
+      const result = await NotificationService.listNotifications(
+        limit,
+        offset,
+        archived
+      );
+
+      return sendSuccess(
+        res,
+        'Notifications retrieved successfully',
+        result,
+        200
+      );
+    } catch (error: any) {
+      console.error('List notifications error:', error);
+      return sendError(res, error.message || 'Internal server error', 500, []);
+    }
+  }
 }

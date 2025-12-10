@@ -547,4 +547,113 @@ export class NotificationService {
     }
     logger.info(`Deleted notification ${notificationId} for user ${userId}`);
   }
+
+  /**
+   * Edit/update a notification (admin)
+   */
+  static async editNotification(notificationId: string, updates: Partial<any>) {
+    try {
+      const updateData: any = {};
+
+      if (updates.title) updateData.title = updates.title;
+      if (updates.body) updateData.body = updates.body;
+      if (updates.type) updateData.type = updates.type;
+      if (updates.category) updateData.category = updates.category;
+      if (updates.targetCriteria)
+        updateData.target_criteria = JSON.stringify(updates.targetCriteria);
+      if (updates.publish_at) updateData.publish_at = updates.publish_at;
+
+      const notifications = await db('notifications')
+        .where({ id: notificationId })
+        .update(updateData)
+        .returning('*');
+
+      if (!notifications || notifications.length === 0) {
+        return null;
+      }
+
+      const notification = notifications[0];
+      if (notification && notification.target_criteria) {
+        (notification as any).targetCriteria = JSON.parse(
+          notification.target_criteria
+        );
+      }
+
+      logger.info(`Notification ${notificationId} updated`);
+      return notification;
+    } catch (error) {
+      logger.error(`Failed to update notification ${notificationId}`, error);
+      throw error;
+    }
+  }
+
+  /**
+   * Archive a notification (soft delete)
+   */
+  static async archiveNotification(notificationId: string) {
+    try {
+      const notifications = await db('notifications')
+        .where({ id: notificationId })
+        .update({ archived: true })
+        .returning('*');
+
+      if (!notifications || notifications.length === 0) {
+        return null;
+      }
+
+      const notification = notifications[0];
+      if (notification && notification.target_criteria) {
+        (notification as any).targetCriteria = JSON.parse(
+          notification.target_criteria
+        );
+      }
+
+      logger.info(`Notification ${notificationId} archived`);
+      return notification;
+    } catch (error) {
+      logger.error(`Failed to archive notification ${notificationId}`, error);
+      throw error;
+    }
+  }
+
+  /**
+   * List all notifications with optional filters
+   */
+  static async listNotifications(
+    limit: number = 50,
+    offset: number = 0,
+    includeArchived: boolean = false
+  ) {
+    let query = db('notifications');
+
+    if (!includeArchived) {
+      query = query.where({ archived: false });
+    }
+
+    const notifications = await query
+      .orderBy('created_at', 'desc')
+      .limit(limit)
+      .offset(offset)
+      .select('*');
+
+    const countQuery = db('notifications');
+    const [{ count }] = await (
+      includeArchived ? countQuery : countQuery.where({ archived: false })
+    ).count('* as count');
+
+    // Parse targetCriteria for each notification
+    const parsed = notifications.map(n => {
+      if (n.target_criteria) {
+        (n as any).targetCriteria = JSON.parse(n.target_criteria);
+      }
+      return n;
+    });
+
+    return {
+      notifications: parsed,
+      total: parseInt(count as any),
+      limit,
+      offset,
+    };
+  }
 }

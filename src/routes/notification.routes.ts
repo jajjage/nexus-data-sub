@@ -2,7 +2,6 @@ import { Router } from 'express';
 import { NotificationController } from '../controllers/notification.controller';
 import { authenticate } from '../middleware/auth.middleware';
 import { validatePushToken } from '../middleware/pushToken.validation.middleware';
-import { hasPermission } from '../middleware/rbac.middleware';
 
 const router = Router();
 
@@ -142,35 +141,6 @@ router.post(
   '/tokens',
   validatePushToken,
   NotificationController.registerPushToken
-);
-
-/**
- * @swagger
- * /notifications:
- *   post:
- *     summary: Create a new notification (admin)
- *     tags: [Notifications]
- *     security:
- *       - bearerAuth: []
- *     requestBody:
- *       required: true
- *       content:
- *         application/json:
- *           schema:
- *             $ref: '#/components/schemas/CreateNotificationRequest'
- *     responses:
- *       201:
- *         description: Notification created
- *         content:
- *           application/json:
- *             schema:
- *               $ref: '#/components/schemas/Notification'
- */
-router.post(
-  '/',
-  authenticate,
-  hasPermission('create.notification'),
-  NotificationController.createNotification
 );
 
 /**
