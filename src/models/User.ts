@@ -382,15 +382,11 @@ export class UserModel {
       return [];
     }
 
-    console.warn(`[debug] getPermissions querying for roleId=${roleId}`);
     const permissions = await db('role_permissions as rp')
       .join('permissions as p', 'rp.permission_id', 'p.id')
       .where('rp.role_id', roleId)
       .select('p.name');
     const names = permissions.map(p => p.name);
-    console.warn(
-      `[debug] getPermissions for roleId=${roleId} returned ${names.length} permissions`
-    );
     return names;
   }
 

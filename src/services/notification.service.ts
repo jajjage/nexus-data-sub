@@ -9,6 +9,7 @@ import {
 } from '../types/notification.types';
 import { logger } from '../utils/logger.utils';
 import { FirebaseService } from './firebase.service';
+import { UserNotificationPreferenceService } from './userNotificationPreference.service';
 
 export class NotificationService {
   /**
@@ -103,6 +104,11 @@ export class NotificationService {
   static async registerPushToken(tokenData: RegisterPushTokenInput) {
     // 1. Persist the token in Postgres
     await NotificationModel.registerPushToken(tokenData);
+
+    // 2. Initialize auto-subscribe topics as user preferences (if not already present)
+    await UserNotificationPreferenceService.initializeDefaultPreferences(
+      tokenData.userId
+    );
 
     // Use a Set to store topics to ensure uniqueness
     const topicsToSubscribe = new Set<string>();

@@ -257,7 +257,7 @@ router.put(
 
 /**
  * @swagger
- * /notifications/unread-count:
+ * /notifications/unread-count/count:
  *   get:
  *     summary: Get count of unread notifications
  *     tags: [Notifications]

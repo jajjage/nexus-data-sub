@@ -1,3 +1,4 @@
+import { config } from '../config/env';
 import { NotificationModel } from '../models/Notification';
 import { UserNotificationPreferenceModel } from '../models/UserNotificationPreference';
 import { UserNotificationPreference } from '../types/notification.types';
@@ -6,6 +7,36 @@ import { logger } from '../utils/logger.utils';
 import { FirebaseService } from './firebase.service';
 
 export class UserNotificationPreferenceService {
+  /**
+   * Initialize default notification preferences for a user
+   * Creates preferences for all auto-subscribe topics
+   * @param userId - The user ID
+   */
+  static async initializeDefaultPreferences(userId: string): Promise<void> {
+    const configTopics = Array.isArray(config.notifications.autoSubscribeTopics)
+      ? config.notifications.autoSubscribeTopics
+      : ['all'];
+
+    try {
+      for (const topic of configTopics) {
+        await UserNotificationPreferenceModel.upsert({
+          userId,
+          category: topic,
+          subscribed: true,
+        });
+      }
+      logger.info(
+        `Initialized notification preferences for user ${userId} with topics: ${configTopics.join(', ')}`
+      );
+    } catch (error) {
+      logger.error(
+        `Failed to initialize notification preferences for user ${userId}`,
+        error
+      );
+      throw error;
+    }
+  }
+
   static async getPreferences(
     userId: string
   ): Promise<UserNotificationPreference[]> {
