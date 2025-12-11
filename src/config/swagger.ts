@@ -302,33 +302,157 @@ export const swaggerOptions = {
         Notification: {
           type: 'object',
           properties: {
+            id: {
+              type: 'string',
+              format: 'uuid',
+              description:
+                'User notification tracking ID (or notification ID if not tracked)',
+            },
+            notification_id: {
+              type: 'string',
+              format: 'uuid',
+              description: 'The notification ID',
+            },
+            user_id: {
+              type: 'string',
+              format: 'uuid',
+              description: 'The user ID',
+            },
+            read: {
+              type: 'boolean',
+              description: 'Whether the notification has been read by the user',
+            },
+            read_at: {
+              type: 'string',
+              format: 'date-time',
+              nullable: true,
+              description: 'Timestamp when the notification was marked as read',
+            },
+            created_at: {
+              type: 'string',
+              format: 'date-time',
+              description: 'Notification creation timestamp',
+            },
+            updated_at: {
+              type: 'string',
+              format: 'date-time',
+              description: 'Notification last update timestamp',
+            },
+            notification: {
+              type: 'object',
+              properties: {
+                id: { type: 'string', format: 'uuid' },
+                title: { type: 'string' },
+                body: { type: 'string' },
+                type: {
+                  type: 'string',
+                  enum: ['info', 'success', 'warning', 'error', 'alert'],
+                },
+                category: { type: 'string' },
+                publish_at: { type: 'string', format: 'date-time' },
+                sent: { type: 'boolean' },
+                archived: { type: 'boolean' },
+              },
+              description: 'The notification details',
+            },
+          },
+        },
+        NotificationAdmin: {
+          type: 'object',
+          properties: {
             id: { type: 'string', format: 'uuid' },
             title: { type: 'string' },
             body: { type: 'string' },
-            target: { type: 'object' },
-            publishAt: { type: 'string', format: 'date-time' },
-            createdBy: { type: 'string', format: 'uuid' },
-            createdAt: { type: 'string', format: 'date-time' },
+            type: {
+              type: 'string',
+              enum: ['info', 'success', 'warning', 'error', 'alert'],
+            },
+            category: { type: 'string' },
+            target_criteria: { type: 'object' },
+            publish_at: { type: 'string', format: 'date-time' },
+            created_by: { type: 'string', format: 'uuid' },
+            created_at: { type: 'string', format: 'date-time' },
             sent: { type: 'boolean' },
             archived: { type: 'boolean' },
           },
+          description: 'Notification object for admin endpoints',
         },
         CreateNotificationRequest: {
           type: 'object',
-          required: ['title'],
+          required: ['title', 'body'],
           properties: {
-            title: { type: 'string' },
-            body: { type: 'string' },
-            target: { type: 'object' },
-            publishAt: { type: 'string', format: 'date-time' },
+            title: {
+              type: 'string',
+              description: 'Notification title',
+            },
+            body: {
+              type: 'string',
+              description: 'Notification body/content',
+            },
+            type: {
+              type: 'string',
+              enum: ['info', 'success', 'warning', 'error', 'alert'],
+              description: 'Notification type (default: info)',
+            },
+            category: {
+              type: 'string',
+              description: 'Notification category for filtering',
+            },
+            targetCriteria: {
+              type: 'object',
+              description: 'Target criteria for selective user delivery',
+              properties: {
+                registrationDateRange: {
+                  type: 'object',
+                  properties: {
+                    start: { type: 'string', format: 'date-time' },
+                    end: { type: 'string', format: 'date-time' },
+                  },
+                },
+                minTransactionCount: { type: 'integer' },
+                maxTransactionCount: { type: 'integer' },
+                minTopupCount: { type: 'integer' },
+                maxTopupCount: { type: 'integer' },
+                lastActiveWithinDays: { type: 'integer' },
+              },
+            },
+            publish_at: {
+              type: 'string',
+              format: 'date-time',
+              description: 'When to publish the notification',
+            },
+          },
+        },
+        UserNotificationPreference: {
+          type: 'object',
+          properties: {
+            id: { type: 'string', format: 'uuid' },
+            user_id: { type: 'string', format: 'uuid' },
+            category: {
+              type: 'string',
+              description: 'Notification category',
+            },
+            subscribed: {
+              type: 'boolean',
+              description: 'Whether user is subscribed to this category',
+            },
+            created_at: { type: 'string', format: 'date-time' },
+            updated_at: { type: 'string', format: 'date-time' },
           },
         },
         PushTokenRegisterRequest: {
           type: 'object',
           required: ['platform', 'token'],
           properties: {
-            platform: { type: 'string', enum: ['ios', 'android', 'web'] },
-            token: { type: 'string' },
+            platform: {
+              type: 'string',
+              enum: ['ios', 'android', 'web'],
+              description: 'Push notification platform',
+            },
+            token: {
+              type: 'string',
+              description: 'FCM push token',
+            },
           },
         },
       },
