@@ -119,6 +119,45 @@ router.get('/', NotificationController.getUserNotifications);
 
 /**
  * @swagger
+ * /notifications/{notificationId}:
+ *   get:
+ *     summary: Get a single notification by ID for the authenticated user
+ *     tags: [Notifications]
+ *     security:
+ *       - bearerAuth: []
+ *     parameters:
+ *       - in: path
+ *         name: notificationId
+ *         required: true
+ *         schema:
+ *           type: string
+ *           format: uuid
+ *         description: The notification ID
+ *     responses:
+ *       200:
+ *         description: Notification retrieved successfully
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 success:
+ *                   type: boolean
+ *                 message:
+ *                   type: string
+ *                 data:
+ *                   $ref: '#/components/schemas/Notification'
+ *       404:
+ *         description: Notification not found
+ */
+router.get(
+  '/:notificationId',
+  authenticate,
+  NotificationController.getNotificationById
+);
+
+/**
+ * @swagger
  * /notifications/tokens:
  *   post:
  *     summary: Register a push token for the authenticated user

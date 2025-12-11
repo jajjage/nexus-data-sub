@@ -173,6 +173,42 @@ export class NotificationController {
   }
 
   /**
+   * Get a single notification by ID for the authenticated user
+   * GET /notifications/:notificationId
+   */
+  static async getNotificationById(req: AuthenticatedRequest, res: Response) {
+    try {
+      if (!req.user) {
+        return sendError(res, 'Authentication required', 401, []);
+      }
+
+      const { notificationId } = req.params;
+      if (!notificationId) {
+        return sendError(res, 'Notification ID is required', 400, []);
+      }
+
+      const notification = await NotificationService.getNotificationById(
+        notificationId,
+        req.user.userId
+      );
+
+      if (!notification) {
+        return sendError(res, 'Notification not found', 404, []);
+      }
+
+      return sendSuccess(
+        res,
+        'Notification retrieved successfully',
+        notification,
+        200
+      );
+    } catch (error) {
+      console.error('Get notification by ID error:', error);
+      return sendError(res, 'Internal server error', 500, []);
+    }
+  }
+
+  /**
    * Marks a notification as read for the authenticated user
    */
   static async markAsRead(req: AuthenticatedRequest, res: Response) {

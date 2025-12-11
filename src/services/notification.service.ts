@@ -299,6 +299,84 @@ export class NotificationService {
   }
 
   /**
+   * Gets a single notification by ID for a user
+   * Includes read status from user_notifications if user has interacted with it
+   * @param notificationId - The notification ID
+   * @param userId - The user ID (for read status)
+   */
+  static async getNotificationById(
+    notificationId: string,
+    userId: string
+  ): Promise<any | null> {
+    // Fetch the notification with user interaction data if any
+    const result = await db('notifications as n')
+      .leftJoin('user_notifications as un', qb => {
+        qb.on('n.id', '=', 'un.notification_id').andOn(
+          'un.user_id',
+          '=',
+          db.raw('?', [userId])
+        );
+      })
+      .where('n.id', notificationId)
+      .andWhere('n.archived', false)
+      .select(
+        'n.id',
+        'n.title',
+        'n.body',
+        'n.type',
+        'n.category',
+        'n.publish_at',
+        'n.sent',
+        'n.archived',
+        'n.created_at',
+        'n.created_by',
+        'n.target_criteria',
+        'un.id as user_notif_id',
+        'un.read',
+        'un.read_at',
+        'un.user_id',
+        'un.deleted'
+      )
+      .first();
+
+    if (!result) {
+      return null;
+    }
+
+    // Check if user has deleted this notification
+    if (result.deleted) {
+      return null;
+    }
+
+    // Transform to match API response format
+    const notification = {
+      id: result.user_notif_id || result.id,
+      notification_id: result.id,
+      user_id: userId,
+      read: result.read || false,
+      read_at: result.read_at || null,
+      created_at: result.created_at,
+      updated_at: result.created_at,
+      notification: {
+        id: result.id,
+        title: result.title,
+        body: result.body,
+        type: result.type,
+        category: result.category,
+        publish_at: result.publish_at,
+        sent: result.sent,
+        archived: result.archived,
+        created_by: result.created_by,
+        target_criteria: result.target_criteria
+          ? JSON.parse(result.target_criteria)
+          : null,
+      },
+    };
+
+    return notification;
+  }
+
+  /**
    * Gets unread count for a user based on preferences
    * Counts notifications they're subscribed to that they haven't marked as read
    * @param userId - The user ID
