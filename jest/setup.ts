@@ -3,7 +3,10 @@ dotenv.config({ path: '.env.test' });
 
 import db from '../src/database/connection';
 import { redisClientInstance } from '../src/database/redis';
-import { tokenCleanupJob } from '../src/jobs/token_cleanup.job';
+import {
+  firebaseTokenCleanupJob,
+  tokenCleanupJob,
+} from '../src/jobs/token_cleanup.job';
 
 import { Knex } from 'knex';
 
@@ -108,6 +111,7 @@ beforeEach(async () => {
 afterAll(async () => {
   // Stop any running jobs
   tokenCleanupJob.stop();
+  firebaseTokenCleanupJob.stop();
 
   // Clean up Redis keys
   const redis = redisClientInstance.getClient();

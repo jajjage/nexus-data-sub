@@ -135,8 +135,10 @@ const setupRoutes = async () => {
 
 setupRoutes();
 
-// Start cron jobs
-tokenCleanupJob.start();
-firebaseTokenCleanupJob.start();
+// Start cron jobs (only in production, not during tests)
+if (process.env.NODE_ENV !== 'test') {
+  tokenCleanupJob.start();
+  firebaseTokenCleanupJob.start();
+}
 
 export default app;

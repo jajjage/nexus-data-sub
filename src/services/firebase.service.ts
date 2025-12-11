@@ -11,10 +11,16 @@ if (process.env.FIREBASE_SERVICE_ACCOUNT) {
     console.error('Invalid FIREBASE_SERVICE_ACCOUNT JSON:', error);
   }
 } else {
-  throw new Error('Missing FIREBASE_SERVICE_ACCOUNT environment variable');
+  // In test environment, Firebase is optional
+  if (process.env.NODE_ENV !== 'test') {
+    throw new Error('Missing FIREBASE_SERVICE_ACCOUNT environment variable');
+  }
+  console.warn(
+    '⚠️ Firebase not configured. Running in test mode without Firebase.'
+  );
 }
 
-if (!admin.apps.length) {
+if (serviceAccount && !admin.apps.length) {
   admin.initializeApp({
     credential: admin.credential.cert(serviceAccount),
   });
