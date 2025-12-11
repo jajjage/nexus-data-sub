@@ -270,4 +270,54 @@ export class FirebaseService {
       );
     }
   }
+
+  /**
+   * Cleans up inactive tokens from Firebase topics
+   * Finds all tokens marked as 'unregistered' in DB and unsubscribes them from all topics
+   * This prevents inactive tokens from receiving notifications
+   * Should be run periodically (e.g., hourly)
+   */
+  static async cleanupInactiveTokens(topics: string[]): Promise<void> {
+    try {
+      const db = (await import('../database/connection')).default;
+
+      // Find all unregistered tokens
+      const inactiveTokens = await db('push_tokens')
+        .where({ status: 'unregistered' })
+        .select('token');
+
+      if (inactiveTokens.length === 0) {
+        logger.info('No inactive tokens to clean up');
+        return;
+      }
+
+      const tokenStrings = inactiveTokens.map(t => t.token);
+      logger.info(
+        `Cleaning up ${inactiveTokens.length} inactive tokens from Firebase topics`
+      );
+
+      // Unsubscribe from all topics
+      for (const topic of topics) {
+        try {
+          await this.unsubscribeTokenFromTopic(tokenStrings, topic);
+        } catch (error) {
+          logger.warn(
+            `Failed to unsubscribe inactive tokens from topic '${topic}'`,
+            error
+          );
+          // Continue with next topic even if one fails
+        }
+      }
+
+      // Mark tokens as cleaned up (update last_seen to indicate cleanup)
+      await db('push_tokens').where({ status: 'unregistered' }).update({
+        last_failure: new Date(),
+        failure_reason: 'Cleaned up - unsubscribed from Firebase topics',
+      });
+
+      logger.info('Successfully cleaned up inactive tokens from Firebase');
+    } catch (error) {
+      logger.error('Error during inactive token cleanup:', error);
+    }
+  }
 }

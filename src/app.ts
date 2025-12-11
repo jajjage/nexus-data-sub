@@ -5,7 +5,10 @@ import helmet from 'helmet';
 import swaggerJsdoc from 'swagger-jsdoc';
 import swaggerUi from 'swagger-ui-express';
 import { swaggerOptions } from './config/swagger';
-import { tokenCleanupJob } from './jobs/token_cleanup.job';
+import {
+  firebaseTokenCleanupJob,
+  tokenCleanupJob,
+} from './jobs/token_cleanup.job';
 import { deviceInfoMiddleware } from './middleware/deviceInfo.middleware';
 import { errorMiddleware } from './middleware/error.middleware';
 import adminRoutes from './routes/admin.routes';
@@ -134,5 +137,6 @@ setupRoutes();
 
 // Start cron jobs
 tokenCleanupJob.start();
+firebaseTokenCleanupJob.start();
 
 export default app;
