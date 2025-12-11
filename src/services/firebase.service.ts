@@ -169,7 +169,8 @@ export class FirebaseService {
   static async sendTopicMessage(
     topic: string,
     title: string,
-    body: string
+    body: string,
+    notificationId?: string
   ): Promise<string | null> {
     if (!admin.apps.length) {
       console.warn(
@@ -178,12 +179,18 @@ export class FirebaseService {
       return null;
     }
 
-    const message = {
+    const message: any = {
       notification: {
         title,
         body,
       },
       topic,
+      // Add data payload for frontend to handle notification click
+      data: {
+        notificationId: notificationId || '',
+        title,
+        body,
+      },
     };
 
     try {

@@ -57,7 +57,8 @@ export class NotificationService {
       const result = await FirebaseService.sendTopicMessage(
         topic,
         notification.title,
-        notification.body || ''
+        notification.body || '',
+        notification.id // Pass notification ID so frontend knows which notification was clicked
       );
 
       if (result) {
