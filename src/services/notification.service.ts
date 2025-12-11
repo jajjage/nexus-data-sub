@@ -7,6 +7,7 @@ import {
   CreateNotificationInput,
   RegisterPushTokenInput,
 } from '../types/notification.types';
+import { ApiError } from '../utils/ApiError';
 import { logger } from '../utils/logger.utils';
 import { FirebaseService } from './firebase.service';
 import { UserNotificationPreferenceService } from './userNotificationPreference.service';
@@ -35,6 +36,8 @@ export class NotificationService {
 
   /**
    * Background job to send push notifications.
+   * Publishes notification to Firebase topic (category-based broadcast)
+   * Firebase automatically sends to all tokens subscribed to that topic
    * @param notification - The notification to send.
    */
   private static async sendPushNotifications(notification: any) {
@@ -42,58 +45,37 @@ export class NotificationService {
       `Starting background job to send push notifications for notification ID: ${notification.id}`
     );
     try {
-      // Get tokens based on targeting criteria if provided
-      const targetedTokens = await NotificationModel.findAllPushTokens(
-        notification.targetCriteria
+      // Determine which topic to publish to
+      // Default to 'all' if no category specified
+      const topic = notification.category || 'all';
+
+      logger.info(
+        `Publishing notification to Firebase topic: ${topic}. Notification ID: ${notification.id}`
       );
 
-      // Filter out non-active tokens
-      const activeTokens = targetedTokens.filter(t => t.status === 'active');
-      const tokenStrings = activeTokens.map(t => t.token);
+      // Publish to Firebase topic - this broadcasts to all devices subscribed to the topic
+      const result = await FirebaseService.sendTopicMessage(
+        topic,
+        notification.title,
+        notification.body || ''
+      );
 
-      if (tokenStrings.length > 0) {
+      if (result) {
+        // Mark notification as sent in database
+        await db('notifications')
+          .where({ id: notification.id })
+          .update({ sent: true });
+
         logger.info(
-          `Sending notification to ${tokenStrings.length} targeted devices`
+          `Notification ${notification.id} successfully published to topic '${topic}'. Message ID: ${result}`
         );
-        const result = await FirebaseService.sendMulticastPushNotification(
-          tokenStrings,
-          notification.title,
-          notification.body || ''
-        );
-
-        // Handle failed tokens
-        if (result?.responses) {
-          const failedTokens = result.responses
-            .map((resp, index) => ({
-              token: tokenStrings[index],
-              error: resp.error,
-            }))
-            .filter(item => item.error);
-
-          // Update failed tokens status
-          await Promise.all(
-            failedTokens.map(async ({ token, error }) => {
-              await NotificationModel.updateTokenStatus(token, {
-                status: 'invalid',
-                failure_reason: error?.message || 'Unknown error',
-                last_failure: new Date(),
-              });
-            })
-          );
-
-          if (failedTokens.length > 0) {
-            logger.warn(
-              `Failed to send notification to ${failedTokens.length} tokens`,
-              failedTokens
-            );
-          }
-        }
       }
     } catch (error) {
       logger.error(
-        `Error in background job for sending push notifications for notification ID: ${notification.id}`,
+        `Error publishing notification ${notification.id} to Firebase topic`,
         error
       );
+      // Don't throw - allow the notification record to exist even if Firebase send fails
     }
   }
 
@@ -518,6 +500,15 @@ export class NotificationService {
     notificationId: string,
     userId: string
   ): Promise<void> {
+    // Verify notification exists
+    const notification = await db('notifications')
+      .where({ id: notificationId })
+      .first();
+
+    if (!notification) {
+      throw new ApiError(404, 'Notification not found');
+    }
+
     // Check if tracking entry exists
     const existing = await db('user_notifications')
       .where({

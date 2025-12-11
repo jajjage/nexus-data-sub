@@ -160,6 +160,45 @@ export class FirebaseService {
   }
 
   /**
+   * Sends a message to all devices subscribed to a topic.
+   * @param topic - The topic name (no /topics/ prefix)
+   * @param title - The title of the notification
+   * @param body - The body of the notification
+   * @returns Message ID if successful, null if failed
+   */
+  static async sendTopicMessage(
+    topic: string,
+    title: string,
+    body: string
+  ): Promise<string | null> {
+    if (!admin.apps.length) {
+      console.warn(
+        'Firebase Admin SDK not initialized. Skipping topic notification.'
+      );
+      return null;
+    }
+
+    const message = {
+      notification: {
+        title,
+        body,
+      },
+      topic,
+    };
+
+    try {
+      const messageId = await admin.messaging().send(message);
+      logger.info(
+        `Successfully sent message to topic '${topic}'. Message ID: ${messageId}`
+      );
+      return messageId;
+    } catch (error) {
+      logger.error(`Error sending message to topic '${topic}':`, error);
+      throw error;
+    }
+  }
+
+  /**
    * Subscribes one or more tokens to a topic.
    * @param token - A single FCM token or array of FCM tokens
    * @param topic - topic name (no /topics/ prefix)
