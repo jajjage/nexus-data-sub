@@ -114,7 +114,8 @@ export class FirebaseService {
   static async sendMulticastPushNotification(
     tokens: string[],
     title: string,
-    body: string
+    body: string,
+    data?: Record<string, string>
   ): Promise<FirebaseMulticastResponse> {
     if (!admin.apps.length) {
       console.warn(
@@ -135,13 +136,18 @@ export class FirebaseService {
       };
     }
 
-    const message = {
+    const message: any = {
       notification: {
         title,
         body,
       },
       tokens,
     };
+
+    // Add data payload if provided
+    if (data && Object.keys(data).length > 0) {
+      message.data = data;
+    }
 
     try {
       const response = await admin.messaging().sendEachForMulticast(message);

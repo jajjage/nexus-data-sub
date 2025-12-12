@@ -319,6 +319,116 @@ export class NotificationService {
   }
 
   /**
+   * Sends a transactional push notification to a user (credit/debit alerts)
+   * These are temporary alerts that don't persist in the database
+   * Includes transaction/payment data in the message payload
+   * @param userId - The ID of the user to send the notification to
+   * @param title - The title of the notification
+   * @param body - The body of the notification
+   * @param transactionData - Transaction details (id, amount, type, reference, etc.)
+   */
+  static async sendTransactionAlert(
+    userId: string,
+    title: string,
+    body: string,
+    transactionData: {
+      id?: string;
+      amount?: number | string;
+      type?: 'credit' | 'debit';
+      currency?: string;
+      reference?: string;
+      timestamp?: string;
+      description?: string;
+      [key: string]: any;
+    }
+  ): Promise<any> {
+    try {
+      // 1. Get all tokens for this user
+      const userTokens = await NotificationModel.findUserPushTokens(userId);
+
+      if (!userTokens.length) {
+        logger.info(
+          `No tokens found for user ${userId}, skipping transaction alert`
+        );
+        return;
+      }
+
+      const tokenStrings = userTokens.map(t => t.token);
+
+      // 2. Prepare data payload with transaction details
+      const dataPayload: Record<string, string> = {
+        title,
+        body,
+        type: 'transaction',
+        transactionId: transactionData.id || '',
+        transactionType: transactionData.type || '',
+        amount: String(transactionData.amount || ''),
+        currency: transactionData.currency || '',
+        reference: transactionData.reference || '',
+        timestamp: transactionData.timestamp || new Date().toISOString(),
+        description: transactionData.description || '',
+      };
+
+      // Add any additional custom fields from transactionData
+      const standardFields = [
+        'id',
+        'amount',
+        'type',
+        'currency',
+        'reference',
+        'timestamp',
+        'description',
+      ];
+      Object.entries(transactionData).forEach(([key, value]) => {
+        if (!standardFields.includes(key)) {
+          dataPayload[`custom_${key}`] = String(value);
+        }
+      });
+
+      // 3. Send via Firebase with data payload (no notification storage)
+      const result = await FirebaseService.sendMulticastPushNotification(
+        tokenStrings,
+        title,
+        body,
+        dataPayload
+      );
+
+      logger.info(
+        `Transaction alert sent to user ${userId}: ${result.successCount} success, ${result.failureCount} failed`
+      );
+
+      // 4. OPPORTUNISTIC CLEANUP - Remove invalid tokens
+      if (result.failureCount > 0 && result.responses) {
+        const invalidTokens: string[] = [];
+
+        result.responses.forEach((resp, idx) => {
+          if (!resp.success && resp.error) {
+            const errorCode = resp.error.code;
+            if (
+              errorCode === 'messaging/registration-token-not-registered' ||
+              errorCode === 'messaging/invalid-registration-token'
+            ) {
+              invalidTokens.push(tokenStrings[idx]);
+            }
+          }
+        });
+
+        if (invalidTokens.length > 0) {
+          logger.info(
+            `Removing ${invalidTokens.length} dead tokens for user ${userId}`
+          );
+          await NotificationModel.deleteTokens(invalidTokens);
+        }
+      }
+
+      return result;
+    } catch (error) {
+      logger.error(`Error sending transaction alert to user ${userId}`, error);
+      // Don't throw - transaction should proceed even if alert fails
+    }
+  }
+
+  /**
    * Gets notifications for a user with pagination using preference-based filtering
    * NO bulk inserts - just query based on user preferences
    * Only tracks read/delete when user interacts

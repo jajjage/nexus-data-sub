@@ -19,7 +19,6 @@ import chatRoutes from './routes/chat.routes';
 import healthRoutes from './routes/health.routes';
 import mobileAuthRoutes from './routes/mobileAuth.routes';
 import notificationRoutes from './routes/notification.routes';
-import notificationAnalyticsRoutes from './routes/notificationAnalytics.routes';
 import notificationTemplateRoutes from './routes/notificationTemplate.routes';
 import rewardsRoutes from './routes/rewards.routes';
 import userNotificationPreferenceRoutes from './routes/userNotificationPreference.routes';
@@ -117,7 +116,6 @@ const setupRoutes = async () => {
   app.use('/api/v1/notifications', notificationRoutes);
   app.use('/api/v1/notification-templates', notificationTemplateRoutes);
   app.use('/api/v1/notification-preferences', userNotificationPreferenceRoutes);
-  app.use('/api/v1/notification-analytics', notificationAnalyticsRoutes);
   app.use('/api/v1/dashboard', rewardsRoutes);
 
   app.get('/', (req, res) => {
