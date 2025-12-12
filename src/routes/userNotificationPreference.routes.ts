@@ -49,6 +49,34 @@ router.put('/', UserNotificationPreferenceController.upsertPreference);
 
 /**
  * @swagger
+ * /notification-preferences/mute-all:
+ *   post:
+ *     summary: Mute all notification categories
+ *     tags: [User Notification Preferences]
+ *     security:
+ *       - bearerAuth: []
+ *     responses:
+ *       200:
+ *         description: All notifications muted
+ */
+router.post('/mute-all', UserNotificationPreferenceController.muteAll);
+
+/**
+ * @swagger
+ * /notification-preferences/unmute-all:
+ *   post:
+ *     summary: Unmute all notification categories
+ *     tags: [User Notification Preferences]
+ *     security:
+ *       - bearerAuth: []
+ *     responses:
+ *       200:
+ *         description: All notifications unmuted
+ */
+router.post('/unmute-all', UserNotificationPreferenceController.unmuteAll);
+
+/**
+ * @swagger
  * /notification-preferences/{category}:
  *   put:
  *     summary: Toggle subscription for a specific category
@@ -81,40 +109,6 @@ router.put('/', UserNotificationPreferenceController.upsertPreference);
 router.put(
   '/:category',
   UserNotificationPreferenceController.toggleCategorySubscription
-);
-
-/**
- * @swagger
- * /notification-preferences/mute-all:
- *   post:
- *     summary: Mute all notification categories
- *     tags: [User Notification Preferences]
- *     security:
- *       - bearerAuth: []
- *     responses:
- *       200:
- *         description: All notifications muted
- */
-router.post(
-  '/mute-all',
-  UserNotificationPreferenceController.muteAll
-);
-
-/**
- * @swagger
- * /notification-preferences/unmute-all:
- *   post:
- *     summary: Unmute all notification categories
- *     tags: [User Notification Preferences]
- *     security:
- *       - bearerAuth: []
- *     responses:
- *       200:
- *         description: All notifications unmuted
- */
-router.post(
-  '/unmute-all',
-  UserNotificationPreferenceController.unmuteAll
 );
 
 export default router;

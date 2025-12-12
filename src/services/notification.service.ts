@@ -4,12 +4,14 @@ import { NotificationModel } from '../models/Notification';
 import { UserNotificationModel } from '../models/UserNotification';
 import { UserNotificationPreferenceModel } from '../models/UserNotificationPreference';
 import {
+  CreateNotificationFromTemplateInput,
   CreateNotificationInput,
   RegisterPushTokenInput,
 } from '../types/notification.types';
 import { ApiError } from '../utils/ApiError';
 import { logger } from '../utils/logger.utils';
 import { FirebaseService } from './firebase.service';
+import { NotificationTemplateService } from './notificationTemplate.service';
 import { UserNotificationPreferenceService } from './userNotificationPreference.service';
 
 export class NotificationService {
@@ -30,6 +32,106 @@ export class NotificationService {
 
     // Fire and forget: Don't await this
     this.sendPushNotifications(notification);
+
+    return notification;
+  }
+
+  /**
+   * Creates a notification (optionally scheduled for future delivery)
+   * If publish_at is in the future, only create without sending
+   * If publish_at is null or in the past, create and send immediately
+   * @param notificationData - The data for the new notification
+   * @param createdBy - The ID of the admin creating the notification
+   * @returns The newly created notification
+   */
+  static async createScheduled(
+    notificationData: CreateNotificationInput,
+    createdBy: string
+  ) {
+    const notification = await NotificationModel.create(
+      notificationData,
+      createdBy
+    );
+
+    // Check if notification should be sent now or scheduled for later
+    const publishAt = notificationData.publish_at
+      ? new Date(notificationData.publish_at)
+      : null;
+    const now = new Date();
+
+    // Only send if publish_at is null (send now) or in the past
+    if (!publishAt || publishAt <= now) {
+      // Fire and forget: Don't await this
+      this.sendPushNotifications(notification);
+    } else {
+      logger.info(
+        `Notification ${notification.id} scheduled for ${publishAt.toISOString()}`
+      );
+    }
+
+    return notification;
+  }
+
+  /**
+   * Creates a notification from a template with variable substitution
+   * Resolves placeholders like {{userName}}, {{amount}} etc. with provided values
+   * @param templateData - Template ID and variables to substitute
+   * @param createdBy - The ID of the admin creating the notification
+   * @returns The newly created notification
+   */
+  static async createFromTemplate(
+    templateData: CreateNotificationFromTemplateInput,
+    createdBy: string
+  ) {
+    // Fetch the template
+    const template = await NotificationTemplateService.get(
+      templateData.template_id
+    );
+
+    if (!template) {
+      throw new ApiError(404, `Template ${templateData.template_id} not found`);
+    }
+
+    // Resolve variables in title and body
+    const variables = templateData.variables || {};
+    let resolvedTitle = template.title;
+    let resolvedBody = template.body;
+
+    // Replace all {{variable}} patterns with actual values
+    Object.entries(variables).forEach(([key, value]) => {
+      const pattern = new RegExp(`\\{\\{${key}\\}\\}`, 'g');
+      resolvedTitle = resolvedTitle.replace(pattern, String(value));
+      resolvedBody = resolvedBody.replace(pattern, String(value));
+    });
+
+    // Create notification with resolved content
+    const notificationData: CreateNotificationInput = {
+      title: resolvedTitle,
+      body: resolvedBody,
+      type: templateData.type || 'info',
+      category: templateData.category,
+      targetCriteria: templateData.targetCriteria,
+      publish_at: templateData.publish_at,
+    };
+
+    const notification = await NotificationModel.create(
+      notificationData,
+      createdBy
+    );
+
+    // Send immediately if no scheduled publish_at
+    const publishAt = templateData.publish_at
+      ? new Date(templateData.publish_at)
+      : null;
+    const now = new Date();
+
+    if (!publishAt || publishAt <= now) {
+      this.sendPushNotifications(notification);
+    } else {
+      logger.info(
+        `Notification ${notification.id} scheduled for ${publishAt.toISOString()}`
+      );
+    }
 
     return notification;
   }

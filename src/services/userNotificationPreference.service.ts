@@ -2,7 +2,6 @@ import { config } from '../config/env';
 import { NotificationModel } from '../models/Notification';
 import { UserNotificationPreferenceModel } from '../models/UserNotificationPreference';
 import { UserNotificationPreference } from '../types/notification.types';
-import { ApiError } from '../utils/ApiError';
 import { logger } from '../utils/logger.utils';
 import { FirebaseService } from './firebase.service';
 
@@ -66,16 +65,12 @@ export class UserNotificationPreferenceService {
     category: string,
     subscribed: boolean
   ): Promise<UserNotificationPreference> {
-    // 1. Update the Database (Source of Truth)
-    const preference = await UserNotificationPreferenceModel.update(
+    // 1. Upsert the Database (Source of Truth) - creates if doesn't exist
+    const preference = await UserNotificationPreferenceModel.upsert({
       userId,
       category,
-      subscribed
-    );
-
-    if (!preference) {
-      throw new ApiError(404, 'Preference not found');
-    }
+      subscribed,
+    });
 
     // 2. Sync with Firebase (The Execution Layer)
     // We must apply this change to ALL of the user's active devices

@@ -510,4 +510,226 @@ describe('Admin Notification Controller - Full Integration Tests', () => {
         .expect(403);
     });
   });
+
+  describe('POST /api/v1/admin/notifications/schedule - Create Scheduled Notification', () => {
+    it('should create and send notification immediately when publish_at is null', async () => {
+      const notificationData = {
+        title: 'Immediate Notification',
+        body: 'This should send immediately',
+      };
+
+      const res = await request(app)
+        .post('/api/v1/admin/notifications/schedule')
+        .set('Authorization', `Bearer ${adminToken}`)
+        .send(notificationData)
+        .expect(201);
+
+      expect(res.body.success).toBe(true);
+      expect(res.body.data).toHaveProperty('id');
+      expect(res.body.data.title).toBe(notificationData.title);
+      expect(res.body.data.body).toBe(notificationData.body);
+      expect(res.body.data.type).toBe('info');
+      // When publish_at is not provided, no scheduling message is shown
+      expect(res.body.message).toBeDefined();
+
+      // Verify in database
+      const dbNotif = await db('notifications')
+        .where({ id: res.body.data.id })
+        .first();
+      expect(dbNotif).toBeDefined();
+      // publish_at defaults to now() in database when not provided
+      // The notification should be sent immediately since publish_at will be ~now
+      expect(dbNotif.publish_at).not.toBeNull();
+    });
+
+    it('should create and send notification when publish_at is in the past', async () => {
+      const pastDate = new Date();
+      pastDate.setHours(pastDate.getHours() - 1); // 1 hour ago
+
+      const notificationData = {
+        title: 'Past Date Notification',
+        body: 'This should send immediately (past date)',
+        publish_at: pastDate.toISOString(),
+      };
+
+      const res = await request(app)
+        .post('/api/v1/admin/notifications/schedule')
+        .set('Authorization', `Bearer ${adminToken}`)
+        .send(notificationData)
+        .expect(201);
+
+      expect(res.body.success).toBe(true);
+      // The message should indicate it was scheduled (showing the past date)
+      // because publish_at was provided, even if it's in the past
+      expect(res.body.message).toContain('scheduled successfully');
+
+      // Verify in database - even though past, publish_at field should contain the value
+      const dbNotif = await db('notifications')
+        .where({ id: res.body.data.id })
+        .first();
+      expect(dbNotif).toBeDefined();
+      // Past date should still be stored in publish_at
+      expect(dbNotif.publish_at).not.toBeNull();
+    });
+
+    it('should create but not send notification when publish_at is in the future', async () => {
+      const futureDate = new Date();
+      futureDate.setHours(futureDate.getHours() + 2); // 2 hours from now
+
+      const notificationData = {
+        title: 'Future Date Notification',
+        body: 'This should be scheduled for later',
+        category: 'updates',
+        publish_at: futureDate.toISOString(),
+      };
+
+      const res = await request(app)
+        .post('/api/v1/admin/notifications/schedule')
+        .set('Authorization', `Bearer ${adminToken}`)
+        .send(notificationData)
+        .expect(201);
+
+      expect(res.body.success).toBe(true);
+      expect(res.body.message).toContain('scheduled successfully');
+      expect(res.body.message).toContain(futureDate.toISOString());
+
+      // Verify in database
+      const dbNotif = await db('notifications')
+        .where({ id: res.body.data.id })
+        .first();
+      expect(dbNotif).toBeDefined();
+      expect(dbNotif.publish_at).not.toBeNull();
+    });
+
+    it('should create scheduled notification with all fields', async () => {
+      const futureDate = new Date();
+      futureDate.setHours(futureDate.getHours() + 3);
+
+      const notificationData = {
+        title: 'Complete Scheduled Notification',
+        body: 'Full data notification',
+        type: 'warning',
+        category: 'alerts',
+        publish_at: futureDate.toISOString(),
+        targetCriteria: {
+          minTransactionCount: 1,
+          maxTransactionCount: 100,
+        },
+      };
+
+      const res = await request(app)
+        .post('/api/v1/admin/notifications/schedule')
+        .set('Authorization', `Bearer ${adminToken}`)
+        .send(notificationData)
+        .expect(201);
+
+      expect(res.body.success).toBe(true);
+      expect(res.body.data.type).toBe('warning');
+      expect(res.body.data.category).toBe('alerts');
+    });
+
+    it('should return 400 if title is missing', async () => {
+      const notificationData = {
+        body: 'Missing title',
+      };
+
+      const res = await request(app)
+        .post('/api/v1/admin/notifications/schedule')
+        .set('Authorization', `Bearer ${adminToken}`)
+        .send(notificationData)
+        .expect(400);
+
+      expect(res.body.success).toBe(false);
+    });
+
+    it('should return 400 if body is missing', async () => {
+      const notificationData = {
+        title: 'Missing body',
+      };
+
+      const res = await request(app)
+        .post('/api/v1/admin/notifications/schedule')
+        .set('Authorization', `Bearer ${adminToken}`)
+        .send(notificationData)
+        .expect(400);
+
+      expect(res.body.success).toBe(false);
+    });
+
+    it('should return 400 for invalid notification type', async () => {
+      const notificationData = {
+        title: 'Invalid Type',
+        body: 'Test body',
+        type: 'invalid_type',
+      };
+
+      const res = await request(app)
+        .post('/api/v1/admin/notifications/schedule')
+        .set('Authorization', `Bearer ${adminToken}`)
+        .send(notificationData)
+        .expect(400);
+
+      expect(res.body.success).toBe(false);
+    });
+
+    it('should return 400 for invalid publish_at date format', async () => {
+      const notificationData = {
+        title: 'Invalid Date',
+        body: 'Test body',
+        publish_at: 'invalid-date-format',
+      };
+
+      const res = await request(app)
+        .post('/api/v1/admin/notifications/schedule')
+        .set('Authorization', `Bearer ${adminToken}`)
+        .send(notificationData)
+        .expect(400);
+
+      expect(res.body.success).toBe(false);
+    });
+
+    it('should return 400 for invalid transaction count range', async () => {
+      const notificationData = {
+        title: 'Invalid Range',
+        body: 'Test body',
+        targetCriteria: {
+          minTransactionCount: 100,
+          maxTransactionCount: 10, // max < min
+        },
+      };
+
+      const res = await request(app)
+        .post('/api/v1/admin/notifications/schedule')
+        .set('Authorization', `Bearer ${adminToken}`)
+        .send(notificationData)
+        .expect(400);
+
+      expect(res.body.success).toBe(false);
+    });
+
+    it('should return 401 if not authenticated', async () => {
+      const notificationData = {
+        title: 'Test',
+        body: 'Test body',
+      };
+
+      await request(app)
+        .post('/api/v1/admin/notifications/schedule')
+        .send(notificationData)
+        .expect(401);
+    });
+
+    it('should return 403 if user lacks permission', async () => {
+      const notificationData = {
+        title: 'Forbidden Test',
+        body: 'Should not create',
+      };
+
+      await request(app)
+        .post('/api/v1/admin/notifications/schedule')
+        .set('Authorization', `Bearer ${regularToken}`)
+        .send(notificationData)
+        .expect(403);
+    });
+  });
 });

@@ -49,6 +49,15 @@ export interface CreateNotificationInput {
   publish_at?: Date;
 }
 
+export interface CreateNotificationFromTemplateInput {
+  template_id: string;
+  variables?: Record<string, string | number>;
+  category?: string;
+  type?: 'info' | 'success' | 'warning' | 'error' | 'alert';
+  targetCriteria?: NotificationTargetCriteria;
+  publish_at?: Date;
+}
+
 export interface RegisterPushTokenInput {
   userId: string;
   platform: 'ios' | 'android' | 'web';

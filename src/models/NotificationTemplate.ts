@@ -14,13 +14,12 @@ export class NotificationTemplateModel {
     const [template] = await db('notification_templates')
       .insert(dataToInsert)
       .returning('*');
-    // Normalize locales to a JSON string for tests and consumers that expect a string
-    if (template && template.locales && typeof template.locales !== 'string') {
+    // Return locales as array for API response
+    if (template && template.locales && typeof template.locales === 'string') {
       try {
-        template.locales = JSON.stringify(template.locales);
+        template.locales = JSON.parse(template.locales);
       } catch (err) {
         void err;
-        // fallback: leave as-is
       }
     }
     return template;
@@ -32,9 +31,9 @@ export class NotificationTemplateModel {
     const template = await db('notification_templates')
       .where('template_id', templateId)
       .first();
-    if (template && template.locales && typeof template.locales !== 'string') {
+    if (template && template.locales && typeof template.locales === 'string') {
       try {
-        template.locales = JSON.stringify(template.locales);
+        template.locales = JSON.parse(template.locales);
       } catch (err) {
         void err;
       }
@@ -45,9 +44,9 @@ export class NotificationTemplateModel {
   static async findAll(): Promise<NotificationTemplate[]> {
     const templates = await db('notification_templates').select('*');
     return templates.map((t: any) => {
-      if (t && t.locales && typeof t.locales !== 'string') {
+      if (t && t.locales && typeof t.locales === 'string') {
         try {
-          t.locales = JSON.stringify(t.locales);
+          t.locales = JSON.parse(t.locales);
         } catch (err) {
           void err;
         }
@@ -62,10 +61,23 @@ export class NotificationTemplateModel {
       Omit<NotificationTemplate, 'id' | 'created_at' | 'updated_at'>
     >
   ): Promise<NotificationTemplate | null> {
+    const dataToUpdate: any = { ...templateData };
+    // Convert locales array to JSONB string if provided
+    if (dataToUpdate.locales) {
+      dataToUpdate.locales = jsonb(dataToUpdate.locales);
+    }
     const [template] = await db('notification_templates')
       .where('template_id', templateId)
-      .update(templateData)
+      .update(dataToUpdate)
       .returning('*');
+    // Return locales as array for API response
+    if (template && template.locales && typeof template.locales === 'string') {
+      try {
+        template.locales = JSON.parse(template.locales);
+      } catch (err) {
+        void err;
+      }
+    }
     return template || null;
   }
 

@@ -42,6 +42,75 @@ router.post(
 
 /**
  * @swagger
+ * /admin/notifications/schedule:
+ *   post:
+ *     summary: Create a notification with optional scheduling for future delivery
+ *     tags: [Admin - Notifications]
+ *     security:
+ *       - bearerAuth: []
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             $ref: '#/components/schemas/CreateNotificationRequest'
+ *     responses:
+ *       201:
+ *         description: Notification created (and sent immediately if publish_at is null or in the past)
+ */
+router.post(
+  '/schedule',
+  hasPermission('create.notification'),
+  NotificationController.createScheduledNotification
+);
+
+/**
+ * @swagger
+ * /admin/notifications/from-template:
+ *   post:
+ *     summary: Create a notification from a template with variable substitution
+ *     tags: [Admin - Notifications]
+ *     security:
+ *       - bearerAuth: []
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             required:
+ *               - template_id
+ *             properties:
+ *               template_id:
+ *                 type: string
+ *                 description: ID of the template to use
+ *               variables:
+ *                 type: object
+ *                 description: Variables to substitute in the template (e.g., {userName, amount})
+ *               category:
+ *                 type: string
+ *               type:
+ *                 type: string
+ *                 enum: [info, success, warning, error, alert]
+ *               targetCriteria:
+ *                 type: object
+ *               publish_at:
+ *                 type: string
+ *                 format: date-time
+ *     responses:
+ *       201:
+ *         description: Notification created from template
+ *       404:
+ *         description: Template not found
+ */
+router.post(
+  '/from-template',
+  hasPermission('create.notification'),
+  NotificationController.createFromTemplate
+);
+
+/**
+ * @swagger
  * /admin/notifications:
  *   get:
  *     summary: List all notifications

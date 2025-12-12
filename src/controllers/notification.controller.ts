@@ -102,6 +102,192 @@ export class NotificationController {
     }
   }
 
+  /**
+   * Create a notification with optional scheduling for future delivery
+   * POST /admin/notifications/schedule
+   */
+  static async createScheduledNotification(
+    req: AuthenticatedRequest,
+    res: Response
+  ) {
+    try {
+      if (!req.user) {
+        return sendError(res, 'Authentication required', 401, []);
+      }
+
+      const { title, body, targetCriteria, publish_at, type, category } =
+        req.body;
+
+      // Validate required fields
+      if (!title || !body) {
+        return sendError(res, 'Title and body are required', 400, []);
+      }
+
+      // Validate type if provided
+      const validTypes = ['info', 'success', 'warning', 'error', 'alert'];
+      if (type && !validTypes.includes(type)) {
+        return sendError(
+          res,
+          `Invalid notification type. Must be one of: ${validTypes.join(', ')}`,
+          400,
+          []
+        );
+      }
+
+      // Validate targeting criteria if provided
+      if (targetCriteria) {
+        if (targetCriteria.registrationDateRange) {
+          const { start, end } = targetCriteria.registrationDateRange;
+          if (!start || !end || new Date(start) > new Date(end)) {
+            return sendError(res, 'Invalid registration date range', 400, []);
+          }
+        }
+
+        if (
+          targetCriteria.minTransactionCount &&
+          targetCriteria.maxTransactionCount &&
+          targetCriteria.minTransactionCount >
+            targetCriteria.maxTransactionCount
+        ) {
+          return sendError(res, 'Invalid transaction count range', 400, []);
+        }
+
+        if (
+          targetCriteria.minTopupCount &&
+          targetCriteria.maxTopupCount &&
+          targetCriteria.minTopupCount > targetCriteria.maxTopupCount
+        ) {
+          return sendError(res, 'Invalid topup count range', 400, []);
+        }
+      }
+
+      // Validate publish_at if provided
+      if (publish_at) {
+        const publishDate = new Date(publish_at);
+        if (isNaN(publishDate.getTime())) {
+          return sendError(res, 'Invalid publish_at date format', 400, []);
+        }
+      }
+
+      const notification = await NotificationService.createScheduled(
+        {
+          title,
+          body,
+          type: type || 'info',
+          category,
+          targetCriteria,
+          publish_at,
+        },
+        req.user.userId
+      );
+
+      const message = publish_at
+        ? `Notification scheduled successfully for ${new Date(publish_at).toISOString()}`
+        : 'Notification created and sent successfully';
+
+      return sendSuccess(res, message, notification, 201);
+    } catch (error) {
+      console.error('Create scheduled notification error:', error);
+      return sendError(res, 'Internal server error', 500, []);
+    }
+  }
+
+  /**
+   * Create a notification from a template with variable substitution
+   * POST /admin/notifications/from-template
+   */
+  static async createFromTemplate(req: AuthenticatedRequest, res: Response) {
+    try {
+      if (!req.user) {
+        return sendError(res, 'Authentication required', 401, []);
+      }
+
+      const {
+        template_id,
+        variables,
+        category,
+        type,
+        targetCriteria,
+        publish_at,
+      } = req.body;
+
+      // Validate required fields
+      if (!template_id) {
+        return sendError(res, 'template_id is required', 400, []);
+      }
+
+      // Validate type if provided
+      const validTypes = ['info', 'success', 'warning', 'error', 'alert'];
+      if (type && !validTypes.includes(type)) {
+        return sendError(
+          res,
+          `Invalid notification type. Must be one of: ${validTypes.join(', ')}`,
+          400,
+          []
+        );
+      }
+
+      // Validate targeting criteria if provided
+      if (targetCriteria) {
+        if (targetCriteria.registrationDateRange) {
+          const { start, end } = targetCriteria.registrationDateRange;
+          if (!start || !end || new Date(start) > new Date(end)) {
+            return sendError(res, 'Invalid registration date range', 400, []);
+          }
+        }
+
+        if (
+          targetCriteria.minTransactionCount &&
+          targetCriteria.maxTransactionCount &&
+          targetCriteria.minTransactionCount >
+            targetCriteria.maxTransactionCount
+        ) {
+          return sendError(res, 'Invalid transaction count range', 400, []);
+        }
+
+        if (
+          targetCriteria.minTopupCount &&
+          targetCriteria.maxTopupCount &&
+          targetCriteria.minTopupCount > targetCriteria.maxTopupCount
+        ) {
+          return sendError(res, 'Invalid topup count range', 400, []);
+        }
+      }
+
+      // Validate publish_at if provided
+      if (publish_at) {
+        const publishDate = new Date(publish_at);
+        if (isNaN(publishDate.getTime())) {
+          return sendError(res, 'Invalid publish_at date format', 400, []);
+        }
+      }
+
+      const notification = await NotificationService.createFromTemplate(
+        {
+          template_id,
+          variables,
+          category,
+          type: type || 'info',
+          targetCriteria,
+          publish_at,
+        },
+        req.user.userId
+      );
+
+      const message = publish_at
+        ? `Notification scheduled successfully for ${new Date(publish_at).toISOString()}`
+        : 'Notification created and sent successfully from template';
+
+      return sendSuccess(res, message, notification, 201);
+    } catch (error: any) {
+      if (error.statusCode === 404) {
+        return sendError(res, error.message, 404, []);
+      }
+      console.error('Create from template error:', error);
+      return sendError(res, 'Internal server error', 500, []);
+    }
+  }
+
   static async registerPushToken(req: AuthenticatedRequest, res: Response) {
     try {
       if (!req.user) {

@@ -36,6 +36,21 @@ export class UserNotificationPreferenceController {
       if (!req.user) {
         return sendError(res, 'Authentication required', 401, []);
       }
+
+      // Validate required fields
+      const { category, subscribed } = req.body;
+      if (!category) {
+        return sendError(res, 'category is required', 400, []);
+      }
+      if (typeof subscribed !== 'boolean') {
+        return sendError(
+          res,
+          'subscribed is required and must be a boolean',
+          400,
+          []
+        );
+      }
+
       const preference =
         await UserNotificationPreferenceService.upsertPreference({
           ...req.body,

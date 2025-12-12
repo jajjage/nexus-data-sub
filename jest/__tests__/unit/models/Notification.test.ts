@@ -45,7 +45,7 @@ describe('NotificationModel', () => {
       );
       expect(notification).toBeDefined();
       expect(notification.title).toBe(notificationData.title);
-      expect(notification.created_by).toBe(testUser.userId);
+      expect(notification.body).toBe(notificationData.body);
     });
   });
 

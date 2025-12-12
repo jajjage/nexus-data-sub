@@ -5,6 +5,18 @@ import { sendError, sendSuccess } from '../utils/response.utils';
 export class NotificationTemplateController {
   static async createTemplate(req: Request, res: Response) {
     try {
+      const { template_id, title, body, locales } = req.body;
+
+      // Validate required fields
+      if (!template_id || !title || !body) {
+        return sendError(
+          res,
+          'template_id, title, and body are required',
+          400,
+          []
+        );
+      }
+
       const template = await NotificationTemplateService.create(req.body);
       return sendSuccess(res, 'Template created successfully', template, 201);
     } catch (error: any) {
