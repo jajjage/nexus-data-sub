@@ -16,7 +16,9 @@ import {
 } from '../types/transaction.types';
 import { ApiError } from '../utils/ApiError';
 import { generateSecureString } from '../utils/crypto';
+import { logger } from '../utils/logger.utils';
 import { comparePassword, hashPassword } from '../utils/security.utils';
+import { NotificationService } from './notification.service';
 
 export class UserService {
   /**
@@ -394,7 +396,7 @@ export class UserService {
       if (!wallet) {
         throw new Error('Wallet not found');
       }
-      await TransactionModel.create(
+      const transaction = await TransactionModel.create(
         {
           walletId: wallet.user_id,
           userId,
@@ -407,6 +409,27 @@ export class UserService {
         },
         trx
       );
+
+      try {
+        await NotificationService.sendTransactionAlert(
+          userId,
+          'Topup Successful',
+          `Your account has been credited with ₦${transaction.amount}`,
+          {
+            id: transaction.id,
+            amount: transaction.amount,
+            type: 'debit',
+            methdod: transaction.method || 'NGN',
+            reference: transaction.reference,
+            timestamp: new Date().toISOString(),
+            description: `Topup - ${transaction.relatedType}`,
+            // provider: transaction.provider,
+          }
+        );
+      } catch (error) {
+        logger.error('Failed to send transaction alert', error);
+        // Alert failure won't block the transaction
+      }
 
       // 10. Handle cashback debit if needed
       if (cashbackDebit > 0) {

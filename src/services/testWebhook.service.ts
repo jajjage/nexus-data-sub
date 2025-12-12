@@ -1,6 +1,8 @@
-import { TestWebhookRequest } from '@/types/testWebhook.types';
 import knex from '../database/connection';
+import { TestWebhookRequest } from '../types/testWebhook.types';
 import { ApiError } from '../utils/ApiError';
+import { logger } from '../utils/logger.utils';
+import { NotificationService } from './notification.service';
 
 interface TestPaymentResult {
   success: boolean;
@@ -109,23 +111,48 @@ export class TestWebhookService {
       });
 
       // Record transaction
-      await trx('transactions').insert({
-        user_id: va.user_id,
-        wallet_id: currentWallet.user_id, // Assuming wallet_id is the same as user_id
-        direction: 'credit',
-        amount: Number(amount),
-        balance_after: Number(newBalance),
-        method: `${provider}_test`,
-        reference: `test_${Date.now()}`,
-        related_type: 'incoming_payment',
-        related_id: incoming_payment.id,
-        metadata: {
-          provider_va_id: providerVaId,
-          test_webhook: true,
-          provider,
-        },
-        created_at: new Date(),
-      });
+      const transaction = await trx('transactions')
+        .insert({
+          user_id: va.user_id,
+          wallet_id: currentWallet.user_id, // Assuming wallet_id is the same as user_id
+          direction: 'credit',
+          amount: Number(amount),
+          balance_after: Number(newBalance),
+          method: `${provider}_test`,
+          reference: `test_${Date.now()}`,
+          related_type: 'incoming_payment',
+          related_id: incoming_payment.id,
+          metadata: {
+            provider_va_id: providerVaId,
+            test_webhook: true,
+            provider,
+          },
+          created_at: new Date(),
+        })
+        .select('*')
+        .then(rows => rows[0]);
+
+      try {
+        const userId = va.user_id;
+        await NotificationService.sendTransactionAlert(
+          userId,
+          'Topup Successful',
+          `Your account has been credited with ₦${newBalance}`,
+          {
+            id: transaction.id,
+            amount: transaction.amount,
+            type: 'credit',
+            currency: transaction.currency || 'NGN',
+            reference: transaction.reference,
+            timestamp: new Date().toISOString(),
+            description: `Topup - ${transaction.provider}`,
+            provider: transaction.provider,
+          }
+        );
+      } catch (error) {
+        logger.error('Failed to send transaction alert', error);
+        // Alert failure won't block the transaction
+      }
 
       // Create a simulated webhook event for logging purposes
       // eslint-disable-next-line @typescript-eslint/no-unused-vars

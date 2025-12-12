@@ -87,12 +87,13 @@ export class UserNotificationPreferenceController {
         return sendError(res, 'subscribed must be a boolean', 400, []);
       }
 
+      // Use upsertPreference to create the preference if it doesn't exist
       const preference =
-        await UserNotificationPreferenceService.updatePreference(
-          req.user.userId,
+        await UserNotificationPreferenceService.upsertPreference({
+          userId: req.user.userId,
           category,
-          subscribed
-        );
+          subscribed,
+        });
 
       return sendSuccess(res, 'Category subscription toggled', preference, 200);
     } catch (error: any) {
