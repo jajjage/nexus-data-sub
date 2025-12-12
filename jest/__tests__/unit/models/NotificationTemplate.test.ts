@@ -17,8 +17,11 @@ describe('NotificationTemplateModel', () => {
       const template = await NotificationTemplateModel.create(templateData);
       expect(template).toBeDefined();
       expect(template.template_id).toBe('test-template');
-      // Knex returns locales as a string, so we parse it for the test
-      expect(JSON.parse(template.locales as any)).toEqual(['en', 'es']);
+      // Knex returns locales as a string or array depending on JSONB handling
+      const locales = template.locales;
+      const parsed =
+        typeof locales === 'string' ? JSON.parse(locales) : locales;
+      expect(parsed).toEqual(['en', 'es']);
     });
   });
 
