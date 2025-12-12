@@ -312,7 +312,7 @@ describe('Notification Template Usage - Create from Template with Variables', ()
     it('should allow admin1 to create template and admin2 to use it with variables', async () => {
       // Create a new template
       const createRes = await request(app)
-        .post('/api/v1/notification-templates')
+        .post('/api/v1/admin/notifications/templates')
         .set('Authorization', `Bearer ${adminToken}`)
         .send({
           template_id: 'shared_promo_template',

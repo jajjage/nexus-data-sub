@@ -1,6 +1,7 @@
 import { Router } from 'express';
 import { NotificationController } from '../controllers/notification.controller';
 import { NotificationAnalyticsController } from '../controllers/notificationAnalytics.controller';
+import { NotificationTemplateController } from '../controllers/notificationTemplate.controller';
 import { authenticate } from '../middleware/auth.middleware';
 import { hasPermission, requireRole } from '../middleware/rbac.middleware';
 
@@ -235,6 +236,144 @@ router.get(
   '/:notificationId/analytics',
   hasPermission('view.notification_analytics'),
   NotificationAnalyticsController.getAnalyticsByNotificationId
+);
+
+/**
+ * @swagger
+ * /admin/notifications/templates:
+ *   post:
+ *     summary: Create a new notification template
+ *     tags: [Admin - Notifications]
+ *     security:
+ *       - bearerAuth: []
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             $ref: '#/components/schemas/NotificationTemplate'
+ *     responses:
+ *       201:
+ *         description: Template created
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/NotificationTemplate'
+ */
+router.post(
+  '/templates',
+  hasPermission('manage.notification_templates'),
+  NotificationTemplateController.createTemplate
+);
+
+/**
+ * @swagger
+ * /admin/notifications/templates:
+ *   get:
+ *     summary: Get all notification templates
+ *     tags: [Admin - Notifications]
+ *     security:
+ *       - bearerAuth: []
+ *     responses:
+ *       200:
+ *         description: List of templates
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: array
+ *               items:
+ *                 $ref: '#/components/schemas/NotificationTemplate'
+ */
+router.get(
+  '/templates',
+  hasPermission('manage.notification_templates'),
+  NotificationTemplateController.listTemplates
+);
+
+/**
+ * @swagger
+ * /admin/notifications/templates/{templateId}:
+ *   get:
+ *     summary: Get a notification template by ID
+ *     tags: [Admin - Notifications]
+ *     security:
+ *       - bearerAuth: []
+ *     parameters:
+ *       - in: path
+ *         name: templateId
+ *         required: true
+ *         schema:
+ *           type: string
+ *     responses:
+ *       200:
+ *         description: Template details
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/NotificationTemplate'
+ */
+router.get(
+  '/templates/:templateId',
+  hasPermission('manage.notification_templates'),
+  NotificationTemplateController.getTemplate
+);
+
+/**
+ * @swagger
+ * /admin/notifications/templates/{templateId}:
+ *   put:
+ *     summary: Update a notification template
+ *     tags: [Admin - Notifications]
+ *     security:
+ *       - bearerAuth: []
+ *     parameters:
+ *       - in: path
+ *         name: templateId
+ *         required: true
+ *         schema:
+ *           type: string
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             $ref: '#/components/schemas/NotificationTemplate'
+ *     responses:
+ *       200:
+ *         description: Template updated
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/NotificationTemplate'
+ */
+router.put(
+  '/templates/:templateId',
+  hasPermission('manage.notification_templates'),
+  NotificationTemplateController.updateTemplate
+);
+
+/**
+ * @swagger
+ * /admin/notifications/templates/{templateId}:
+ *   delete:
+ *     summary: Delete a notification template
+ *     tags: [Admin - Notifications]
+ *     security:
+ *       - bearerAuth: []
+ *     parameters:
+ *       - in: path
+ *         name: templateId
+ *         required: true
+ *         schema:
+ *           type: string
+ *     responses:
+ *       200:
+ *         description: Template deleted
+ */
+router.delete(
+  '/templates/:templateId',
+  hasPermission('manage.notification_templates'),
+  NotificationTemplateController.deleteTemplate
 );
 
 export default router;

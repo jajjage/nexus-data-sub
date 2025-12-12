@@ -19,7 +19,6 @@ import chatRoutes from './routes/chat.routes';
 import healthRoutes from './routes/health.routes';
 import mobileAuthRoutes from './routes/mobileAuth.routes';
 import notificationRoutes from './routes/notification.routes';
-import notificationTemplateRoutes from './routes/notificationTemplate.routes';
 import rewardsRoutes from './routes/rewards.routes';
 import userNotificationPreferenceRoutes from './routes/userNotificationPreference.routes';
 
@@ -114,7 +113,6 @@ const setupRoutes = async () => {
   app.use('/api/v1/test-webhooks', testWebhookLimiter, testWebhookRoutes);
   app.use('/api/v1/chat', chatRoutes);
   app.use('/api/v1/notifications', notificationRoutes);
-  app.use('/api/v1/notification-templates', notificationTemplateRoutes);
   app.use('/api/v1/notification-preferences', userNotificationPreferenceRoutes);
   app.use('/api/v1/dashboard', rewardsRoutes);
 

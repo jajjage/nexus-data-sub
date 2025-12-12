@@ -65,7 +65,7 @@ describe('Notification Template Controller - Full Integration Tests', () => {
     }
   });
 
-  describe('POST /api/v1/notification-templates - Create Template', () => {
+  describe('POST /api/v1/admin/notifications/templates - Create Template', () => {
     it('should create a notification template with required fields', async () => {
       const templateData = {
         template_id: 'welcome_user',
@@ -75,7 +75,7 @@ describe('Notification Template Controller - Full Integration Tests', () => {
       };
 
       const res = await request(app)
-        .post('/api/v1/notification-templates')
+        .post('/api/v1/admin/notifications/templates')
         .set('Authorization', `Bearer ${adminToken}`)
         .send(templateData)
         .expect(201);
@@ -103,7 +103,7 @@ describe('Notification Template Controller - Full Integration Tests', () => {
       };
 
       const res = await request(app)
-        .post('/api/v1/notification-templates')
+        .post('/api/v1/admin/notifications/templates')
         .set('Authorization', `Bearer ${adminToken}`)
         .send(templateData)
         .expect(201);
@@ -121,7 +121,7 @@ describe('Notification Template Controller - Full Integration Tests', () => {
       };
 
       const res = await request(app)
-        .post('/api/v1/notification-templates')
+        .post('/api/v1/admin/notifications/templates')
         .set('Authorization', `Bearer ${adminToken}`)
         .send(templateData)
         .expect(201);
@@ -138,7 +138,7 @@ describe('Notification Template Controller - Full Integration Tests', () => {
       };
 
       const res = await request(app)
-        .post('/api/v1/notification-templates')
+        .post('/api/v1/admin/notifications/templates')
         .set('Authorization', `Bearer ${adminToken}`)
         .send(templateData)
         .expect(400);
@@ -154,7 +154,7 @@ describe('Notification Template Controller - Full Integration Tests', () => {
       };
 
       const res = await request(app)
-        .post('/api/v1/notification-templates')
+        .post('/api/v1/admin/notifications/templates')
         .set('Authorization', `Bearer ${adminToken}`)
         .send(templateData)
         .expect(400);
@@ -170,7 +170,7 @@ describe('Notification Template Controller - Full Integration Tests', () => {
       };
 
       const res = await request(app)
-        .post('/api/v1/notification-templates')
+        .post('/api/v1/admin/notifications/templates')
         .set('Authorization', `Bearer ${adminToken}`)
         .send(templateData)
         .expect(400);
@@ -188,14 +188,14 @@ describe('Notification Template Controller - Full Integration Tests', () => {
 
       // Create first template
       await request(app)
-        .post('/api/v1/notification-templates')
+        .post('/api/v1/admin/notifications/templates')
         .set('Authorization', `Bearer ${adminToken}`)
         .send(templateData)
         .expect(201);
 
       // Try to create duplicate
       const res = await request(app)
-        .post('/api/v1/notification-templates')
+        .post('/api/v1/admin/notifications/templates')
         .set('Authorization', `Bearer ${adminToken}`)
         .send(templateData)
         .expect(409);
@@ -212,7 +212,7 @@ describe('Notification Template Controller - Full Integration Tests', () => {
       };
 
       await request(app)
-        .post('/api/v1/notification-templates')
+        .post('/api/v1/admin/notifications/templates')
         .send(templateData)
         .expect(401);
     });
@@ -226,14 +226,14 @@ describe('Notification Template Controller - Full Integration Tests', () => {
       };
 
       await request(app)
-        .post('/api/v1/notification-templates')
+        .post('/api/v1/admin/notifications/templates')
         .set('Authorization', `Bearer ${regularToken}`)
         .send(templateData)
         .expect(403);
     });
   });
 
-  describe('GET /api/v1/notification-templates - List Templates', () => {
+  describe('GET /api/v1/admin/notifications/templates - List Templates', () => {
     beforeAll(async () => {
       // Create multiple test templates
       const templates = [
@@ -264,7 +264,7 @@ describe('Notification Template Controller - Full Integration Tests', () => {
 
     it('should list all notification templates', async () => {
       const res = await request(app)
-        .get('/api/v1/notification-templates')
+        .get('/api/v1/admin/notifications/templates')
         .set('Authorization', `Bearer ${adminToken}`)
         .expect(200);
 
@@ -275,7 +275,7 @@ describe('Notification Template Controller - Full Integration Tests', () => {
 
     it('should list templates with all fields', async () => {
       const res = await request(app)
-        .get('/api/v1/notification-templates')
+        .get('/api/v1/admin/notifications/templates')
         .set('Authorization', `Bearer ${adminToken}`)
         .expect(200);
 
@@ -291,18 +291,18 @@ describe('Notification Template Controller - Full Integration Tests', () => {
     });
 
     it('should return 401 if not authenticated', async () => {
-      await request(app).get('/api/v1/notification-templates').expect(401);
+      await request(app).get('/api/v1/admin/notifications/templates').expect(401);
     });
 
     it('should return 403 if user lacks permission', async () => {
       await request(app)
-        .get('/api/v1/notification-templates')
+        .get('/api/v1/admin/notifications/templates')
         .set('Authorization', `Bearer ${regularToken}`)
         .expect(403);
     });
   });
 
-  describe('GET /api/v1/notification-templates/:templateId - Get Single Template', () => {
+  describe('GET /api/v1/admin/notifications/templates/:templateId - Get Single Template', () => {
     let testTemplateId: string;
 
     beforeAll(async () => {
@@ -317,7 +317,7 @@ describe('Notification Template Controller - Full Integration Tests', () => {
 
     it('should retrieve a template by ID', async () => {
       const res = await request(app)
-        .get(`/api/v1/notification-templates/${testTemplateId}`)
+        .get(`/api/v1/admin/notifications/templates/${testTemplateId}`)
         .set('Authorization', `Bearer ${adminToken}`)
         .expect(200);
 
@@ -329,7 +329,7 @@ describe('Notification Template Controller - Full Integration Tests', () => {
 
     it('should return 404 for non-existent template', async () => {
       const res = await request(app)
-        .get('/api/v1/notification-templates/non-existent-template')
+        .get('/api/v1/admin/notifications/templates/non-existent-template')
         .set('Authorization', `Bearer ${adminToken}`)
         .expect(404);
 
@@ -338,19 +338,19 @@ describe('Notification Template Controller - Full Integration Tests', () => {
 
     it('should return 401 if not authenticated', async () => {
       await request(app)
-        .get(`/api/v1/notification-templates/${testTemplateId}`)
+        .get(`/api/v1/admin/notifications/templates/${testTemplateId}`)
         .expect(401);
     });
 
     it('should return 403 if user lacks permission', async () => {
       await request(app)
-        .get(`/api/v1/notification-templates/${testTemplateId}`)
+        .get(`/api/v1/admin/notifications/templates/${testTemplateId}`)
         .set('Authorization', `Bearer ${regularToken}`)
         .expect(403);
     });
   });
 
-  describe('PUT /api/v1/notification-templates/:templateId - Update Template', () => {
+  describe('PUT /api/v1/admin/notifications/templates/:templateId - Update Template', () => {
     let updateTemplateId: string;
 
     beforeAll(async () => {
@@ -369,7 +369,7 @@ describe('Notification Template Controller - Full Integration Tests', () => {
       };
 
       const res = await request(app)
-        .put(`/api/v1/notification-templates/${updateTemplateId}`)
+        .put(`/api/v1/admin/notifications/templates/${updateTemplateId}`)
         .set('Authorization', `Bearer ${adminToken}`)
         .send(updateData)
         .expect(200);
@@ -390,7 +390,7 @@ describe('Notification Template Controller - Full Integration Tests', () => {
       };
 
       const res = await request(app)
-        .put(`/api/v1/notification-templates/${updateTemplateId}`)
+        .put(`/api/v1/admin/notifications/templates/${updateTemplateId}`)
         .set('Authorization', `Bearer ${adminToken}`)
         .send(updateData)
         .expect(200);
@@ -407,7 +407,7 @@ describe('Notification Template Controller - Full Integration Tests', () => {
       };
 
       const res = await request(app)
-        .put(`/api/v1/notification-templates/${updateTemplateId}`)
+        .put(`/api/v1/admin/notifications/templates/${updateTemplateId}`)
         .set('Authorization', `Bearer ${adminToken}`)
         .send(updateData)
         .expect(200);
@@ -426,7 +426,7 @@ describe('Notification Template Controller - Full Integration Tests', () => {
       };
 
       const res = await request(app)
-        .put(`/api/v1/notification-templates/${updateTemplateId}`)
+        .put(`/api/v1/admin/notifications/templates/${updateTemplateId}`)
         .set('Authorization', `Bearer ${adminToken}`)
         .send(updateData)
         .expect(200);
@@ -438,7 +438,7 @@ describe('Notification Template Controller - Full Integration Tests', () => {
 
     it('should return 404 for non-existent template', async () => {
       const res = await request(app)
-        .put('/api/v1/notification-templates/non-existent')
+        .put('/api/v1/admin/notifications/templates/non-existent')
         .set('Authorization', `Bearer ${adminToken}`)
         .send({ title: 'Updated' })
         .expect(404);
@@ -448,21 +448,21 @@ describe('Notification Template Controller - Full Integration Tests', () => {
 
     it('should return 401 if not authenticated', async () => {
       await request(app)
-        .put(`/api/v1/notification-templates/${updateTemplateId}`)
+        .put(`/api/v1/admin/notifications/templates/${updateTemplateId}`)
         .send({ title: 'Hacked' })
         .expect(401);
     });
 
     it('should return 403 if user lacks permission', async () => {
       await request(app)
-        .put(`/api/v1/notification-templates/${updateTemplateId}`)
+        .put(`/api/v1/admin/notifications/templates/${updateTemplateId}`)
         .set('Authorization', `Bearer ${regularToken}`)
         .send({ title: 'Unauthorized Update' })
         .expect(403);
     });
   });
 
-  describe('DELETE /api/v1/notification-templates/:templateId - Delete Template', () => {
+  describe('DELETE /api/v1/admin/notifications/templates/:templateId - Delete Template', () => {
     let deleteTemplateId: string;
 
     beforeAll(async () => {
@@ -477,7 +477,7 @@ describe('Notification Template Controller - Full Integration Tests', () => {
 
     it('should delete a notification template', async () => {
       const res = await request(app)
-        .delete(`/api/v1/notification-templates/${deleteTemplateId}`)
+        .delete(`/api/v1/admin/notifications/templates/${deleteTemplateId}`)
         .set('Authorization', `Bearer ${adminToken}`)
         .expect(200);
 
@@ -492,7 +492,7 @@ describe('Notification Template Controller - Full Integration Tests', () => {
 
     it('should return 404 for non-existent template', async () => {
       const res = await request(app)
-        .delete('/api/v1/notification-templates/non-existent')
+        .delete('/api/v1/admin/notifications/templates/non-existent')
         .set('Authorization', `Bearer ${adminToken}`)
         .expect(404);
 
@@ -509,7 +509,7 @@ describe('Notification Template Controller - Full Integration Tests', () => {
       });
 
       await request(app)
-        .delete(`/api/v1/notification-templates/${newTemplateId}`)
+        .delete(`/api/v1/admin/notifications/templates/${newTemplateId}`)
         .expect(401);
 
       // Cleanup
@@ -528,7 +528,7 @@ describe('Notification Template Controller - Full Integration Tests', () => {
       });
 
       await request(app)
-        .delete(`/api/v1/notification-templates/${newTemplateId}`)
+        .delete(`/api/v1/admin/notifications/templates/${newTemplateId}`)
         .set('Authorization', `Bearer ${regularToken}`)
         .expect(403);
 
@@ -551,14 +551,14 @@ describe('Notification Template Controller - Full Integration Tests', () => {
 
       // Create
       await request(app)
-        .post('/api/v1/notification-templates')
+        .post('/api/v1/admin/notifications/templates')
         .set('Authorization', `Bearer ${adminToken}`)
         .send(initialData)
         .expect(201);
 
       // Read
       const getRes = await request(app)
-        .get(`/api/v1/notification-templates/${templateId}`)
+        .get(`/api/v1/admin/notifications/templates/${templateId}`)
         .set('Authorization', `Bearer ${adminToken}`)
         .expect(200);
 
@@ -566,7 +566,7 @@ describe('Notification Template Controller - Full Integration Tests', () => {
 
       // Update
       const updateRes = await request(app)
-        .put(`/api/v1/notification-templates/${templateId}`)
+        .put(`/api/v1/admin/notifications/templates/${templateId}`)
         .set('Authorization', `Bearer ${adminToken}`)
         .send({
           title: 'Updated Lifecycle Test',
@@ -578,13 +578,13 @@ describe('Notification Template Controller - Full Integration Tests', () => {
 
       // Delete
       await request(app)
-        .delete(`/api/v1/notification-templates/${templateId}`)
+        .delete(`/api/v1/admin/notifications/templates/${templateId}`)
         .set('Authorization', `Bearer ${adminToken}`)
         .expect(200);
 
       // Verify deleted
       await request(app)
-        .get(`/api/v1/notification-templates/${templateId}`)
+        .get(`/api/v1/admin/notifications/templates/${templateId}`)
         .set('Authorization', `Bearer ${adminToken}`)
         .expect(404);
     });
@@ -600,14 +600,14 @@ describe('Notification Template Controller - Full Integration Tests', () => {
 
       // Create
       await request(app)
-        .post('/api/v1/notification-templates')
+        .post('/api/v1/admin/notifications/templates')
         .set('Authorization', `Bearer ${adminToken}`)
         .send(templateData)
         .expect(201);
 
       // Get immediately
       const getRes = await request(app)
-        .get(`/api/v1/notification-templates/${templateId}`)
+        .get(`/api/v1/admin/notifications/templates/${templateId}`)
         .set('Authorization', `Bearer ${adminToken}`)
         .expect(200);
 
@@ -618,7 +618,7 @@ describe('Notification Template Controller - Full Integration Tests', () => {
 
       // Cleanup
       await request(app)
-        .delete(`/api/v1/notification-templates/${templateId}`)
+        .delete(`/api/v1/admin/notifications/templates/${templateId}`)
         .set('Authorization', `Bearer ${adminToken}`)
         .expect(200);
     });
